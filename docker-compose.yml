@@ -12,13 +12,13 @@ services:
     depends_on:
       - redis
       - mongo
-      - gjtiff-fastapi
+      #- gjtiff-fastapi
     restart: always
 
   celery-worker:
     container_name: oculus_celery-worker
     build: ./backend
-    command: celery -A app.core.celery_app.celery worker -l info
+    command: celery -A app.infrastructure.celery.celery_app.celery worker -l info
     volumes:
       - data_volume:/data
     env_file:
@@ -31,7 +31,7 @@ services:
   celery-worker-processing:
     build: ./backend
     container_name: oculus_celery-worker-processing
-    command: celery -A app.core.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
+    command: celery -A app.infrastructure.celery.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
     volumes:
       - data_volume:/data
     env_file:
@@ -44,7 +44,7 @@ services:
   celery-beat:
     build: ./backend
     container_name: oculus_celery-beat
-    command: celery -A app.core.celery_app.celery beat --loglevel=info
+    command: celery -A app.infrastructure.celery.celery_app.celery beat --loglevel=info
     volumes:
       - data_volume:/data
     depends_on:
@@ -68,38 +68,38 @@ services:
       - "27017:27017"
     restart: always
 
-  gjtiff-fastapi:
-    build: gjtiff-fastapi
-    container_name: oculus_gjtiff_fastapi
-    ports:
-      - "8001:8000"
-    depends_on:
-      - gjtiff
-
-  gjtiff-clone:
-    image: alpine/git
-    volumes:
-      - ./gjtiff:/gjtiff
-      - ./gjtiff-clone/gjtiff-clone.sh:/gjtiff-clone.sh
-    entrypoint: ["/gjtiff-clone.sh"]
-    restart: no
-
-  gjtiff:
-    build: ./gjtiff
-    container_name: oculus_gjtiff
-    command: [ "sleep", "infinity" ]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
-    depends_on:
-      - gjtiff-clone
-    volumes:
-      - ./gjtiff:/gjtiff
-      - data_volume:/data
+#  gjtiff-fastapi:
+#    build: gjtiff-fastapi
+#    container_name: oculus_gjtiff_fastapi
+#    ports:
+#      - "8001:8000"
+#    depends_on:
+#      - gjtiff
+#
+#  gjtiff-clone:
+#    image: alpine/git
+#    volumes:
+#      - ./gjtiff:/gjtiff
+#      - ./gjtiff-clone/gjtiff-clone.sh:/gjtiff-clone.sh
+#    entrypoint: ["/gjtiff-clone.sh"]
+#    restart: no
+#
+#  gjtiff:
+#    build: ./gjtiff
+#    container_name: oculus_gjtiff
+#    command: [ "sleep", "infinity" ]
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: all
+#              capabilities: [ gpu ]
+#    depends_on:
+#      - gjtiff-clone
+#    volumes:
+#      - ./gjtiff:/gjtiff
+#      - data_volume:/data
 
 volumes:
   data_volume:

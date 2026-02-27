@@ -2,15 +2,16 @@ import uuid
 
 from fastapi import FastAPI
 
-from .application.orchestrators import CeleryOrchestrator
+from .application.orchestrators import BaseOrchestrator, CeleryOrchestrator
+from .domain import JobRepository
+from .infrastructure.db import MongoJobRepository
 from .infrastructure.logging.logger import configure_logging
-from .repositories import MongoJobRepository
 
 configure_logging()
 
 app = FastAPI(title="Oculus - GJTIFF wrapper service")
-repo = MongoJobRepository()
-orchestrator = CeleryOrchestrator()
+repo: JobRepository = MongoJobRepository()
+orchestrator: BaseOrchestrator = CeleryOrchestrator()
 
 
 @app.post("/jobs")

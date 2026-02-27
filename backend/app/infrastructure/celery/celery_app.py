@@ -2,8 +2,8 @@ import os
 
 from celery import Celery
 
-from ..config import APP_NAME
-from ..infrastructure.logging.logger import configure_logging
+from ...config import APP_NAME
+from ..logging.logger import configure_logging
 
 celery = Celery(
     APP_NAME,
@@ -11,11 +11,11 @@ celery = Celery(
     backend=os.getenv("CELERY_BACKEND", "redis://redis:6379/0")
 )
 
-celery.autodiscover_tasks(["app.tasks"])
+celery.autodiscover_tasks(["app.infrastructure.celery.tasks"])
 
 celery.conf.beat_schedule = {
     "hourly-cleanup": {
-        "task": "backend.app.tasks.cleanup_task",
+        "task": "app.infrastructure.celery.tasks.cleanup_task",
         "schedule": 3600.0,
     },
 }

@@ -19,7 +19,7 @@ class JobRepository(ABC):
         pass
 
     @abstractmethod
-    def find_expired(self, threshold: datetime):
+    def find_expired(self, threshold: datetime) -> list[Job]:
         pass
 
     @abstractmethod
