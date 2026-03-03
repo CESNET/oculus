@@ -10,7 +10,15 @@ APP_VERSION: str = os.getenv("APP_VERSION", f"{datetime.now(tz=timezone.utc).str
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
 LOG_LEVEL: int = getattr(logging, LOG_LEVEL, logging.INFO)
 
-USE_GSS: bool = os.getenv("USE_GSS", default="False").lower() in true_statements
+ENABLED_DATASETS = [
+    dataset for dataset, env_var in [
+        ("sentinel", "ENABLE_SENTINEL"),
+        ("landsat", "ENABLE_LANDSAT")
+    ]
+    if os.getenv(env_var, "False").lower() in true_statements
+] # Warning - dataset name must correspond with `domain/job_dataset.py` JobDataset Enum values!
+
+ENABLE_GSS: bool = os.getenv("ENABLE_GSS", default="False").lower() in true_statements
 
 TMP_DIR: str = os.getenv("TMP_DIR", f"/tmp/{APP_NAME}")
 DATA_DIR: str = os.getenv("DATA_DIR", f"/data")

@@ -1,6 +1,7 @@
 import logging
 
 from . import BaseProvider
+from ....config import ENABLE_GSS
 
 
 class GSSProvider(BaseProvider):
@@ -15,6 +16,10 @@ class GSSProvider(BaseProvider):
         )
 
     def has_product(self, product_id: str) -> bool:
+        if not ENABLE_GSS:
+            self._logger.warning("GSS datasource is not enabled!")
+            return False
+
         feature_id = product_id
 
         # TODO implementovat lookup produktu na GSS

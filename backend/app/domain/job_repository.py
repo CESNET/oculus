@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from . import Job, JobDataset
-
+from . import Job
 
 class JobRepository(ABC):
     @abstractmethod
