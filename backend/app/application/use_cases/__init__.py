@@ -1,4 +1,4 @@
-from .cleanup_use_case import CleanupJobUseCase
+from .cleanup_job_use_case import CleanupJobUseCase
 from .download_job_use_case import DownloadJobUseCase
 from .finalize_job_use_case import FinalizeJobUseCase
 from .process_job_use_case import ProcessJobUseCase

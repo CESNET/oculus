@@ -1,15 +1,10 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from . import Job
+from . import Job, JobDataset
 
 
 class JobRepository(ABC):
-
-    @abstractmethod
-    def create(self, job_id: str) -> Job:
-        pass
-
     @abstractmethod
     def get(self, job_id: str) -> Job:
         pass

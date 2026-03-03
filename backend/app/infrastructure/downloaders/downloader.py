@@ -1,25 +1,30 @@
 import logging
 import os
-from typing import Optional
+from abc import ABC, abstractmethod
 
 from ...config import APP_NAME, DATA_DIR
+from ...domain import Job
 
 
-class Downloader:
-    _downloaded_data_path: str
+class Downloader(ABC):
+    def __init__(self, job: Job, logger: logging.Logger | None = None):
+        self._job: Job = job
 
-    def __init__(self, job_id: str, logger: Optional[logging.Logger] = None):
-        self._job_id = job_id
+        self._downloaded_data_path = os.path.join(DATA_DIR, self._job.id, "data", "downloaded")
 
         self._logger: logging.Logger = logger or logging.getLogger(APP_NAME)
 
     def download(self) -> str:
-        self._logger.info(f"Start download for job {self._job_id}")
+        self._logger.info(f"Starting download for job ID: {self._job.id}")
 
-        self._downloaded_data_path = os.path.join(DATA_DIR, self._job_id, "data", "downloaded")
         os.makedirs(self._downloaded_data_path, exist_ok=True)
 
-        return self._download()
+        self._downloaded_data_path = self._download()
 
+        self._logger.info(f"Job ID: {self._job.id} finished downloading int {self._downloaded_data_path}")
+
+        return self._downloaded_data_path
+
+    @abstractmethod
     def _download(self) -> str:
-        ...
+        pass

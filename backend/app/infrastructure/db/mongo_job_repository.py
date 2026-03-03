@@ -1,21 +1,10 @@
 from datetime import datetime, timezone
 
 from ..db.mongo import get_collection
-from ...domain import Job, JobStatus, JobRepository
+from ...domain import Job, JobRepository
 
 
 class MongoJobRepository(JobRepository):
-
-    def create(self, job_id: str) -> Job:
-        now = datetime.now(tz=timezone.utc)
-
-        job = Job(id=job_id, status=JobStatus.ACCEPTED, created_at=now)
-        data = job.serialize()
-        data["last_accessed"] = now
-
-        get_collection().insert_one(data)
-
-        return job
 
     def get(self, job_id: str) -> Job:
         doc = get_collection().find_one({"_id": job_id})
@@ -35,9 +24,10 @@ class MongoJobRepository(JobRepository):
         data = job.serialize()
         data["last_accessed"] = now
 
-        get_collection().find_one_and_update(
+        get_collection().update_one(
             {"_id": job.id},
-            {"$set": data}
+            {"$set": data},
+            upsert=True
         )
 
     def find_expired(self, threshold: datetime) -> list[Job]:

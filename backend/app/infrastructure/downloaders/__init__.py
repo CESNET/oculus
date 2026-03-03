@@ -1,7 +1,7 @@
-from .cdse_downloader import CDSEDownloader
 from .downloader import Downloader
+from .downloader_selector import DownloaderSelector
 
 __all__ = [
-    "CDSEDownloader",
-    "Downloader"
+    "Downloader",
+    "DownloaderSelector",
 ]

@@ -1,6 +1,8 @@
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
+from .job_dataset import JobDataset
 from .job_status import JobStatus
 
 
@@ -8,13 +10,19 @@ class Job:
     def __init__(
             self,
             id: str,
+            dataset: JobDataset,
+            metadata: dict,
+            properties: dict,
             status: JobStatus,
-            created_at: datetime,
+            created_at: datetime = datetime.now(tz=timezone.utc),
             downloaded_data_path: Optional[str] = None,
             processed_data_path: Optional[str] = None,
             fail_reason: Optional[str] = None
     ):
         self.id: str = id
+        self.dataset: JobDataset = dataset
+        self.metadata: dict = metadata
+        self.properties: dict = properties
         self.status: JobStatus = status
         self.created_at: datetime = created_at
         self.downloaded_data_path: Optional[str] = downloaded_data_path
@@ -71,25 +79,45 @@ class Job:
     def mark_finished(self):
         self.transition(JobStatus.FINISHED)
 
+    # --- Creation ---
+    @classmethod
+    def create(cls, dataset: JobDataset, metadata: dict, properties: dict) -> "Job":
+        job_id = str(uuid.uuid4()) # TODO udělat neměnný identifikátor! Možná už by měl přijít z frontendu?
+
+        return cls(
+            id=job_id,
+            dataset=dataset,
+            metadata=metadata,
+            properties=properties,
+            status=JobStatus.ACCEPTED,
+            created_at=datetime.now(timezone.utc),
+        )
+
     # --- Serialization ---
     def serialize(self) -> dict:
         return {
             "_id": self.id,
+            "dataset": self.dataset.value,
+            "metadata": self.metadata,
+            "properties": self.properties,
             "status": self.status.value,
             "created_at": self.created_at,
             "downloaded_data_path": self.downloaded_data_path,
             "processed_data_path": self.processed_data_path,
             "fail_reason": self.fail_reason,
-            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
+            "updated_at": datetime.now(tz=timezone.utc),
         }
 
     @classmethod
     def deserialize(cls, doc: dict) -> "Job":
         return cls(
             id=doc["_id"],
+            dataset=JobDataset(doc["dataset"]),
+            metadata=doc["metadata"],
+            properties=doc["properties"],
             status=JobStatus(doc["status"]),
             created_at=doc["created_at"],
             downloaded_data_path=doc.get("downloaded_data_path"),
             processed_data_path=doc.get("processed_data_path"),
-            fail_reason=doc["fail_reason"]
+            fail_reason=doc.get("fail_reason")
         )

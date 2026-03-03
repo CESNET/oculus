@@ -1,21 +1,19 @@
 import logging
-from typing import Type, Optional
+from typing import Optional
 
 from .use_case import UseCase
 from ...domain.job import Job
 from ...domain.job_repository import JobRepository
-from ...infrastructure.downloaders.downloader import Downloader
+from ...infrastructure.downloaders import Downloader
+from ...infrastructure.downloaders import DownloaderSelector
 
 
 class DownloadJobUseCase(UseCase):
     def __init__(
             self,
             repository: JobRepository,
-            downloader_class: Type[Downloader],
             logger: Optional[logging.Logger] = None
     ):
-        self._downloader_class: Type[Downloader] = downloader_class
-
         super().__init__(repository, logger)
 
     def execute(self, job_id: Optional[str]) -> str:
@@ -27,7 +25,8 @@ class DownloadJobUseCase(UseCase):
         job.mark_downloading()
         self._repository.save(job)
 
-        downloader: Downloader = self._downloader_class(job_id=job.id)
+        downloader: Downloader = DownloaderSelector(job.dataset).select()(job=job)
+
         self._logger.info(f"Downloading job {job.id}")
         downloaded_data_path: str = downloader.download()
 
