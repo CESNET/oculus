@@ -1,6 +1,6 @@
 from celery import chain
 
-from . import BaseOrchestrator
+from .base_orchestrator import BaseOrchestrator
 
 
 class CeleryOrchestrator(BaseOrchestrator):

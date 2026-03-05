@@ -20,6 +20,10 @@ ENABLED_DATASETS = [
 
 ENABLE_GSS: bool = os.getenv("ENABLE_GSS", default="False").lower() in true_statements
 
+CDSE_CATALOG_ROOT:str=os.getenv("CDSE_CATALOG_ROOT", "")
+CDSE_S3_ACCESS_KEY:str=os.getenv("CDSE_S3_ACCESS_KEY", "")
+CDSE_S3_SECRET_KEY:str=os.getenv("CDSE_S3_SECRET_KEY", "")
+
 TMP_DIR: str = os.getenv("TMP_DIR", f"/tmp/{APP_NAME}")
 DATA_DIR: str = os.getenv("DATA_DIR", f"/data")
 

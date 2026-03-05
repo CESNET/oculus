@@ -10,6 +10,7 @@ class Job:
     def __init__(
             self,
             id: str,
+            product_id: str,
             dataset: JobDataset,
             metadata: dict,
             properties: dict,
@@ -20,6 +21,7 @@ class Job:
             fail_reason: Optional[str] = None
     ):
         self.id: str = id
+        self.product_id = product_id
         self.dataset: JobDataset = dataset
         self.metadata: dict = metadata
         self.properties: dict = properties
@@ -82,10 +84,11 @@ class Job:
     # --- Creation ---
     @classmethod
     def create(cls, dataset: JobDataset, metadata: dict, properties: dict) -> "Job":
-        job_id = str(uuid.uuid4()) # TODO udělat neměnný identifikátor! Možná už by měl přijít z frontendu?
+        job_id = str(uuid.uuid4())  # TODO udělat neměnný identifikátor! Možná už by měl přijít z frontendu? Možná by to měl být metadata[dataset.product_id_key()] (tedy id produktu - například pro sentinel feature_id)
 
         return cls(
             id=job_id,
+            product_id=metadata[dataset.product_id_key()],
             dataset=dataset,
             metadata=metadata,
             properties=properties,
@@ -97,6 +100,7 @@ class Job:
     def serialize(self) -> dict:
         return {
             "_id": self.id,
+            "product_id": self.product_id,
             "dataset": self.dataset.value,
             "metadata": self.metadata,
             "properties": self.properties,
@@ -112,6 +116,7 @@ class Job:
     def deserialize(cls, doc: dict) -> "Job":
         return cls(
             id=doc["_id"],
+            product_id=doc["product_id"],
             dataset=JobDataset(doc["dataset"]),
             metadata=doc["metadata"],
             properties=doc["properties"],

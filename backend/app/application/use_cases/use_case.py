@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from ...config import APP_NAME
-from ...domain.job_repository import JobRepository
+from ...domain import JobRepository
 
 
 class UseCase:

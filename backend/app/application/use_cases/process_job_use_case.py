@@ -1,11 +1,9 @@
-# app/application/use_cases/process_job_use_case.py
 import logging
 from typing import Type, Optional
 
 from .use_case import UseCase
-from ...domain.job import Job
-from ...domain.job_repository import JobRepository
-from ...infrastructure.processors.processor import Processor
+from ...domain import Job, JobRepository
+from ...infrastructure.processors import Processor
 
 
 class ProcessJobUseCase(UseCase):

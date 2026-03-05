@@ -1,113 +1,104 @@
 import logging
 import re
+from pathlib import Path
 from typing import List, Tuple
 
 import httpx
-
-from app.config import CDSE_CATALOG_ROOT, CDSE_S3_CREDENTIALS
-from app.infrastructure.downloaders.s3_client import S3Client
+from ....config import CDSE_CATALOG_ROOT, CDSE_S3_ACCESS_KEY, CDSE_S3_SECRET_KEY
+from dataspace.s3_client import S3Client
 
 
 class CDSEConnector:
     """
-    Nízkourovňový klient pro komunikaci s CDSE API a S3.
-    Neobsahuje žádnou business logiku.
+    Connector pro CDSE: komunikuje s CDSE API a S3.
+    Provádí získání feature, list dostupných souborů a stahování.
     """
 
-    def __init__(
-        self,
-        feature_id: str,
-        workdir: str,
-        logger: logging.Logger | None = None
-    ):
+    def __init__(self, feature_id: str, workdir: str, logger: logging.Logger | None = None):
         self._feature_id = feature_id
-        self._workdir = workdir
+        self._workdir = Path(workdir)
         self._logger = logger or logging.getLogger(__name__)
-
         self._feature: dict | None = None
         self._s3_client = S3Client(config=CDSE_S3_CREDENTIALS)
 
-    # =========================
-    # HTTP část
-    # =========================
-
-    def _fetch_feature(self) -> dict:
+    # -----------------------
+    # API + feature
+    # -----------------------
+    def _get_feature(self) -> dict:
+        """Získá metadata feature z CDSE API."""
         if self._feature is not None:
             return self._feature
 
-        endpoint = f"{CDSE_CATALOG_ROOT}/Products({self._feature_id})"
+        endpoint = f"Products({self._feature_id})"
+        response: httpx.Response = httpx.get(f"{CDSE_CATALOG_ROOT}/{endpoint}")
 
-        self._logger.debug(f"Fetching CDSE feature {self._feature_id}")
-
-        response = httpx.get(endpoint, timeout=60)
+        self._logger.debug(f"CDSE connector calling API for feature {self._feature_id}")
 
         if response.status_code != 200:
             raise RuntimeError(
-                f"CDSE returned {response.status_code}: {response.text}"
+                f"CDSE API error: {response.status_code}, response: {response.text}"
             )
 
         self._feature = response.json()
         return self._feature
 
-    # =========================
-    # S3 část
-    # =========================
-
-    def _get_s3_path(self) -> str:
-        feature = self._fetch_feature()
-
+    def get_s3_path(self) -> str:
+        """Vrací S3 bucket/key pro danou feature."""
+        feature = self._get_feature()
         try:
             return feature["S3Path"]
         except KeyError:
-            raise RuntimeError("CDSE feature does not contain S3Path")
+            raise FileNotFoundError(f"Feature {self._feature_id} nemá S3Path")
 
-    def _get_asset_relative_path(self, full_path: str) -> str:
-        feature = self._fetch_feature()
-        name = feature.get("Name")
-
-        if not name:
-            return ""
-
-        match = re.search(re.escape(name), full_path)
-        if match:
-            return full_path[match.start():]
-
-        return ""
-
-    def list_files(self) -> List[Tuple[str, str]]:
+    # -----------------------
+    # Files
+    # -----------------------
+    def get_available_files(self) -> List[Tuple[str, str]]:
         """
-        Vrací list tuple:
-        (relative_asset_path, full_s3_path)
+        Vrátí seznam dostupných souborů jako tuple (friendly_name, s3_key).
+        friendly_name = část S3 cesty od názvu feature.
         """
+        s3_path = self.get_s3_path()
+        if "/eodata/" in s3_path:
+            s3_path = s3_path.replace("/eodata/", "")
 
-        bucket_key = self._get_s3_path()
+        all_files = self._s3_client.get_file_list(bucket_key=s3_path)
+        feature_name = self._get_feature()["Name"]
 
-        if "/eodata/" in bucket_key:
-            bucket_key = bucket_key.replace("/eodata/", "")
+        result: List[Tuple[str, str]] = []
+        for f in all_files:
+            m = re.search(re.escape(feature_name), f)
+            if m:
+                friendly_name = f[m.start():]
+            else:
+                friendly_name = f
+            result.append((friendly_name, f))
 
-        self._logger.debug(f"Listing S3 files from {bucket_key}")
+        return result
 
-        available_files = self._s3_client.get_file_list(bucket_key=bucket_key)
-
-        return [
-            (self._get_asset_relative_path(file), file)
-            for file in available_files
-        ]
-
-    def download_files(self, files: List[Tuple[str, str]]) -> List[str]:
+    # -----------------------
+    # Download
+    # -----------------------
+    def download_selected_files(self, files: List[Tuple[str, str]]) -> List[str]:
         """
-        Stáhne soubory do workdir.
-        Vrací list lokálních cest.
+        Stáhne vybrané soubory z S3.
+        files = list of tuples (friendly_name, s3_key)
         """
-
         downloaded: List[str] = []
+        self._workdir.mkdir(parents=True, exist_ok=True)
 
-        for _, full_s3_path in files:
-            local_path = self._s3_client.download_file(
-                bucket_key=full_s3_path,
-                root_output_directory=self._workdir
+        for _, s3_key in files:
+            out_path = self._s3_client.download_file(
+                bucket_key=s3_key,
+                root_output_directory=str(self._workdir)
             )
-
-            downloaded.append(str(local_path))
+            downloaded.append(str(out_path))
 
         return downloaded
+
+    # -----------------------
+    # Geo footprint
+    # -----------------------
+    def get_polygon(self) -> List[List[float]]:
+        """Vrací polygon feature pro případné zpracování AOI."""
+        return self._get_feature()["GeoFootprint"]["coordinates"][0]

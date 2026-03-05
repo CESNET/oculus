@@ -3,8 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from .use_case import UseCase
-from ...domain.job import Job
-from ...domain.job_repository import JobRepository
+from ...domain import Job, JobRepository
 
 
 class CleanupJobUseCase(UseCase):

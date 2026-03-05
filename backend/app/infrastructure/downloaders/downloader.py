@@ -1,30 +1,28 @@
 import logging
-import os
 from abc import ABC, abstractmethod
+from typing import Optional, List
 
-from ...config import APP_NAME, DATA_DIR
-from ...domain import Job
+from .providers.base_provider import BaseProvider
+from ...config import APP_NAME
+from ...domain.job import Job
 
 
 class Downloader(ABC):
-    def __init__(self, job: Job, logger: logging.Logger | None = None):
-        self._job: Job = job
+    _providers: List[BaseProvider] = []
 
-        self._downloaded_data_path = os.path.join(DATA_DIR, self._job.id, "data", "downloaded")
+    def __init__(self, job: Job, logger: Optional[logging.Logger] = None):
+        self._logger = logger or logging.getLogger(APP_NAME)
 
-        self._logger: logging.Logger = logger or logging.getLogger(APP_NAME)
+        self._job = job
 
     def download(self) -> str:
-        self._logger.info(f"Starting download for job ID: {self._job.id}")
+        for provider in self._providers:
+            if provider.has_product():
+                self._logger.info(
+                    f"Product {self._job.product_id} found in {provider.__class__.__name__}"
+                )
+                return provider.download_product()
 
-        os.makedirs(self._downloaded_data_path, exist_ok=True)
+            self._logger.info(f"Product {self._job.product_id} not found in {provider.__class__.__name__}")
 
-        self._downloaded_data_path = self._download()
-
-        self._logger.info(f"Job ID: {self._job.id} finished downloading int {self._downloaded_data_path}")
-
-        return self._downloaded_data_path
-
-    @abstractmethod
-    def _download(self) -> str:
-        pass
+        raise ValueError(f"Product {self._job.product_id} not found in any provider")

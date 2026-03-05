@@ -1,10 +1,10 @@
+from ..orchestrators import BaseOrchestrator
 from ...config import ENABLED_DATASETS
-from ...domain import Job
-from ...domain import JobDataset
+from ...domain import Job, JobDataset, JobRepository
 
 
-class CreateJobUseCase:
-    def __init__(self, repository, orchestrator):
+class CreateJobUseCase():
+    def __init__(self, repository: JobRepository, orchestrator: BaseOrchestrator):
         self.repository = repository
         self.orchestrator = orchestrator
 
