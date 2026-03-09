@@ -6,14 +6,14 @@ from .application.use_cases.create_job_use_case import CreateJobUseCase
 from .application.use_cases.download_job_use_case import DownloadJobUseCase
 from .application.use_cases.finalize_job_use_case import FinalizeJobUseCase
 from .application.use_cases.process_job_use_case import ProcessJobUseCase
-from .config import APP_NAME
+from .settings import settings
 from .domain.job_repository import JobRepository
 from .infrastructure.db.mongo_job_repository import MongoJobRepository
 from .infrastructure.processors.gjtiff_processor import GJTIFFProcessor
 
 default_job_repository = MongoJobRepository()
 default_orchestrator = CeleryOrchestrator()
-default_logger = logging.getLogger(APP_NAME)
+default_logger = logging.getLogger(settings.APP_NAME)
 
 
 class BootstrapContainer:
@@ -25,7 +25,7 @@ class BootstrapContainer:
     ):
         self._repository = repository or MongoJobRepository()
         self._orchestrator = orchestrator or CeleryOrchestrator()
-        self._logger = logger or logging.getLogger(APP_NAME)
+        self._logger = logger or logging.getLogger(settings.APP_NAME)
 
     @property
     def repository(self) -> JobRepository:
@@ -42,7 +42,8 @@ class BootstrapContainer:
     def create_job(self) -> CreateJobUseCase:
         return CreateJobUseCase(
             repository=self._repository,
-            orchestrator=self._orchestrator
+            orchestrator=self._orchestrator,
+            data_directory_root=settings.DATA_DIR
         )
 
     def download_job(self) -> DownloadJobUseCase:

@@ -26,11 +26,11 @@ class DownloadJobUseCase(UseCase):
         downloader: Downloader = downloader_factory.get_downloader(job)
 
         self._logger.info(f"Downloading job {job.id}")
-        downloaded_data_path: str = downloader.download()
+        downloaded_files: list[str] = downloader.download()
 
-        job.mark_downloading_complete(downloaded_data_path)
+        job.mark_downloading_complete(downloaded_files)
         self._repository.save(job)
 
-        self._logger.info(f"Job {job.id} downloaded to {downloaded_data_path}")
+        self._logger.info(f"Total {len(downloaded_files)} for job {job.id} downloaded")
 
         return job.id

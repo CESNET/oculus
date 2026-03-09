@@ -19,8 +19,10 @@ class USGSProvider(BaseProvider):
         # USGS is an authoritative provider, expecting that product exists without check, returning always True
         return True
 
-    def download_product(self) -> str:
-        # TODO implementovat stahování
-        raise NotImplementedError("!!! LANDSAT NOT IMPLEMENTED YET !!!")
+    def list_product_files(self) -> list[str]:
+        # TODO lookup produktů na USGS
+        raise NotImplementedError("USGS datasource lookup is not implemented!")
 
-        return self._path_to_downloaded
+    def download_product_files(self, files_to_download: list[str]) -> list[str]:
+        # TODO download prodkutů z USGS
+        raise NotImplementedError("USGS datasource download is not implemented!")

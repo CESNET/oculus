@@ -1,11 +1,11 @@
 import logging
 from abc import ABC, abstractmethod
 
-from ...config import APP_NAME
+from ...settings import settings
 
 
 class BaseOrchestrator(ABC):
-    _logger: logging.Logger = logging.getLogger(APP_NAME)
+    _logger: logging.Logger = logging.getLogger(settings.APP_NAME)
 
     @abstractmethod
     def run_pipeline(self, job_id: str):

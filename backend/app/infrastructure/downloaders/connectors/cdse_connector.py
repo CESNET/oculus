@@ -1,104 +1,154 @@
 import logging
 import re
 from pathlib import Path
-from typing import List, Tuple
 
+import boto3
 import httpx
-from ....config import CDSE_CATALOG_ROOT, CDSE_S3_ACCESS_KEY, CDSE_S3_SECRET_KEY
-from dataspace.s3_client import S3Client
+from botocore.exceptions import ClientError
+
+from ....settings import settings
 
 
 class CDSEConnector:
     """
-    Connector pro CDSE: komunikuje s CDSE API a S3.
-    Provádí získání feature, list dostupných souborů a stahování.
+    CDSE Connector: interacts with the CDSE API and S3 storage.
+    Provides methods to fetch feature metadata, list available files, and download them.
     """
 
     def __init__(self, feature_id: str, workdir: str, logger: logging.Logger | None = None):
-        self._feature_id = feature_id
-        self._workdir = Path(workdir)
-        self._logger = logger or logging.getLogger(__name__)
+        self._feature_id: str = feature_id
+        self._workdir: Path = Path(workdir)
+        self._logger: logging.Logger = logger or logging.getLogger(__name__)
         self._feature: dict | None = None
-        self._s3_client = S3Client(config=CDSE_S3_CREDENTIALS)
+        self._cached_files: list[str] | None = None
+
+        # boto3 client and resource for fallback
+        creds = settings.SENTINEL_CDSE_S3_CREDENTIALS
+        self._s3_client = boto3.client(
+            service_name="s3",
+            endpoint_url=creds["endpoint_url"],
+            aws_access_key_id=creds["aws_access_key_id"],
+            aws_secret_access_key=creds["aws_secret_access_key"],
+            region_name=creds["region_name"]
+        )
+        self._s3_resource = boto3.resource(
+            service_name="s3",
+            endpoint_url=creds["endpoint_url"],
+            aws_access_key_id=creds["aws_access_key_id"],
+            aws_secret_access_key=creds["aws_secret_access_key"],
+            region_name=creds["region_name"]
+        )
+
+        self._logger.debug(f"Initialized CDSEConnector for feature {self._feature_id}")
 
     # -----------------------
-    # API + feature
+    # Feature API
     # -----------------------
     def _get_feature(self) -> dict:
-        """Získá metadata feature z CDSE API."""
-        if self._feature is not None:
-            return self._feature
+        if self._feature is None:
+            url = f"{settings.SENTINEL_CDSE_CATALOG_ROOT.rstrip('/')}/Products({self._feature_id})"
 
-        endpoint = f"Products({self._feature_id})"
-        response: httpx.Response = httpx.get(f"{CDSE_CATALOG_ROOT}/{endpoint}")
+            self._logger.debug(f"Fetching feature metadata from API: {url}")
 
-        self._logger.debug(f"CDSE connector calling API for feature {self._feature_id}")
+            response = httpx.get(url)
 
-        if response.status_code != 200:
-            raise RuntimeError(
-                f"CDSE API error: {response.status_code}, response: {response.text}"
-            )
+            if response.status_code != 200:
+                self._logger.error(f"CDSE API returned {response.status_code}: {response.text}")
 
-        self._feature = response.json()
+                raise RuntimeError(f"CDSE API error: {response.status_code}, response: {response.text}")
+
+            self._feature = response.json()
+            self._logger.debug(f"Feature metadata fetched successfully for {self._feature_id}")
+
         return self._feature
 
     def get_s3_path(self) -> str:
-        """Vrací S3 bucket/key pro danou feature."""
-        feature = self._get_feature()
         try:
-            return feature["S3Path"]
+            return self._get_feature()["S3Path"]
         except KeyError:
-            raise FileNotFoundError(f"Feature {self._feature_id} nemá S3Path")
+            self._logger.error(f"Feature {self._feature_id} does not contain 'S3Path'")
+            raise FileNotFoundError(f"Feature {self._feature_id} does not contain S3Path key")
 
     # -----------------------
-    # Files
+    # Helpers
     # -----------------------
-    def get_available_files(self) -> List[Tuple[str, str]]:
-        """
-        Vrátí seznam dostupných souborů jako tuple (friendly_name, s3_key).
-        friendly_name = část S3 cesty od názvu feature.
-        """
-        s3_path = self.get_s3_path()
-        if "/eodata/" in s3_path:
-            s3_path = s3_path.replace("/eodata/", "")
+    def _parse_s3_path(self, s3_path: str) -> tuple[str, str]:
+        s3_path = s3_path.lstrip("s3:/") if s3_path.startswith("s3://") else s3_path.lstrip("/")
+        parts = s3_path.split("/", 1)
+        bucket = parts[0]
+        prefix = parts[1] if len(parts) > 1 else ""
+        return bucket, prefix
 
-        all_files = self._s3_client.get_file_list(bucket_key=s3_path)
-        feature_name = self._get_feature()["Name"]
+    # -----------------------
+    # File Listing
+    # -----------------------
+    def get_available_files(self) -> list[str]:
+        if self._cached_files is not None:
+            return self._cached_files
 
-        result: List[Tuple[str, str]] = []
-        for f in all_files:
-            m = re.search(re.escape(feature_name), f)
-            if m:
-                friendly_name = f[m.start():]
+        bucket, prefix = self._parse_s3_path(self.get_s3_path())
+
+        self._logger.debug(f"Listing files in S3 bucket '{bucket}' with prefix '{prefix}'")
+
+        files: list[str] = []
+        continuation_token = None
+
+        while True:
+            list_kwargs = {"Bucket": bucket, "Prefix": prefix}
+
+            if continuation_token:
+                list_kwargs["ContinuationToken"] = continuation_token
+
+            response = self._s3_client.list_objects_v2(**list_kwargs)
+            for obj in response.get("Contents", []):
+                key = obj["Key"]
+                files.append(key)
+
+            if response.get("IsTruncated"):
+                continuation_token = response.get("NextContinuationToken")
+
             else:
-                friendly_name = f
-            result.append((friendly_name, f))
+                break
 
-        return result
+        self._cached_files = files
+
+        self._logger.debug(f"Found {len(files)} files for feature {self._feature_id}")
+
+        return files
 
     # -----------------------
-    # Download
+    # File Download
     # -----------------------
-    def download_selected_files(self, files: List[Tuple[str, str]]) -> List[str]:
-        """
-        Stáhne vybrané soubory z S3.
-        files = list of tuples (friendly_name, s3_key)
-        """
-        downloaded: List[str] = []
+    def download_selected_files(self, files_to_download: list[str]) -> list[str]:
         self._workdir.mkdir(parents=True, exist_ok=True)
+        bucket, _ = self._parse_s3_path(self.get_s3_path())
 
-        for _, s3_key in files:
-            out_path = self._s3_client.download_file(
-                bucket_key=s3_key,
-                root_output_directory=str(self._workdir)
-            )
-            downloaded.append(str(out_path))
+        downloaded: list[str] = []
+        self._logger.debug(f"Downloading {len(files_to_download)} files to {self._workdir}")
+
+        for s3_key in files_to_download:
+            out_path = self._workdir / Path(s3_key).name
+
+            try:
+                # Fallback: first try client, if fails, try resource
+                try:
+                    self._s3_client.download_file(bucket, s3_key, str(out_path))
+
+                except ClientError:
+                    self._logger.warning(f"Client download failed for {s3_key}, using resource fallback")
+
+                    self._s3_resource.Object(bucket, s3_key).download_file(str(out_path))
+
+                downloaded.append(str(out_path))
+                self._logger.info(f"Downloaded {s3_key} to {out_path}")
+
+            except ClientError as e:
+                self._logger.error(f"Failed to download {s3_key}: {e}")
 
         return downloaded
 
     # -----------------------
     # Geo footprint
     # -----------------------
-    def get_polygon(self) -> List[List[float]]:
-        """Vrací polygon feature pro případné zpracování AOI."""
+    def get_polygon(self) -> list[list[float]]:
         return self._get_feature()["GeoFootprint"]["coordinates"][0]

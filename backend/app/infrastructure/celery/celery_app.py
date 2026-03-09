@@ -2,11 +2,11 @@ import os
 
 from celery import Celery
 
-from ...config import APP_NAME
+from ...settings import settings
 from ..logging.logger import configure_logging
 
 celery = Celery(
-    APP_NAME,
+    settings.APP_NAME,
     broker=os.getenv("CELERY_BROKER", "redis://redis:6379/0"),
     backend=os.getenv("CELERY_BACKEND", "redis://redis:6379/0")
 )

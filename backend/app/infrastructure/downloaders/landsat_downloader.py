@@ -10,3 +10,6 @@ class LandsatDownloader(Downloader):
         self._providers = [
             USGSProvider(job=job)
         ]
+
+    def _filter_files(self, available_files: list[str]) -> list[str]:
+        raise NotImplementedError("Files filtering is not implemented for Landsat!")

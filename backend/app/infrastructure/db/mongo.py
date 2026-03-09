@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 
-from ...config import MONGO_URI, MONGO_CLIENT, MONGO_DB
+from ...settings import settings
 
 _mongo_client = None
 
@@ -9,7 +9,7 @@ def get_collection():
     global _mongo_client
 
     if _mongo_client is None:
-        _mongo_client = MongoClient(MONGO_URI)
+        _mongo_client = MongoClient(settings.MONGO_URI)
 
-    db = _mongo_client[MONGO_CLIENT]
-    return db[MONGO_DB]
+    db = _mongo_client[settings.MONGO_CLIENT]
+    return db[settings.MONGO_DB]

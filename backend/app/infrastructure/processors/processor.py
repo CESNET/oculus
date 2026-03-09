@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Optional
 
-from ...config import APP_NAME, DATA_DIR
+from ...settings import settings
 from ...domain import Job
 
 
@@ -10,9 +10,9 @@ class Processor:
     def __init__(self, job: Job, logger: Optional[logging.Logger] = None):
         self._job = job
 
-        self._processed_data_path = os.path.join(DATA_DIR, self._job.id, "data", "processed")
+        self._processed_data_path = os.path.join(settings.DATA_DIR, self._job.id, "data", "processed")
 
-        self._logger: logging.Logger = logger or logging.getLogger(APP_NAME)
+        self._logger: logging.Logger = logger or logging.getLogger(settings.APP_NAME)
 
     def process(self) -> str:
         self._logger.info(f"Start processing for job {self._job.id}")

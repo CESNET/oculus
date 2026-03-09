@@ -1,8 +1,8 @@
 import logging
 
 from . import BaseProvider
-from ....config import ENABLE_GSS
 from ....domain import Job
+from ....settings import settings
 
 
 class GSSProvider(BaseProvider):
@@ -17,13 +17,17 @@ class GSSProvider(BaseProvider):
         )
 
     def has_product(self) -> bool:
-        if not ENABLE_GSS:
+        if not settings.SENTINEL_ENABLE_GSS:
             self._logger.warning("GSS datasource is not enabled!")
             return False
 
         # TODO implementovat lookup produktu na GSS
         return False
 
-    def download_product(self) -> str:
-        # TODO implementovat stahování do path_to_download
-        return self._path_to_downloaded
+    def list_product_files(self) -> list[str]:
+        # TODO lookup produktů na GSS
+        raise NotImplementedError("GSS datasource lookup is not implemented!")
+
+    def download_product_files(self, files_to_download: list[str]) -> list[str]:
+        # TODO download prodkutů z GSS
+        raise NotImplementedError("GSS datasource download is not implemented!")

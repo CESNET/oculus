@@ -1,21 +1,30 @@
 from ..orchestrators import BaseOrchestrator
-from ...config import ENABLED_DATASETS
 from ...domain import Job, JobDataset, JobRepository
+from ...settings import settings
 
 
-class CreateJobUseCase():
-    def __init__(self, repository: JobRepository, orchestrator: BaseOrchestrator):
+class CreateJobUseCase:
+    def __init__(
+            self,
+            repository: JobRepository,
+            orchestrator: BaseOrchestrator,
+            data_directory_root: str
+    ):
         self.repository = repository
         self.orchestrator = orchestrator
 
+        self.data_directory_root = data_directory_root
+
+
     def execute(self, dataset: str, metadata: dict, properties: dict) -> str:
-        if dataset not in ENABLED_DATASETS:
+        if dataset not in settings.ENABLED_DATASETS:
             raise ValueError("Requested dataset is not enabled!")
 
         job = Job.create(
             dataset=JobDataset(dataset),
             metadata=metadata,
-            properties=properties
+            properties=properties,
+            data_directory=self.data_directory_root
         )
 
         self.repository.save(job)
