@@ -2,10 +2,10 @@ import logging
 from typing import Optional
 
 from .use_case import UseCase
-from ...domain import Job, JobRepository
+from ...domain import Job, JobRepository, FAILED_STATUSES
 
 
-class FinalizeJobUseCase(UseCase):
+class CheckJobUseCase(UseCase):
     def __init__(
             self,
             repository: JobRepository,
@@ -19,14 +19,7 @@ class FinalizeJobUseCase(UseCase):
 
         job: Job = self._repository.get(job_id)
 
-        job.mark_finalizing()
-        self._save_job(job)
+        if job.status in FAILED_STATUSES:
+            raise RuntimeError(f"Job {job_id} failed. Status: {job.status}. Error: {job.fail_reason}")
 
-        self._logger.info(f"Finalizing job {job.id}")
-        # TODO: tady bude něco jako vracení requestu zpět frontendu
-
-        job.mark_finished()
-        self._save_job(job)
-
-        self._logger.info(f"Job {job.id} finished")
-        return job.id
+        return job_id

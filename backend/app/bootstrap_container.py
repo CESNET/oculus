@@ -1,18 +1,23 @@
 import logging
 
+import redis
+
 from .application.orchestrators import BaseOrchestrator, CeleryOrchestrator
+from .application.use_cases.check_job_use_case import CheckJobUseCase
 from .application.use_cases.cleanup_job_use_case import CleanupJobUseCase
 from .application.use_cases.create_job_use_case import CreateJobUseCase
 from .application.use_cases.download_job_use_case import DownloadJobUseCase
 from .application.use_cases.finalize_job_use_case import FinalizeJobUseCase
 from .application.use_cases.process_job_use_case import ProcessJobUseCase
-from .settings import settings
 from .domain.job_repository import JobRepository
 from .infrastructure.db.mongo_job_repository import MongoJobRepository
 from .infrastructure.processors.gjtiff_processor import GJTIFFProcessor
+from .infrastructure.redis.redis import get_redis_client
+from .settings import settings
 
 default_job_repository = MongoJobRepository()
 default_orchestrator = CeleryOrchestrator()
+default_redis_client = get_redis_client()
 default_logger = logging.getLogger(settings.APP_NAME)
 
 
@@ -21,10 +26,12 @@ class BootstrapContainer:
             self,
             repository: JobRepository = None,
             orchestrator: BaseOrchestrator = None,
+            redis_client: redis.Redis = None,
             logger: logging.Logger = None
     ):
         self._repository = repository or MongoJobRepository()
         self._orchestrator = orchestrator or CeleryOrchestrator()
+        self._redis_client: redis.Redis = redis_client or get_redis_client()
         self._logger = logger or logging.getLogger(settings.APP_NAME)
 
     @property
@@ -36,6 +43,10 @@ class BootstrapContainer:
         return self._orchestrator
 
     @property
+    def redis(self) -> redis.Redis:
+        return self._redis_client
+
+    @property
     def logger(self) -> logging.Logger:
         return self._logger
 
@@ -44,6 +55,11 @@ class BootstrapContainer:
             repository=self._repository,
             orchestrator=self._orchestrator,
             data_directory_root=settings.DATA_DIR
+        )
+
+    def check_job(self) -> CheckJobUseCase:
+        return CheckJobUseCase(
+            repository=self._repository
         )
 
     def download_job(self) -> DownloadJobUseCase:
@@ -71,5 +87,6 @@ class BootstrapContainer:
 bootstrap_container = BootstrapContainer(
     repository=default_job_repository,
     orchestrator=default_orchestrator,
+    redis_client=default_redis_client,
     logger=default_logger
 )

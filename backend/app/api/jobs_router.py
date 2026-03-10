@@ -47,11 +47,6 @@ def create_job(request: CreateJobRequestModel):
     return {"job_id": job_id}
 
 
-@jobs_router.get("/gjtif/{job_id}")
-def process_gjtif(job_id: str):
-    return {"job_id": job_id}
-
-
 @jobs_router.get("/{job_id}")
 def get_job(job_id: str):
     return bootstrap_container.repository.get(job_id).serialize()

@@ -24,7 +24,7 @@ class ProcessJobUseCase(UseCase):
         job: Job = self._repository.get(job_id)
 
         job.mark_processing()
-        self._repository.save(job)
+        self._save_job(job)
 
         processor = self._processor_class(job=job, logger=self._logger)
 
@@ -38,6 +38,6 @@ class ProcessJobUseCase(UseCase):
             job.mark_processing_failed(str(e))
             self._logger.exception(f"Processing failed for job {job.id}: {e}")
 
-        self._repository.save(job)
+        self._save_job(job)
 
         return job.id

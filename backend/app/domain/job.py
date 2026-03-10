@@ -4,54 +4,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from .job_dataset import JobDataset
-from .job_status import JobStatus
-
-ALLOWED_TRANSITIONS: dict[JobStatus, list[JobStatus]] = {
-    JobStatus.ACCEPTED: [
-        JobStatus.DOWNLOADING
-    ],
-
-    JobStatus.DOWNLOADING: [
-        JobStatus.DOWNLOADING_COMPLETE,
-        JobStatus.DOWNLOADING_FAILED
-    ],
-
-    JobStatus.DOWNLOADING_COMPLETE: [
-        JobStatus.PROCESSING
-    ],
-
-    JobStatus.DOWNLOADING_FAILED: [
-        JobStatus.DOWNLOADING,
-        JobStatus.FAILED
-    ],
-
-    JobStatus.PROCESSING: [
-        JobStatus.PROCESSING_COMPLETE,
-        JobStatus.PROCESSING_FAILED
-    ],
-
-    JobStatus.PROCESSING_COMPLETE: [
-        JobStatus.FINALIZING
-    ],
-
-    JobStatus.PROCESSING_FAILED: [
-        JobStatus.PROCESSING,
-        JobStatus.FAILED
-    ],
-
-    JobStatus.FINALIZING: [
-        JobStatus.FINISHED,
-        JobStatus.FINALIZING_FAILED
-    ],
-
-    JobStatus.FINALIZING_FAILED: [
-        JobStatus.FINALIZING,
-        JobStatus.FAILED
-    ],
-
-    JobStatus.FINISHED: [],
-    JobStatus.FAILED: [],
-}
+from .job_status import JobStatus, ALLOWED_TRANSITIONS
 
 
 class Job:
