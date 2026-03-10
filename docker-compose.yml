@@ -33,6 +33,7 @@ services:
     command: celery -A app.infrastructure.celery.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
     volumes:
       - data_volume:/data
+      - /var/run/docker.sock:/var/run/docker.sock
     env_file:
       - .env
     depends_on:
