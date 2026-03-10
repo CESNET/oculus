@@ -12,7 +12,7 @@ ZOOM_LEVELS = {
 }  # TODO This should probably be in the Job and changed dynamically based on the resolution of Job product...
 
 FORMAT_OPTIONS = {
-    "png": [],
+    "jpg": [],
     "webp": ["-w"]
 }
 

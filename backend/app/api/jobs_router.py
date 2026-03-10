@@ -20,7 +20,7 @@ class CreateJobRequestModel(BaseModel):
   },
   "properties": {
     "output_formats": [
-      "png", "webp"
+      "jpg", "webp"
     ],
     "platform": "SENTINEL-2",
     "filters": {
