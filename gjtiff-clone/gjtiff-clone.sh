@@ -3,6 +3,8 @@
 REPO_DIR=/gjtiff
 REPO_URL=https://github.com/MartinPulec/gjtiff.git
 
+mkdir -p $REPO_DIR
+
 if [ -d "$REPO_DIR/.git" ]; then
     echo "Repository exists, updating..."
     cd "$REPO_DIR"
