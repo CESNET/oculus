@@ -26,14 +26,18 @@ class ProcessJobUseCase(UseCase):
         job.mark_processing()
         self._repository.save(job)
 
-        processor: Processor = self._processor_class(job=job, logger=self._logger)
-        self._logger.info(f"Processing job {job.id}")
-        processor_output = processor.process()
-        processed_data_path = processor_output  # Todo něco v tom smyslu
-        # TODO: zpracovat processor_output, uložit výsledky apod.
+        processor = self._processor_class(job=job, logger=self._logger)
 
-        job.mark_processing_complete(processed_data_path)
+        try:
+            processed_files: list[str] = processor.process()
+
+            job.mark_processing_complete(processed_files)
+            self._logger.info(f"Processing finished successfully for job {job_id}")
+
+        except Exception as e:
+            job.mark_processing_failed(str(e))
+            self._logger.exception(f"Processing failed for job {job.id}: {e}")
+
         self._repository.save(job)
 
-        self._logger.info(f"Job {job.id} processed")
         return job.id

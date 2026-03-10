@@ -36,6 +36,11 @@ class Sentinel2Downloader(SentinelDownloader):
         if not files:
             return []
 
+        bands = self._job.properties.get("filters", {}).get("bands")
+
+        if not bands:
+            return files
+
         filtered_files: list[str] = []
 
         for file in files:
@@ -48,7 +53,7 @@ class Sentinel2Downloader(SentinelDownloader):
 
             band = filename_parts[2]
 
-            if band not in self._job.properties["filters"]["bands"]:
+            if band not in bands:
                 continue
 
             filtered_files.append(file)
@@ -71,7 +76,7 @@ class Sentinel2Downloader(SentinelDownloader):
             filename_parts = re.split(r'[_.]', filename)
 
             if len(filename_parts) != 5:
-                #other_files.append(f)  # keep files without proper resolution format
+                # other_files.append(f)  # keep files without proper resolution format
                 continue
 
             band = filename_parts[2]

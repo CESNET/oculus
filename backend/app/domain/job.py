@@ -5,7 +5,53 @@ from typing import Optional
 
 from .job_dataset import JobDataset
 from .job_status import JobStatus
-from ..settings import settings
+
+ALLOWED_TRANSITIONS: dict[JobStatus, list[JobStatus]] = {
+    JobStatus.ACCEPTED: [
+        JobStatus.DOWNLOADING
+    ],
+
+    JobStatus.DOWNLOADING: [
+        JobStatus.DOWNLOADING_COMPLETE,
+        JobStatus.DOWNLOADING_FAILED
+    ],
+
+    JobStatus.DOWNLOADING_COMPLETE: [
+        JobStatus.PROCESSING
+    ],
+
+    JobStatus.DOWNLOADING_FAILED: [
+        JobStatus.DOWNLOADING,
+        JobStatus.FAILED
+    ],
+
+    JobStatus.PROCESSING: [
+        JobStatus.PROCESSING_COMPLETE,
+        JobStatus.PROCESSING_FAILED
+    ],
+
+    JobStatus.PROCESSING_COMPLETE: [
+        JobStatus.FINALIZING
+    ],
+
+    JobStatus.PROCESSING_FAILED: [
+        JobStatus.PROCESSING,
+        JobStatus.FAILED
+    ],
+
+    JobStatus.FINALIZING: [
+        JobStatus.FINISHED,
+        JobStatus.FINALIZING_FAILED
+    ],
+
+    JobStatus.FINALIZING_FAILED: [
+        JobStatus.FINALIZING,
+        JobStatus.FAILED
+    ],
+
+    JobStatus.FINISHED: [],
+    JobStatus.FAILED: [],
+}
 
 
 class Job:
@@ -18,41 +64,70 @@ class Job:
             properties: dict,
             data_directory: str,
             status: JobStatus,
-            created_at: datetime = datetime.now(tz=timezone.utc),
-            downloaded_files: Optional[str] = None,
-            processed_data_path: Optional[str] = None,
+            created_at: datetime,
+            last_accessed: datetime,
+            downloaded_files: Optional[list[str]] = None,
+            processed_files: Optional[list[str]] = None,
             fail_reason: Optional[str] = None
     ):
         self.id: str = id
-        self.product_id = product_id
+
+        self.product_id: str = product_id
         self.dataset: JobDataset = dataset
+
         self.metadata: dict = metadata
         self.properties: dict = properties
+
         self.data_directory: str = data_directory
+
         self.status: JobStatus = status
+
         self.created_at: datetime = created_at
+        self.last_accessed: datetime = last_accessed
+
         self.downloaded_files: Optional[list[str]] = downloaded_files
-        self.processed_data_path: Optional[str] = processed_data_path
+        self.processed_files: Optional[list[str]] = processed_files
         self.fail_reason: Optional[str] = fail_reason
 
-        self.allowed_transitions: dict[JobStatus, list[JobStatus]] = {
-            JobStatus.ACCEPTED: [JobStatus.DOWNLOADING],
-            JobStatus.DOWNLOADING: [JobStatus.DOWNLOADING_COMPLETE, JobStatus.DOWNLOADING_FAILED],
-            JobStatus.DOWNLOADING_COMPLETE: [JobStatus.PROCESSING],
-            JobStatus.DOWNLOADING_FAILED: [JobStatus.DOWNLOADING, JobStatus.FAILED],
-            JobStatus.PROCESSING: [JobStatus.PROCESSING_COMPLETE, JobStatus.PROCESSING_FAILED],
-            JobStatus.PROCESSING_COMPLETE: [JobStatus.FINALIZING],
-            JobStatus.PROCESSING_FAILED: [JobStatus.PROCESSING, JobStatus.FAILED],
-            JobStatus.FINALIZING: [JobStatus.FINISHED],
-            JobStatus.FINALIZING_FAILED: [JobStatus.FINALIZING, JobStatus.FAILED],
-            JobStatus.FINISHED: [],
-            JobStatus.FAILED: [],
-        }
+    # ------------------------------------------------
+    # helper methods
+    # ------------------------------------------------
+
+    def get_tile_path(self, processed_file: str, zoom: int, x: int, y: int) -> str:
+        """
+        Returns path to the tile in WebMercator mosaic file path
+        Expected structure:
+        <processed_file>/<zoom>/<x>/<y>.{processed_file_extension}
+        """
+        from pathlib import Path
+
+        p = Path(processed_file)
+        base_path = str(p.with_suffix(''))
+        extension = p.suffix
+
+        return os.path.join(base_path, str(zoom), str(x), f"{y}{extension}")
+
+    # ------------------------------------------------
+    # lifecycle helpers
+    # ------------------------------------------------
+
+    def touch(self):
+        """
+        Update last access timestamp.
+        """
+        self.last_accessed = datetime.now(timezone.utc)
 
     def transition(self, to_status: JobStatus):
-        if to_status not in self.allowed_transitions[self.status]:
-            raise ValueError(f"Invalid transition from {self.status} to {to_status}")
+        if to_status not in ALLOWED_TRANSITIONS[self.status]:
+            raise ValueError(f"Invalid transition {self.status} -> {to_status}")
+
         self.status = to_status
+
+        self.touch()
+
+    # ------------------------------------------------
+    # status helpers
+    # ------------------------------------------------
 
     def mark_downloading(self):
         self.transition(JobStatus.DOWNLOADING)
@@ -68,8 +143,8 @@ class Job:
     def mark_processing(self):
         self.transition(JobStatus.PROCESSING)
 
-    def mark_processing_complete(self, processed_data_path: str):
-        self.processed_data_path = processed_data_path
+    def mark_processing_complete(self, processed_files: list[str]):
+        self.processed_files = processed_files
         self.transition(JobStatus.PROCESSING_COMPLETE)
 
     def mark_processing_failed(self, fail_reason: str):
@@ -79,31 +154,54 @@ class Job:
     def mark_finalizing(self):
         self.transition(JobStatus.FINALIZING)
 
-    def mark_finalizing_failed(self):
+    def mark_finalizing_failed(self, fail_reason: str):
+        self.fail_reason = fail_reason
         self.transition(JobStatus.FINALIZING_FAILED)
 
     def mark_finished(self):
         self.transition(JobStatus.FINISHED)
 
-    # --- Creation ---
+    # ------------------------------------------------
+    # creation
+    # ------------------------------------------------
+
     @classmethod
-    def create(cls, dataset: JobDataset, metadata: dict, properties: dict, data_directory: str) -> "Job":
-        job_id = str(uuid.uuid4())  # TODO udělat neměnný identifikátor! Možná už by měl přijít z frontendu? Možná by to měl být metadata[dataset.product_id_key()] (tedy id produktu - například pro sentinel feature_id)
-        # TODO job_id by měl možná generovat už usecase a jen předat. Zároveň by asi měl UseCase tedy předávat už kompletní data_directory
+    def create(
+            cls,
+            dataset: JobDataset,
+            metadata: dict,
+            properties: dict,
+            data_directory: str
+    ) -> "Job":
+
+        now = datetime.now(timezone.utc)
+
+        job_id = str(uuid.uuid4())  # TODO možná by to spíš mělo být metadata[dataset.product_id_key()]
+        product_id = metadata[dataset.product_id_key()]
+
+        data_directory: str = os.path.join(data_directory, job_id, "data")
 
         return cls(
             id=job_id,
-            product_id=metadata[dataset.product_id_key()],
+            product_id=product_id,
             dataset=dataset,
             metadata=metadata,
             properties=properties,
-            data_directory=os.path.join(data_directory, job_id, "data"),
+            data_directory=data_directory,
             status=JobStatus.ACCEPTED,
-            created_at=datetime.now(timezone.utc),
+            created_at=now,
+            last_accessed=now
         )
 
     # --- Serialization ---
-    def serialize(self) -> dict:
+    def serialize(self, touch: bool = True) -> dict:
+        """
+        Convert Job to dictionary.
+        If touch=True, last_accessed timestamp is updated
+        """
+        if touch:
+            self.touch()
+
         return {
             "_id": self.id,
             "product_id": self.product_id,
@@ -113,10 +211,10 @@ class Job:
             "data_directory": self.data_directory,
             "status": self.status.value,
             "created_at": self.created_at,
+            "last_accessed": self.last_accessed,
             "downloaded_files": self.downloaded_files,
-            "processed_data_path": self.processed_data_path,
+            "processed_files": self.processed_files,
             "fail_reason": self.fail_reason,
-            "updated_at": datetime.now(tz=timezone.utc),
         }
 
     @classmethod
@@ -130,7 +228,8 @@ class Job:
             data_directory=doc["data_directory"],
             status=JobStatus(doc["status"]),
             created_at=doc["created_at"],
+            last_accessed=doc["last_accessed"],
             downloaded_files=doc.get("downloaded_files"),
-            processed_data_path=doc.get("processed_data_path"),
-            fail_reason=doc.get("fail_reason")
+            processed_files=doc.get("processed_files"),
+            fail_reason=doc.get("fail_reason"),
         )

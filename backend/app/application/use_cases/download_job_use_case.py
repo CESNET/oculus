@@ -25,12 +25,19 @@ class DownloadJobUseCase(UseCase):
 
         downloader: Downloader = downloader_factory.get_downloader(job)
 
-        self._logger.info(f"Downloading job {job.id}")
-        downloaded_files: list[str] = downloader.download()
+        try:
+            downloaded_files: list[str] = downloader.download()
 
-        job.mark_downloading_complete(downloaded_files)
+            if not downloaded_files:
+                raise ValueError("No data downloaded")
+
+            job.mark_downloading_complete(downloaded_files)
+            self._logger.info(f"Downloading finished successfully for job {job_id}")
+
+        except Exception as e:
+            job.mark_downloading_failed(str(e))
+            self._logger.exception(f"Downloading failed for job {job.id}: {e}")
+
         self._repository.save(job)
-
-        self._logger.info(f"Total {len(downloaded_files)} for job {job.id} downloaded")
 
         return job.id

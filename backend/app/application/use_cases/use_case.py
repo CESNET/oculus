@@ -11,4 +11,5 @@ class UseCase:
         self._logger = logger or logging.getLogger(settings.APP_NAME)
 
     def execute(self, job_id: Optional[str]) -> str:
-        raise NotImplementedError(f"Subclasses of {self.__class__.__name__} must implement execute(job_id)")
+        ...
+        #raise NotImplementedError(f"Subclasses of {self.__class__.__name__} must implement execute(job_id)")

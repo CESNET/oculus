@@ -12,8 +12,7 @@ services:
     depends_on:
       - redis
       - mongo
-      #- gjtiff-fastapi
-    restart: always
+      - gjtiff
 
   celery-worker:
     container_name: oculus_celery-worker
@@ -68,38 +67,30 @@ services:
       - "27017:27017"
     restart: always
 
-#  gjtiff-fastapi:
-#    build: gjtiff-fastapi
-#    container_name: oculus_gjtiff_fastapi
-#    ports:
-#      - "8001:8000"
-#    depends_on:
-#      - gjtiff
-#
-#  gjtiff-clone:
-#    image: alpine/git
-#    volumes:
-#      - ./gjtiff:/gjtiff
-#      - ./gjtiff-clone/gjtiff-clone.sh:/gjtiff-clone.sh
-#    entrypoint: ["/gjtiff-clone.sh"]
-#    restart: no
-#
-#  gjtiff:
-#    build: ./gjtiff
-#    container_name: oculus_gjtiff
-#    command: [ "sleep", "infinity" ]
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              count: all
-#              capabilities: [ gpu ]
-#    depends_on:
-#      - gjtiff-clone
-#    volumes:
-#      - ./gjtiff:/gjtiff
-#      - data_volume:/data
+  gjtiff-clone:
+    image: alpine/git
+    volumes:
+      - ./gjtiff:/gjtiff
+      - ./gjtiff-clone/gjtiff-clone.sh:/gjtiff-clone.sh
+    entrypoint: ["/gjtiff-clone.sh"]
+    restart: no
+
+  gjtiff:
+    build: ./gjtiff
+    container_name: oculus_gjtiff # !!! This container must be named 'oculus_gjtiff' as GJTIFFProcessor Python class is hardcoded to this name !!!
+    command: [ "sleep", "infinity" ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    depends_on:
+      - gjtiff-clone
+    volumes:
+      - ./gjtiff:/gjtiff
+      - data_volume:/data
 
 volumes:
   data_volume:

@@ -32,10 +32,14 @@ class Downloader(ABC):
         ...
 
     def download(self) -> list[str]:
+        self._logger.info(f"Downloading job {self._job.id}")
+
         available_files: list[str] = self._provider.list_product_files()
-        self._logger.info(f"Available files: {available_files}")
+
         files_to_download: list[str] = self._filter_files(available_files=available_files)
-        self._logger.info(f"Files to download: {files_to_download}")
+
         downloaded_files: list[str] = self._provider.download_product_files(files_to_download=files_to_download)
-        self._logger.info(f"Downloaded files: {downloaded_files}")
+
+        self._logger.info(f"Total {len(downloaded_files)} files for job {self._job.id} downloaded")
+
         return downloaded_files

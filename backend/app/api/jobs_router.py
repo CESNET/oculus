@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 from ..bootstrap_container import bootstrap_container
 
-api_router = APIRouter()
+jobs_router = APIRouter()
 
 
 class CreateJobRequestModel(BaseModel):
@@ -19,6 +19,9 @@ class CreateJobRequestModel(BaseModel):
     "sentinel:feature_id": "df4e26df-41ad-4f65-913d-d09105498515"
   },
   "properties": {
+    "output_formats": [
+      "png", "webp"
+    ],
     "platform": "SENTINEL-2",
     "filters": {
       "cloud_cover": "100",
@@ -26,7 +29,7 @@ class CreateJobRequestModel(BaseModel):
         "S2MSI2A"
       ],
       "bands": [
-        "TCI"
+        "TCI", "B02", "B8A"
       ]
     }
   }
@@ -34,7 +37,7 @@ class CreateJobRequestModel(BaseModel):
 """
 
 
-@api_router.post("/create")
+@jobs_router.post("/create")
 def create_job(request: CreateJobRequestModel):
     job_id = bootstrap_container.create_job().execute(
         dataset=request.dataset,
@@ -44,6 +47,11 @@ def create_job(request: CreateJobRequestModel):
     return {"job_id": job_id}
 
 
-@api_router.get("/{job_id}")
+@jobs_router.get("/gjtif/{job_id}")
+def process_gjtif(job_id: str):
+    return {"job_id": job_id}
+
+
+@jobs_router.get("/{job_id}")
 def get_job(job_id: str):
-    return bootstrap_container.repository.get(job_id)
+    return bootstrap_container.repository.get(job_id).serialize()
