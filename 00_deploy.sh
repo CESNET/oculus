@@ -1,6 +1,6 @@
 #!/bin/sh
 
-REPO_DIR=/gjtiff
+REPO_DIR=./gjtiff
 REPO_URL=https://github.com/MartinPulec/gjtiff.git
 
 mkdir -p $REPO_DIR
@@ -16,3 +16,5 @@ else
     git clone "$REPO_URL" "$REPO_DIR"
     echo "Repository cloned."
 fi
+
+docker compose up -d
