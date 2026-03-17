@@ -56,7 +56,7 @@ def _job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
         if last_status in FAILED_STATUSES or last_status == JobStatus.FINISHED:
             return
 
-        last_heartbeat = datetime.now(timezone.utc).isoformat()
+        last_heartbeat = time.time()
 
         while True:
             message = subscribe_client.get_message(timeout=1.0)
@@ -68,7 +68,7 @@ def _job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
                 if last_status in FAILED_STATUSES or last_status == JobStatus.FINISHED:
                     break
 
-            if (datetime.now(timezone.utc).isoformat() - last_heartbeat) > heartbeat_interval:
+            if (time.time() - last_heartbeat) > heartbeat_interval:
                 job = bootstrap_container.repository.get(job_id)
 
                 if job.status != last_status:
@@ -78,7 +78,7 @@ def _job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
                 else:
                     yield ":\n\n"
 
-                last_heartbeat = datetime.now(timezone.utc).isoformat()
+                last_heartbeat = time.time()
 
             time.sleep(0.1)
 
