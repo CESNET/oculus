@@ -34,9 +34,8 @@ def get_job(job_id: str):
 
 @jobs_router.get("/{job_id}/events")
 def stream_job_events(job_id: str):
-    subscribe_client = bootstrap_container.redis_pubsub.subscribe(job_id=job_id)
     return StreamingResponse(
-        _job_event_generator(job_id, subscribe_client),
+        _job_event_generator(job_id),
         media_type="text/event-stream"
     )
 
