@@ -51,7 +51,7 @@ def _job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
     try:
         job = bootstrap_container.repository.get(job_id)
         last_status = job.status
-        yield f"data: {json.dumps({'status': last_status, 'timestamp': job.last_accessed.isoformat()})}\n\n"
+        yield f"data: {json.dumps({'job_id': job.id, 'status': last_status, 'timestamp': job.last_accessed.isoformat()})}\n\n"
 
         if last_status in FAILED_STATUSES or last_status == JobStatus.FINISHED:
             return
@@ -63,7 +63,7 @@ def _job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
             if message and message["type"] == "message":
                 data = message["data"]
                 last_status = data
-                yield f"data: {json.dumps({'status': data, 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
+                yield f"data: {json.dumps({'job_id': job.id, 'status': data, 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
 
                 if last_status in FAILED_STATUSES or last_status == JobStatus.FINISHED:
                     break
@@ -73,7 +73,7 @@ def _job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
 
                 if job.status != last_status:
                     last_status = job.status
-                    yield f"data: {json.dumps({'status': job.status, 'timestamp': job.last_accessed.isoformat()})}\n\n"
+                    yield f"data: {json.dumps({'job_id': job.id, 'status': job.status, 'timestamp': job.last_accessed.isoformat()})}\n\n"
 
                 else:
                     yield ":\n\n"
