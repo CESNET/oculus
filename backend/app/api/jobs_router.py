@@ -68,7 +68,7 @@ def _job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
                 if last_status in FAILED_STATUSES or last_status == JobStatus.FINISHED:
                     break
 
-            if time.time() - last_heartbeat > heartbeat_interval:
+            if (time.time() - last_heartbeat) > heartbeat_interval:
                 job = bootstrap_container.repository.get(job_id)
 
                 if job.status != last_status:
