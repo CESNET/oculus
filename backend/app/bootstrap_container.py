@@ -13,6 +13,7 @@ from .domain.job_repository import JobRepository
 from .infrastructure.db.mongo_job_repository import MongoJobRepository
 from .infrastructure.processors.gjtiff_processor import GJTIFFProcessor
 from .infrastructure.redis.redis import get_redis_client
+from .infrastructure.redis.redis_pubsub import RedisPubSub
 from .settings import settings
 
 default_job_repository = MongoJobRepository()
@@ -31,7 +32,7 @@ class BootstrapContainer:
     ):
         self._repository = repository or MongoJobRepository()
         self._orchestrator = orchestrator or CeleryOrchestrator()
-        self._redis_client: redis.Redis = redis_client or get_redis_client()
+        self._redis_pubsub: RedisPubSub = RedisPubSub(client=redis_client) or RedisPubSub(default_redis_client)
         self._logger = logger or logging.getLogger(settings.APP_NAME)
 
     @property
@@ -43,8 +44,8 @@ class BootstrapContainer:
         return self._orchestrator
 
     @property
-    def redis(self) -> redis.Redis:
-        return self._redis_client
+    def redis_pubsub(self) -> RedisPubSub:
+        return self._redis_pubsub
 
     @property
     def logger(self) -> logging.Logger:
@@ -52,35 +53,40 @@ class BootstrapContainer:
 
     def create_job(self) -> CreateJobUseCase:
         return CreateJobUseCase(
-            repository=self._repository,
-            orchestrator=self._orchestrator,
+            repository=self.repository,
+            orchestrator=self.orchestrator,
             data_directory_root=settings.DATA_DIR
         )
 
     def check_job(self) -> CheckJobUseCase:
         return CheckJobUseCase(
-            repository=self._repository
+            repository=self.repository,
+            redis_pubsub=self.redis_pubsub
         )
 
     def download_job(self) -> DownloadJobUseCase:
         return DownloadJobUseCase(
-            repository=self._repository,
+            repository=self.repository,
+            redis_pubsub=self.redis_pubsub
         )
 
     def process_job(self) -> ProcessJobUseCase:
         return ProcessJobUseCase(
-            repository=self._repository,
+            repository=self.repository,
+            redis_pubsub=self.redis_pubsub,
             processor_class=GJTIFFProcessor
         )
 
     def finalize_job(self) -> FinalizeJobUseCase:
         return FinalizeJobUseCase(
-            repository=self._repository,
+            repository=self.repository,
+            redis_pubsub=self.redis_pubsub
         )
 
     def cleanup_job(self) -> CleanupJobUseCase:
         return CleanupJobUseCase(
-            repository=self._repository,
+            repository=self.repository,
+            redis_pubsub=self.redis_pubsub
         )
 
 

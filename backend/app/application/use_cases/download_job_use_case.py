@@ -4,22 +4,23 @@ from typing import Optional
 from .use_case import UseCase
 from ...domain import Job, JobRepository
 from ...infrastructure.downloaders import Downloader, downloader_factory
+from ...infrastructure.redis.redis_pubsub import RedisPubSub
 
 
 class DownloadJobUseCase(UseCase):
     def __init__(
             self,
             repository: JobRepository,
+            redis_pubsub: RedisPubSub,
             logger: Optional[logging.Logger] = None
     ):
-        super().__init__(repository, logger)
+        super().__init__(
+            repository=repository,
+            redis_pubsub=redis_pubsub,
+            logger=logger
+        )
 
-    def execute(self, job_id: Optional[str]) -> str:
-        if not job_id:
-            raise ValueError("Job ID is required")
-
-        job: Job = self._repository.get(job_id)
-
+    def _execute(self, job: Job) -> Job:
         job.mark_downloading()
         self._save_job(job)
 
@@ -32,7 +33,7 @@ class DownloadJobUseCase(UseCase):
                 raise ValueError("No data downloaded")
 
             job.mark_downloading_complete(downloaded_files)
-            self._logger.info(f"Downloading finished successfully for job {job_id}")
+            self._logger.info(f"Downloading finished successfully for job {job.id}")
 
         except Exception as e:
             job.mark_downloading_failed(str(e))
@@ -40,4 +41,4 @@ class DownloadJobUseCase(UseCase):
 
         self._save_job(job)
 
-        return job.id
+        return job

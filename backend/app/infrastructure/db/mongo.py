@@ -11,5 +11,5 @@ def get_collection():
     if _mongo_client is None:
         _mongo_client = MongoClient(settings.MONGO_URI)
 
-    db = _mongo_client[settings.MONGO_CLIENT]
-    return db[settings.MONGO_DB]
+    db = _mongo_client[settings.MONGO_CLIENT_RESOLVED]
+    return db[settings.MONGO_DB_RESOLVED]

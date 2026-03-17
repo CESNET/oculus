@@ -112,5 +112,12 @@ class Settings(BaseSettings):
 
     CELERY_MAX_CONCURRENT_PROCESS_TASKS: int = 1
 
+    # ------------------------------------------------------------------
+    # REDIS
+    # ------------------------------------------------------------------
+
+    REDIS_BROKER: str = "redis://redis:6379/0"
+    REDIS_BACKEND: str = "redis://redis:6379/0"
+
 
 settings = Settings()

@@ -4,6 +4,7 @@ from typing import Type, Optional
 from .use_case import UseCase
 from ...domain import Job, JobRepository
 from ...infrastructure.processors import Processor
+from ...infrastructure.redis.redis_pubsub import RedisPubSub
 
 
 class ProcessJobUseCase(UseCase):
@@ -11,18 +12,18 @@ class ProcessJobUseCase(UseCase):
             self,
             repository: JobRepository,
             processor_class: Type[Processor],
+            redis_pubsub: RedisPubSub,
             logger: Optional[logging.Logger] = None
     ):
         self._processor_class: Type[Processor] = processor_class
 
-        super().__init__(repository, logger)
+        super().__init__(
+            repository=repository,
+            redis_pubsub=redis_pubsub,
+            logger=logger
+        )
 
-    def execute(self, job_id: str) -> str:
-        if not job_id:
-            raise ValueError("Job ID is required")
-
-        job: Job = self._repository.get(job_id)
-
+    def _execute(self, job: Job) -> Job:
         job.mark_processing()
         self._save_job(job)
 
@@ -32,7 +33,7 @@ class ProcessJobUseCase(UseCase):
             processed_files: list[str] = processor.process()
 
             job.mark_processing_complete(processed_files)
-            self._logger.info(f"Processing finished successfully for job {job_id}")
+            self._logger.info(f"Processing finished successfully for job {job.id}")
 
         except Exception as e:
             job.mark_processing_failed(str(e))
@@ -40,4 +41,4 @@ class ProcessJobUseCase(UseCase):
 
         self._save_job(job)
 
-        return job.id
+        return job

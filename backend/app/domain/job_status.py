@@ -17,16 +17,19 @@ class JobStatus(str, Enum):
 
 ALLOWED_TRANSITIONS: dict[JobStatus, list[JobStatus]] = {
     JobStatus.ACCEPTED: [
-        JobStatus.DOWNLOADING
+        JobStatus.DOWNLOADING,
+        JobStatus.FAILED
     ],
 
     JobStatus.DOWNLOADING: [
         JobStatus.DOWNLOADING_COMPLETE,
-        JobStatus.DOWNLOADING_FAILED
+        JobStatus.DOWNLOADING_FAILED,
+        JobStatus.FAILED
     ],
 
     JobStatus.DOWNLOADING_COMPLETE: [
-        JobStatus.PROCESSING
+        JobStatus.PROCESSING,
+        JobStatus.FAILED
     ],
 
     JobStatus.DOWNLOADING_FAILED: [
@@ -36,11 +39,13 @@ ALLOWED_TRANSITIONS: dict[JobStatus, list[JobStatus]] = {
 
     JobStatus.PROCESSING: [
         JobStatus.PROCESSING_COMPLETE,
-        JobStatus.PROCESSING_FAILED
+        JobStatus.PROCESSING_FAILED,
+        JobStatus.FAILED
     ],
 
     JobStatus.PROCESSING_COMPLETE: [
-        JobStatus.FINALIZING
+        JobStatus.FINALIZING,
+        JobStatus.FAILED
     ],
 
     JobStatus.PROCESSING_FAILED: [
@@ -50,7 +55,8 @@ ALLOWED_TRANSITIONS: dict[JobStatus, list[JobStatus]] = {
 
     JobStatus.FINALIZING: [
         JobStatus.FINISHED,
-        JobStatus.FINALIZING_FAILED
+        JobStatus.FINALIZING_FAILED,
+        JobStatus.FAILED
     ],
 
     JobStatus.FINALIZING_FAILED: [

@@ -1,25 +1,27 @@
 import logging
 from typing import Optional
 
+from .exceptions import CheckJobUseCaseFailedException
 from .use_case import UseCase
 from ...domain import Job, JobRepository, FAILED_STATUSES
+from ...infrastructure.redis.redis_pubsub import RedisPubSub
 
 
 class CheckJobUseCase(UseCase):
     def __init__(
             self,
             repository: JobRepository,
+            redis_pubsub: RedisPubSub,
             logger: Optional[logging.Logger] = None
     ):
-        super().__init__(repository, logger)
+        super().__init__(
+            repository=repository,
+            redis_pubsub=redis_pubsub,
+            logger=logger
+        )
 
-    def execute(self, job_id: Optional[str]) -> str:
-        if not job_id:
-            raise ValueError("Job ID is required")
-
-        job: Job = self._repository.get(job_id)
-
+    def _execute(self, job: Job) -> Job:
         if job.status in FAILED_STATUSES:
-            raise RuntimeError(f"Job {job_id} failed. Status: {job.status}. Error: {job.fail_reason}")
+            raise CheckJobUseCaseFailedException(job_id=job.id, status=job.status, fail_reason=job.fail_reason)
 
-        return job_id
+        return job

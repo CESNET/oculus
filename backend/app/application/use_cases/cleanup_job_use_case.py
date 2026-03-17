@@ -4,6 +4,7 @@ from typing import Optional
 
 from .use_case import UseCase
 from ...domain import Job, JobRepository
+from ...infrastructure.redis.redis_pubsub import RedisPubSub
 
 
 class CleanupJobUseCase(UseCase):
@@ -12,8 +13,17 @@ class CleanupJobUseCase(UseCase):
     Stateles – container předává repository a logger.
     """
 
-    def __init__(self, repository: JobRepository, logger: Optional[logging.Logger] = None):
-        super().__init__(repository=repository, logger=logger)
+    def __init__(
+            self,
+            repository: JobRepository,
+            redis_pubsub:RedisPubSub,
+            logger: Optional[logging.Logger] = None
+    ):
+        super().__init__(
+            repository=repository,
+            redis_pubsub=redis_pubsub,
+            logger=logger
+        )
 
     def execute(self, job_id: Optional[str]) -> int:
         threshold = datetime.now(tz=timezone.utc) - timedelta(minutes=1)

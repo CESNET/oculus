@@ -72,7 +72,10 @@ class Job:
 
     def transition(self, to_status: JobStatus):
         if to_status not in ALLOWED_TRANSITIONS[self.status]:
-            raise ValueError(f"Invalid transition {self.status} -> {to_status}")
+            self.status = JobStatus.FAILED
+            self.fail_reason = f"Invalid transition {self.status} -> {to_status}"
+
+            raise ValueError(self.fail_reason)
 
         self.status = to_status
 
