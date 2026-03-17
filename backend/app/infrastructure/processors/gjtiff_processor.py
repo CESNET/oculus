@@ -13,7 +13,7 @@ ZOOM_LEVELS = {
 
 FORMAT_OPTIONS = {
     "jpg": [],
-    "webp": ["-w"]
+    "webp": ["-W"]
 }
 
 
