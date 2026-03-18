@@ -6,14 +6,15 @@ from docker.errors import DockerException
 
 from .processor import Processor
 
-ZOOM_LEVELS = {
+ZOOM_LEVELS: dict[str, int] = {
     "min_zoom": 8,
     "max_zoom": 15
 }  # TODO This should probably be in the Job and changed dynamically based on the resolution of Job product...
 
-FORMAT_OPTIONS = {
-    "jpg": [],
-    "webp": ["-W"]
+FORMAT_FLAGS = {
+    "jpg": {"product": "-J", "tiles": "-j"},
+    "png": {"product": "-P", "tiles": "-p"},
+    "webp": {"product": "-W", "tiles": "-w"},
 }
 
 
@@ -26,22 +27,33 @@ class GJTIFFProcessor(Processor):
         except DockerException as e:
             raise RuntimeError(f"GJTIFF container 'oculus_gjtiff' not found. Error: {e}")
 
-    def _build_command(self, output_format: str, input_files: list[str]) -> list[str]:
-        if output_format not in FORMAT_OPTIONS:
-            raise TypeError(f"Unknown output format: {output_format}")
+    def _build_command(self, outputs: dict, input_files: list[str], zoom_levels=None) -> list[str]:
+        if zoom_levels is None:
+            zoom_levels = ZOOM_LEVELS
 
         zoom_levels = ",".join(
-            str(z) for z in range(ZOOM_LEVELS["min_zoom"], ZOOM_LEVELS["max_zoom"] + 1)
+            str(z) for z in range(zoom_levels["min_zoom"], zoom_levels["max_zoom"] + 1)
         )
+
+        flags = []
+
+        for format, modes in outputs.items():
+            if format not in FORMAT_FLAGS:
+                raise TypeError(f"Unknown format: {format}")
+
+            for mode, enabled in modes.items():
+                if enabled:
+                    flags.append(FORMAT_FLAGS[format][mode])
 
         command = (
                 [
                     "gjtiff",
-                    "-q", "82",  # quality
-                    "-Q",  # quiet mode
-                    "-z", zoom_levels,  # zoom levels
-                    "-o", self._path_to_processed  # output directory
-                ] + FORMAT_OPTIONS[output_format]  # current format
+                    "-q", "82",  # Quality
+                    "-Q",  # Quiet
+                    "-z", zoom_levels,  # WebMercator zoom levels
+                    "-o", self._path_to_processed  # Output path, processed files will be stored in this directory
+                ]
+                + flags
                 + input_files
         )
 
@@ -88,11 +100,12 @@ class GJTIFFProcessor(Processor):
 
         gjtiff_container = self._get_container()
 
-        output_formats = self._job.properties.get("output_formats", ["webp"])
+        outputs = self._job.properties.get(
+            "outputs",
+            {"webp": {"product": True, "tiles": True}}  # default fallback
+        )
 
-        for output_format in output_formats:
-            command = self._build_command(output_format, input_files)
-
-            output_files.extend(self._run_command(gjtiff_container, command))
+        command = self._build_command(outputs, input_files)
+        output_files.extend(self._run_command(gjtiff_container, command))
 
         return output_files
