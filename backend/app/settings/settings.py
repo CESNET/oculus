@@ -1,8 +1,9 @@
+import json
 import logging
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
-from pydantic import computed_field
+from pydantic import field_validator, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,17 +16,12 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # APP
     # ------------------------------------------------------------------
-
     APP_NAME: str = "oculus"
-
-    APP_VERSION: str = (
-        f"{datetime.now(tz=timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-dev"
-    )
+    APP_VERSION: str = f"{datetime.now(tz=timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-dev"
 
     # ------------------------------------------------------------------
     # LOGGING
     # ------------------------------------------------------------------
-
     LOG_LEVEL: str = "INFO"
 
     @computed_field
@@ -36,36 +32,30 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # DATASETS
     # ------------------------------------------------------------------
-
     ENABLE_SENTINEL: bool = False
     ENABLE_LANDSAT: bool = False
 
     @computed_field
     @property
     def ENABLED_DATASETS(self) -> List[str]:
-        # WARNING - datasets must correspond to `domain/job_dataset.py` definitions!
         datasets = []
-
         if self.ENABLE_SENTINEL:
             datasets.append("sentinel")
-
         if self.ENABLE_LANDSAT:
             datasets.append("landsat")
-
         return datasets
 
+    # Sentinel credentials
     SENTINEL_ENABLE_GSS: bool = False
-
     SENTINEL_CDSE_CATALOG_ROOT: str = "https://catalogue.dataspace.copernicus.eu/odata/v1/"
     SENTINEL_CDSE_S3_ENDPOINT_URL: str = "https://eodata.dataspace.copernicus.eu/"
     SENTINEL_CDSE_S3_REGION_NAME: str = "default"
-    SENTINEL_CDSE_S3_ACCESS_KEY: str | None = None
-    SENTINEL_CDSE_S3_SECRET_KEY: str | None = None
+    SENTINEL_CDSE_S3_ACCESS_KEY: Optional[str] = None
+    SENTINEL_CDSE_S3_SECRET_KEY: Optional[str] = None
 
     @computed_field
     @property
-    def SENTINEL_CDSE_S3_CREDENTIALS(self) -> dict[str, str | None]:
-
+    def SENTINEL_CDSE_S3_CREDENTIALS(self) -> dict[str, Optional[str]]:
         return {
             "aws_access_key_id": self.SENTINEL_CDSE_S3_ACCESS_KEY,
             "aws_secret_access_key": self.SENTINEL_CDSE_S3_SECRET_KEY,
@@ -76,25 +66,20 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # PATHS
     # ------------------------------------------------------------------
-
-    TMP_DIR: str | None = None
+    TMP_DIR: Optional[str] = None
     DATA_DIR: str = "/data"
 
     @computed_field
     @property
     def TMP_DIR_RESOLVED(self) -> str:
-        if self.TMP_DIR:
-            return self.TMP_DIR
-        return f"/tmp/{self.APP_NAME}"
+        return self.TMP_DIR if self.TMP_DIR else f"/tmp/{self.APP_NAME}"
 
     # ------------------------------------------------------------------
     # MONGO
     # ------------------------------------------------------------------
-
     MONGO_URI: str = "mongodb://localhost:27017"
-
-    MONGO_CLIENT: str | None = None
-    MONGO_DB: str | None = None
+    MONGO_CLIENT: Optional[str] = None
+    MONGO_DB: Optional[str] = None
 
     @computed_field
     @property
@@ -109,15 +94,36 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # CELERY
     # ------------------------------------------------------------------
-
     CELERY_MAX_CONCURRENT_PROCESS_TASKS: int = 1
 
     # ------------------------------------------------------------------
     # REDIS
     # ------------------------------------------------------------------
-
     REDIS_BROKER: str = "redis://redis:6379/0"
     REDIS_BACKEND: str = "redis://redis:6379/0"
+
+    # ------------------------------------------------------------------
+    # PROCESSING
+    # ------------------------------------------------------------------
+    DEFAULT_PROCESSING_QUALITY: int = 80
+    DEFAULT_PROCESSING_ZOOM_LEVELS: list[int] = [8, 9, 10, 11, 12, 13, 14, 15]
+
+    @field_validator("DEFAULT_PROCESSING_ZOOM_LEVELS", mode="before")
+    def parse_zoom_levels(cls, v):
+        if isinstance(v, str):
+            return [int(x.strip()) for x in v.split(",") if x.strip()]
+        return v
+
+    DEFAULT_PROCESSING_OUTPUT_FORMATS: dict[str, dict[str, bool]] = {"webp": {"product": True, "tiles": True}}
+
+    @field_validator("DEFAULT_PROCESSING_OUTPUT_FORMATS", mode="before")
+    def parse_output_formats(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return {"webp": {"product": True, "tiles": True}}
+        return v
 
 
 settings = Settings()
