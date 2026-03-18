@@ -107,23 +107,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     DEFAULT_PROCESSING_QUALITY: int = 80
     DEFAULT_PROCESSING_ZOOM_LEVELS: list[int] = [8, 9, 10, 11, 12, 13, 14, 15]
-
-    @field_validator("DEFAULT_PROCESSING_ZOOM_LEVELS", mode="before")
-    def parse_zoom_levels(cls, v):
-        if isinstance(v, str):
-            return [int(x.strip()) for x in v.split(",") if x.strip()]
-        return v
-
     DEFAULT_PROCESSING_OUTPUT_FORMATS: dict[str, dict[str, bool]] = {"webp": {"product": True, "tiles": True}}
-
-    @field_validator("DEFAULT_PROCESSING_OUTPUT_FORMATS", mode="before")
-    def parse_output_formats(cls, v):
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return {"webp": {"product": True, "tiles": True}}
-        return v
 
 
 settings = Settings()
