@@ -1,0 +1,87 @@
+services:
+  app:
+    build: ./backend
+    container_name: oculus_backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - data_volume:/data
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - mongo
+#      - gjtiff
+
+  celery-worker:
+    container_name: oculus_celery-worker
+    build: ./backend
+    command: celery -A app.infrastructure.celery.celery_app.celery worker -l info
+    volumes:
+      - data_volume:/data
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - mongo
+    restart: always
+
+  celery-worker-processing:
+    build: ./backend
+    container_name: oculus_celery-worker-processing
+    command: celery -A app.infrastructure.celery.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
+    volumes:
+      - data_volume:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - mongo
+    restart: always
+
+  celery-beat:
+    build: ./backend
+    container_name: oculus_celery-beat
+    command: celery -A app.infrastructure.celery.celery_app.celery beat --loglevel=info
+    volumes:
+      - data_volume:/data
+    depends_on:
+      - redis
+      - mongo
+    env_file:
+      - .env
+    restart: always
+
+  redis:
+    image: redis:7
+    container_name: oculus_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  mongo:
+    image: mongo:6
+    container_name: oculus_mongo
+    ports:
+      - "27017:27017"
+    restart: always
+
+#  gjtiff:
+#    build: ./gjtiff
+#    container_name: oculus_gjtiff # !!! This container must be named 'oculus_gjtiff' as GJTIFFProcessor Python class is hardcoded to this name !!!
+#    command: [ "sleep", "infinity" ]
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: all
+#              capabilities: [ gpu ]
+#    volumes:
+#      - ./gjtiff:/gjtiff
+#      - data_volume:/data
+
+volumes:
+  data_volume:

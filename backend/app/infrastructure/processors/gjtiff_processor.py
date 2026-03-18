@@ -11,6 +11,7 @@ FORMAT_FLAGS = {
     "png": {"product": "-P", "tiles": "-p"},
     "webp": {"product": "-W", "tiles": "-w"},
 }
+# TODO tiles jdou generovat jen v jednom formátu, asi chceme upřednosťnovat gjtiff, tak to nějak ošetřit při skládání commandu
 
 
 class GJTIFFProcessor(Processor):
@@ -85,5 +86,7 @@ class GJTIFFProcessor(Processor):
             gjtiff_output = json.loads(output_str)
         except json.JSONDecodeError as e:
             raise RuntimeError(f"Failed to parse GJTIFF JSON output: {e}")
+
+        # TODO tady jinak pracovat s outfiles. A nevím, jestli to teda vlastně nakonec potřebujeme..? Jestli není jednodušší předpokládat, že prostě v processed jsou soubory jen podle return code gjtiffu?
 
         return [item["outfile"] for item in gjtiff_output if "outfile" in item]
