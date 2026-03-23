@@ -11,7 +11,6 @@ FORMAT_FLAGS = {
     "png": {"product": "-P", "tiles": "-p"},
     "webp": {"product": "-W", "tiles": "-w"},
 }
-# TODO tiles jdou generovat jen v jednom formátu, asi chceme upřednosťnovat gjtiff, tak to nějak ošetřit při skládání commandu
 
 
 class GJTIFFProcessor(Processor):

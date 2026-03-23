@@ -9,35 +9,31 @@ class Sentinel1Downloader(SentinelDownloader):
         super().__init__(job, logger)
 
     def _filter_files(self, available_files: list[str] = None) -> list[str]:
-        raise NotImplementedError("Filtering for Sentinel 1 is not implemented")
-        # TODO FIND BELOW VERSION FROM PREVIOUS OCULUS VERSION
-
-        # TODO asi bude potřeba přidělat stažení i nějakých metadat pro zobrazení v mapě
-
-        if available_files is None:
-            available_files = []
-
-        polarisation_filter = []
-        for p in self._filters['polarisation_channels']:
-            if '&' in p:
-                polarisation_filter.extend(p.split('&'))
-            else:
-                polarisation_filter.append(p)
-        polarisation_filter = list(set(polarisation_filter))
+        if not available_files:
+            return []
 
         filtered_files = []
 
-        for available_file in available_files:
-            if not (
-                    re.search('/measurement/', available_file[0].strip())
-            ):
+        requested_polarizations = set(
+            self._job.properties.get("filters", {}).get(
+                "polarisation_channels", ["VV", "VH", "HH", "HV"]  # default all polarizations
+            )
+        )
+
+        for file in available_files:
+            file_strip_lower = file.strip().lower()
+
+            # only measurement TIFFs
+            if "/measurement/" not in file_strip_lower or not re.search(r"\.(tif|tiff)$", file_strip_lower):
                 continue
 
-            for polarisation_channel in polarisation_filter:
-                if re.search(f'.+-{polarisation_channel.lower()}-.+', available_file[0].strip()):
-                    if available_file[0].split('.')[-1].lower() in ['tif', 'tiff']:
-                        self._filters_polarisation_channels_availability[polarisation_channel.upper()] = True
-                        filtered_files.append(available_file)
-                        break
+            # loose filter
+            matched = False
+            for pol in requested_polarizations:
+                if f"-{pol.lower()}-" in file_strip_lower:
+                    matched = True
+
+            if matched:
+                filtered_files.append(file)
 
         return filtered_files
