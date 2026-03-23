@@ -1,0 +1,73 @@
+/* Desktop sidebar */
+.control-panel-desktop {
+    width: 300px;
+    height: 100vh;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    flex-shrink: 0;
+}
+
+/* Mobile overlay panel */
+.mobile-overlay {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 70%;
+    background: #f8f9fa;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: top 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* obsah nahoře, šipka dole */
+}
+
+.mobile-overlay.open {
+    top: 0;
+}
+
+/* Obsah panelu nahoře */
+.mobile-overlay-content {
+    padding: 10px;
+    flex: 1; /* zabírá zbytek výšky, šipka dole */
+    overflow-y: auto;
+}
+
+/* Šipka dole uvnitř panelu */
+.mobile-toggle-btn {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0;
+    cursor: pointer;
+}
+
+.arrow {
+    font-size: 24px;
+    transition: transform 0.3s ease-in-out;
+    display: inline-block;
+}
+
+.arrow.open {
+    transform: rotate(180deg);
+}
+
+/* Šipka nahoře uprostřed pokud panel zavřený */
+.mobile-toggle-top {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #007bff;
+    color: white;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    z-index: 1001;
+    cursor: pointer;
+}
