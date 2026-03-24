@@ -1,0 +1,32 @@
+/* celá stránka 100% výška */
+html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+}
+
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* container pod navbar zabírá zbytek */
+.main-container {
+    flex: 1; /* vyplní zbytek výšky */
+    padding: 0;
+}
+
+/* řada zabírá celou výšku containeru */
+.main-container .row.h-100 {
+    height: 100%;
+}
+
+.sidebar-col {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.map-col {
+    height: 100%;
+}

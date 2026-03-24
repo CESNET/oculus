@@ -1,0 +1,107 @@
+/* =========================
+   Layout
+   ========================= */
+
+.map-wrapper {
+    position: relative;
+    height: 100%;
+}
+
+
+/* =========================
+   Map Controls
+   ========================= */
+
+.map-locate-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 42px;
+    height: 42px;
+
+    border-radius: 0.5rem; /* aligned with Bootstrap styling */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.map-locate-btn.loading {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+
+/* =========================
+   Map Overlays
+   ========================= */
+
+.map-error {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1000;
+
+    font-size: 0.85rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+
+/* =========================
+   User Location Marker
+   ========================= */
+
+.user-location-marker .dot {
+    position: relative;
+
+    width: 14px;
+    height: 14px;
+
+    background: #1a73e8;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+
+    box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.2);
+}
+
+/* Pulse animation for live location indication */
+.user-location-marker .dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+
+    border-radius: 50%;
+    background: rgba(26, 115, 232, 0.4);
+
+    animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+
+/* =========================
+   Accuracy Circle
+   ========================= */
+
+.accuracy-circle {
+    fill: #b6e2fa;
+    fill-opacity: 0.4;
+
+    /* soft visual edge */
+    filter: blur(2px);
+
+    /* smooth transitions when radius changes */
+    transition: all 0.3s ease;
+}
