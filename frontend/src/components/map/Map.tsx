@@ -1,57 +1,73 @@
 import React from 'react';
-import {MapContainer, TileLayer} from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-
-import {useUserLocation, DEFAULT_LOCATION} from '../../hooks/useUserLocation';
-import LocateButton from './LocateButton';
+import {MapContainer, TileLayer, useMapEvents} from 'react-leaflet';
+import {useMapStore} from '../../store/mapStore';
 import UserLocationMarker from './UserLocationMarker';
+import LocateButton from './LocateButton';
 import ProductLayer from './layers/ProductLayer';
-
-import './Map.css';
+import type {LatLngExpression} from 'leaflet';
+import {toLatLngTuple} from '../../utils/map';
 
 interface Props {
-    zoom?: number;
-    productUrl?: string; // URL for the selected product overlay
+    center: LatLngExpression;
+    zoom: number;
+    location?: { lat: number; lng: number };
+    userLocation?: boolean;
+    loadingLocation?: boolean;
+    productUrl?: string;
 }
 
-const Map: React.FC<Props> = ({zoom = 13, productUrl}) => {
-    const {location, loading, error} = useUserLocation();
+const Map: React.FC<Props> = ({
+                                  center,
+                                  zoom,
+                                  location,
+                                  userLocation,
+                                  loadingLocation,
+                                  productUrl
+                              }) => {
+    const setView = useMapStore(state => state.setView);
+
+    const MapUpdater = () => {
+        useMapEvents({
+            moveend: (e) => {
+                const map = e.target;
+                const c = map.getCenter();
+                setView([c.lat, c.lng], map.getZoom());
+            },
+            zoomend: (e) => {
+                const map = e.target;
+                const c = map.getCenter();
+                setView([c.lat, c.lng], map.getZoom());
+            },
+        });
+        return null;
+    };
+
+    const [lat, lng] = toLatLngTuple(center);
 
     return (
-        <div className="map-wrapper">
-            <MapContainer
-                center={[DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng]}
+        <MapContainer center={center} zoom={zoom} className="w-100 h-100">
+            <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="&copy; OpenStreetMap contributors"
+            />
+
+            {/* Locate button enabled jen pokud známe userLocation */}
+            <LocateButton
+                lat={location?.lat ?? lat}
+                lng={location?.lng ?? lng}
+                userLocation={!!userLocation} // enabled pouze pokud máme skutečnou polohu
+                loading={loadingLocation ?? false}
                 zoom={zoom}
-                className="w-100 h-100"
-            >
-                {/* Base map */}
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution="&copy; OpenStreetMap contributors"
-                />
+            />
 
-                {/* User location marker and accuracy */}
-                <UserLocationMarker location={location}/>
+            {/* Marker jen pokud máme skutečnou polohu uživatele */}
+            {userLocation && location && <UserLocationMarker location={location} />}
 
-                {/* Product overlay (conditionally rendered) */}
-                {productUrl && <ProductLayer productUrl={productUrl} opacity={1}/>}
+            {/* Product overlay */}
+            {productUrl && <ProductLayer productUrl={productUrl} opacity={1} />}
 
-                {/* Locate button */}
-                <LocateButton
-                    lat={location.lat}
-                    lng={location.lng}
-                    loading={loading}
-                    zoom={zoom}
-                />
-            </MapContainer>
-
-            {/* Error message */}
-            {error && (
-                <div className="map-error alert alert-light py-1 px-2">
-                    {error}
-                </div>
-            )}
-        </div>
+            <MapUpdater />
+        </MapContainer>
     );
 };
 

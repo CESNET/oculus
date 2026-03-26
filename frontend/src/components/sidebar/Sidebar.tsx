@@ -1,7 +1,7 @@
 import { useState } from "react";
-import FiltersPanel from "./FiltersPanel";
-import FeaturesPanel from "./FeaturesPanel";
-import VisualizationPanel from "./VisualizationPanel";
+import FiltersTab from "./FiltersTab.tsx";
+import FeaturesTab from "./FeaturesTab.tsx";
+import VisualizationTab from "./VisualizationTab.tsx";
 import "./Sidebar.css";
 
 const tabs = ["Filters", "Features", "Visualization"];
@@ -24,9 +24,9 @@ export default function Sidebar() {
             </div>
 
             <div className="sidebar-panel">
-                {activeTab === 0 && <FiltersPanel />}
-                {activeTab === 1 && <FeaturesPanel />}
-                {activeTab === 2 && <VisualizationPanel />}
+                {activeTab === 0 && <FiltersTab />}
+                {activeTab === 1 && <FeaturesTab />}
+                {activeTab === 2 && <VisualizationTab />}
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 import {useState} from "react";
 
-export default function FiltersPanel() {
+export default function FiltersTab() {
     const [dataset, setDataset] = useState<"S1" | "S2">("S1");
 
     return (

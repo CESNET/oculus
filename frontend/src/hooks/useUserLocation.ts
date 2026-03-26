@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 
-interface Location {
+export interface Location {
     lat: number;
     lng: number;
     accuracy?: number;
@@ -18,7 +18,8 @@ export const useUserLocation = () => {
 
     const [location, setLocation] = useState<Location>(DEFAULT_LOCATION);
     const [loading, setLoading] = useState(isSupported);
-    const [error, setError] = useState<string | null>(
+    const [isUserLocation, setIsUserLocation] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(
         isSupported ? null : 'Geolocation is not supported'
     );
 
@@ -32,14 +33,24 @@ export const useUserLocation = () => {
                     lng: position.coords.longitude,
                     accuracy: position.coords.accuracy,
                 });
+                setIsUserLocation(true);
                 setLoading(false);
             },
-            () => {
-                setError('Using default location');
+            (error) => {
+                console.error('Failed to get location:', error);
+                setIsUserLocation(false);
+                setErrorMessage('Using default location');
                 setLoading(false);
-            }
+            },
+            { enableHighAccuracy: true, timeout: 20000 }
         );
     }, [isSupported]);
 
-    return {location, loading, error};
+    console.log(location, loading, isUserLocation, errorMessage);
+    return {
+        location: location,
+        loading: loading,
+        isUserLocation: isUserLocation,
+        errorMessage: errorMessage
+    };
 };

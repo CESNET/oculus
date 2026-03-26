@@ -1,22 +1,22 @@
 import React from 'react';
-import {useMap} from 'react-leaflet';
+import { useMap } from 'react-leaflet';
 import './Map.css';
 
 interface Props {
     lat: number;
     lng: number;
-    loading: boolean;
     zoom: number;
+    loading: boolean;
+    userLocation: boolean; // true pouze pokud máme skutečnou polohu
 }
 
-const LocateButton: React.FC<Props> = ({lat, lng, loading, zoom}) => {
+const LocateButton: React.FC<Props> = ({ lat, lng, loading, zoom, userLocation }) => {
     const map = useMap();
 
-    const hasValidLocation =
-        typeof lat === 'number' && typeof lng === 'number';
+    const isEnabled = !loading && userLocation;
 
     const handleClick = () => {
-        if (loading || !hasValidLocation) return;
+        if (!isEnabled) return;
 
         map.flyTo([lat, lng], zoom, {
             animate: true,
@@ -24,19 +24,25 @@ const LocateButton: React.FC<Props> = ({lat, lng, loading, zoom}) => {
         });
     };
 
+    //if (!userLocation) return null;
+
     return (
         <button
             type="button"
-            onClick={handleClick}
-            className={`btn btn-light map-locate-btn ${
-                loading ? 'loading' : ''
-            }`}
-            title="Find my location"
+            onClick={() => {
+                if (!isEnabled) {
+                    console.warn('User location unavailable'); // todo vypsat nějaký alert
+                    return;
+                }
+                handleClick();
+            }}
+            className={`btn btn-light map-locate-btn ${!isEnabled ? 'not-available' : ''}`}
+            title={isEnabled ? "Find my location" : "Location unavailable"}
         >
             {loading ? (
-                <span className="spinner-border spinner-border-sm"/>
+                <span className="spinner-border spinner-border-sm" />
             ) : (
-                <i className="bi bi-crosshair"/>
+                <i className="bi bi-crosshair" />
             )}
         </button>
     );

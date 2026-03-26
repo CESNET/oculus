@@ -12,7 +12,7 @@ export default function MainLayout() {
             <NavbarLayout />
 
             <Container fluid className="main-container">
-                <Row className="h-100">
+                <Row>
                     <Col md={3} className="p-0 sidebar-col">
                         <SidebarLayout />
                     </Col>
