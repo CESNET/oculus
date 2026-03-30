@@ -1,11 +1,11 @@
-import React from 'react';
-import {MapContainer, TileLayer, useMapEvents} from 'react-leaflet';
-import {useMapStore} from '../../store/mapStore';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
+import { useMapStore } from '../../store/useMapStore';
+import { useFiltersStore } from '../../store/useFiltersStore';
 import UserLocationMarker from './UserLocationMarker';
 import LocateButton from './LocateButton';
 import ProductLayer from './layers/ProductLayer';
-import type {LatLngExpression} from 'leaflet';
-import {toLatLngTuple} from '../../utils/map';
+import type { LatLngExpression } from 'leaflet';
 
 interface Props {
     center: LatLngExpression;
@@ -14,36 +14,53 @@ interface Props {
     userLocation?: boolean;
     loadingLocation?: boolean;
     productUrl?: string;
+    programmaticRef: React.MutableRefObject<boolean>;
 }
 
-const Map: React.FC<Props> = ({
-                                  center,
-                                  zoom,
-                                  location,
-                                  userLocation,
-                                  loadingLocation,
-                                  productUrl
-                              }) => {
+const MapUpdater = ({ programmaticRef }: { programmaticRef: React.MutableRefObject<boolean> }) => {
     const setView = useMapStore(state => state.setView);
+    const setBboxFromMap = useFiltersStore(state => state.setBboxFromMap);
 
-    const MapUpdater = () => {
-        useMapEvents({
-            moveend: (e) => {
-                const map = e.target;
-                const c = map.getCenter();
-                setView([c.lat, c.lng], map.getZoom());
-            },
-            zoomend: (e) => {
-                const map = e.target;
-                const c = map.getCenter();
-                setView([c.lat, c.lng], map.getZoom());
-            },
-        });
-        return null;
-    };
+    const map = useMapEvents({
+        moveend: () => {
+            const c = map.getCenter();
+            const z = map.getZoom();
+            const bounds = map.getBounds();
 
-    const [lat, lng] = toLatLngTuple(center);
+            // 1. Vždy synchronizujeme URL/střed (pro MapStore)
+            setView([c.lat, c.lng], z);
 
+            // 2. Pokud je pohyb "programový", ignorujeme update filtrů a vypneme flag
+            if (programmaticRef.current) {
+                programmaticRef.current = false;
+                return;
+            }
+
+            // 3. Jinak aktualizujeme BBox ve filtrech
+            setBboxFromMap(
+                bounds.getNorth(),
+                bounds.getSouth(),
+                bounds.getEast(),
+                bounds.getWest()
+            );
+        },
+    });
+
+    // Inicializace BBoxu při prvním renderu mapy
+    useEffect(() => {
+        const bounds = map.getBounds();
+        setBboxFromMap(
+            bounds.getNorth(),
+            bounds.getSouth(),
+            bounds.getEast(),
+            bounds.getWest()
+        );
+    }, []);
+
+    return null;
+};
+
+const Map: React.FC<Props> = ({ center, zoom, location, userLocation, loadingLocation, productUrl, programmaticRef }) => {
     return (
         <MapContainer center={center} zoom={zoom} className="w-100 h-100">
             <TileLayer
@@ -51,22 +68,21 @@ const Map: React.FC<Props> = ({
                 attribution="&copy; OpenStreetMap contributors"
             />
 
-            {/* Locate button enabled jen pokud známe userLocation */}
-            <LocateButton
-                lat={location?.lat ?? lat}
-                lng={location?.lng ?? lng}
-                userLocation={!!userLocation} // enabled pouze pokud máme skutečnou polohu
-                loading={loadingLocation ?? false}
-                zoom={zoom}
-            />
+            {userLocation && (
+                <LocateButton
+                    lat={location?.lat ?? 0}
+                    lng={location?.lng ?? 0}
+                    zoom={13}
+                    userLocation={!!userLocation}
+                    loading={loadingLocation ?? false}
+                    programmaticRef={programmaticRef}
+                />
+            )}
 
-            {/* Marker jen pokud máme skutečnou polohu uživatele */}
             {userLocation && location && <UserLocationMarker location={location} />}
-
-            {/* Product overlay */}
             {productUrl && <ProductLayer productUrl={productUrl} opacity={1} />}
 
-            <MapUpdater />
+            <MapUpdater programmaticRef={programmaticRef} />
         </MapContainer>
     );
 };

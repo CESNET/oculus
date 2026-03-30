@@ -46,7 +46,6 @@ export const useUserLocation = () => {
         );
     }, [isSupported]);
 
-    console.log(location, loading, isUserLocation, errorMessage);
     return {
         location: location,
         loading: loading,
