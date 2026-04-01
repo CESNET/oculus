@@ -1,52 +1,44 @@
-import {useSentinel1Store} from "../../../store/useSentinel1Store";
+import {useFiltersStore} from "../../../store/useFiltersStore";
+import MultiButtonGroup from "./MultiButtonGroup";
+import {Dataset} from "../../../types/datasets";
+import {getAllOptions} from "../../../utils/filterUtils.ts";
+import {type Sentinel1FilterState} from "../../../store/useFiltersStore";
 
 export default function Sentinel1Filter() {
-    const {sentinel1, toggleLevel, toggleSensingType, toggleProductType, togglePolarization} = useSentinel1Store();
+    const sentinel1 = useFiltersStore((s) => s.sentinel1);
+    const toggleSentinel1 = useFiltersStore((s) => s.toggleSentinel1);
 
-    const levels = ["0", "1", "2"];
-    const sensingTypes = ["IW", "EW", "SM", "WV"];
-    const productTypes = ["SLC", "GRD"];
-    const polarizations = ["HH", "HV", "VH", "VV"];
+    const defaults = getAllOptions(Dataset.Sentinel1) as Sentinel1FilterState;
 
     return (
         <>
-            {/*<h4>Sentinel-1 Filters</h4>*/}
+            <MultiButtonGroup
+                label="Levels"
+                values={defaults.levels}
+                selected={sentinel1.levels}
+                onToggle={(v) => toggleSentinel1("levels", v)}
+            />
 
-            <div className="mb-3">
-                <label>Levels</label>
-                <div className="btn-group">
-                    {levels.map(l => (
-                        <button key={l} className={`btn ${sentinel1.levels.includes(l) ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => toggleLevel(l)}>{l}</button>
-                    ))}
-                </div>
-            </div>
+            <MultiButtonGroup
+                label="Sensing Types"
+                values={defaults.sensingTypes}
+                selected={sentinel1.sensingTypes}
+                onToggle={(v) => toggleSentinel1("sensingTypes", v)}
+            />
 
-            <div className="mb-3">
-                <label>Sensing Types</label>
-                <div className="btn-group">
-                    {sensingTypes.map(s => (
-                        <button key={s} className={`btn btn-sm ${sentinel1.sensingTypes.includes(s) ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => toggleSensingType(s)}>{s}</button>
-                    ))}
-                </div>
-            </div>
+            <MultiButtonGroup
+                label="Product Types"
+                values={defaults.productTypes}
+                selected={sentinel1.productTypes}
+                onToggle={(v) => toggleSentinel1("productTypes", v)}
+            />
 
-            <div className="mb-3">
-                <label>Product Types</label>
-                <div className="btn-group">
-                    {productTypes.map(p => (
-                        <button key={p} className={`btn ${sentinel1.productTypes.includes(p) ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => toggleProductType(p)}>{p}</button>
-                    ))}
-                </div>
-            </div>
-
-            <div className="mb-3">
-                <label>Polarization</label>
-                <div className="btn-group">
-                    {polarizations.map(p => (
-                        <button key={p} className={`btn btn-sm ${sentinel1.polarizations.includes(p) ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => togglePolarization(p)}>{p}</button>
-                    ))}
-                </div>
-            </div>
+            <MultiButtonGroup
+                label="Polarizations"
+                values={defaults.polarizations}
+                selected={sentinel1.polarizations}
+                onToggle={(v) => toggleSentinel1("polarizations", v)}
+            />
         </>
     );
 }

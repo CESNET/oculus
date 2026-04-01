@@ -1,45 +1,61 @@
-import {useSentinel2Store} from "../../../store/useSentinel2Store";
+import {useFiltersStore} from "../../../store/useFiltersStore";
+import MultiButtonGroup from "./MultiButtonGroup";
+import {Dataset} from "../../../types/datasets";
+import {getAllOptions} from "../../../utils/filterUtils.ts";
+import {type Sentinel2FilterState} from "../../../store/useFiltersStore";
 
 export default function Sentinel2Filter() {
-    const {sentinel2, toggleLevel, toggleBand, setCloudCover} = useSentinel2Store();
-    const levels = ["0", "1A", "1B", "1C", "2A"];
-    const bands = ["1", "2", "3", "4", "5", "6", "7", "8", "8A", "9", "10", "11", "12", "TCI"];
+    const sentinel2 = useFiltersStore((s) => s.sentinel2);
+    const toggleSentinel2 = useFiltersStore((s) => s.toggleSentinel2);
+    const setSentinel2 = useFiltersStore((s) => s.setSentinel2);
+
+    const defaults = getAllOptions(Dataset.Sentinel2) as Sentinel2FilterState;
 
     return (
         <>
-            {/*<h4>Sentinel-2 Filters</h4>*/}
-
             <div className="mb-3">
                 <label>
                     Cloud Cover (%)
-                    <input type="number" min={0} max={100} value={sentinel2.cloudCover}
-                           onChange={e => setCloudCover(parseFloat(e.target.value))} />
-                    <input type="range" min={0} max={100} value={sentinel2.cloudCover}
-                           onChange={e => setCloudCover(parseFloat(e.target.value))} />
+
+                    <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={sentinel2.cloudCover ?? 100}
+                        onChange={(e) =>
+                            setSentinel2({
+                                cloudCover: Number(e.target.value),
+                            })
+                        }
+                    />
+
+                    <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={sentinel2.cloudCover ?? 100}
+                        onChange={(e) =>
+                            setSentinel2({
+                                cloudCover: Number(e.target.value),
+                            })
+                        }
+                    />
                 </label>
             </div>
 
-            <div className="mb-3">
-                <label>Levels</label>
-                <div className="btn-group">
-                    {levels.map(l => (
-                        <button key={l}
-                                className={`btn ${sentinel2.levels.includes(l) ? "btn-primary" : "btn-outline-secondary"}`}
-                                onClick={() => toggleLevel(l)}>{l}</button>
-                    ))}
-                </div>
-            </div>
+            <MultiButtonGroup
+                label="Levels"
+                values={defaults.levels}
+                selected={sentinel2.levels}
+                onToggle={(v) => toggleSentinel2("levels", v)}
+            />
 
-            <div className="mb-3">
-                <label>Bands</label>
-                <div className="btn-group">
-                    {bands.map(b => (
-                        <button key={b}
-                                className={`btn btn-sm ${sentinel2.bands.includes(b) ? "btn-primary" : "btn-outline-secondary"}`}
-                                onClick={() => toggleBand(b)}>{b}</button>
-                    ))}
-                </div>
-            </div>
+            <MultiButtonGroup
+                label="Bands"
+                values={defaults.bands}
+                selected={sentinel2.bands}
+                onToggle={(v) => toggleSentinel2("bands", v)}
+            />
         </>
     );
 }

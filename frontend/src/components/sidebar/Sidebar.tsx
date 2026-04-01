@@ -24,7 +24,9 @@ export default function Sidebar() {
             </div>
 
             <div className="sidebar-panel">
-                {activeTab === 0 && <FiltersTab />}
+                {activeTab === 0 && (
+                    <FiltersTab onFetched={() => setActiveTab(1)} />
+                )}
                 {activeTab === 1 && <FeaturesTab />}
                 {activeTab === 2 && <VisualizationTab />}
             </div>

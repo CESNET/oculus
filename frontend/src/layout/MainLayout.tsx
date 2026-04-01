@@ -1,4 +1,6 @@
-import { Container, Row, Col } from "react-bootstrap";
+import {Container, Row, Col} from "react-bootstrap";
+
+import {useRef} from "react";
 
 import NavbarLayout from "./NavbarLayout";
 import SidebarLayout from "./SidebarLayout";
@@ -7,9 +9,12 @@ import MapLayout from "./MapLayout.tsx";
 import './MainLayout.css';
 
 export default function MainLayout() {
+    // Sdílený ref pro programmatic posuny mapy
+    const programmaticRef = useRef(false);
+
     return (
         <div className="main-layout">
-            <NavbarLayout />
+            <NavbarLayout programmaticRef={programmaticRef} />
 
             <Container fluid className="main-container">
                 <Row>
@@ -18,7 +23,7 @@ export default function MainLayout() {
                     </Col>
 
                     <Col md={9} className="p-0 map-col">
-                        <MapLayout />
+                        <MapLayout programmaticRef={programmaticRef} />
                     </Col>
                 </Row>
             </Container>

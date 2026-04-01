@@ -2,15 +2,18 @@ import { useEffect, useState, useRef } from "react";
 import Map from "../components/map/Map";
 import { useMapStore } from "../store/useMapStore";
 import { useUserLocation, DEFAULT_LOCATION } from "../hooks/useUserLocation";
-import { toLatLngTuple } from "../utils/map";
+import { toLatLngTuple } from "../utils/mapUtils.ts";
 
-export default function MapLayout() {
+interface MapLayoutProps {
+    programmaticRef: React.MutableRefObject<boolean>;
+}
+
+export default function MapLayout({ programmaticRef }: MapLayoutProps) {
     const { center, zoom, setView } = useMapStore();
     const { location, loading, isUserLocation } = useUserLocation();
     const [initialized, setInitialized] = useState(false);
 
-    // Tento ref sdílíme s komponentou Map
-    const programmaticRef = useRef(false);
+    programmaticRef = useRef(false);
 
     // 1. Načtení z URL při prvním startu
     useEffect(() => {

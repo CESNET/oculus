@@ -1,6 +1,6 @@
 import {create} from "zustand";
 
-interface Feature {
+export interface Feature {
     id: string;
     title: string;
     platform: string;
@@ -8,7 +8,7 @@ interface Feature {
     productUrl: string;
 }
 
-interface FeaturesState {
+export interface FeaturesState {
     features: Feature[];
     setFeatures: (features: Feature[]) => void;
     addFeatures: (features: Feature[]) => void;
@@ -18,6 +18,6 @@ interface FeaturesState {
 export const useFeaturesStore = create<FeaturesState>((set) => ({
     features: [],
     setFeatures: (features) => set({features}),
-    addFeatures: (features) => set((state) => ({features: state.features.concat(features)})),
+    addFeatures: (features) => set((state) => ({features: [...state.features, ...features]})),
     clearFeatures: () => set({features: []}),
 }));
