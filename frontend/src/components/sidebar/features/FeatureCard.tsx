@@ -1,4 +1,4 @@
-import type { Feature } from "../../../store/useFeaturesStore.ts";
+import {type Feature, useFeaturesStore} from "../../../store/useFeaturesStore.ts";
 import { useState } from "react";
 
 interface FeatureCardProps {
@@ -6,12 +6,14 @@ interface FeatureCardProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ feature }) => {
-    const [copied, setCopied] = useState(false);
+    const setHoveredId = useFeaturesStore(state => state.setHoveredFeatureId);
 
-    const handleCopy = () => {
+    const [copied, setUrlCopied] = useState(false);
+
+    const handleUrlCopy = () => {
         navigator.clipboard.writeText(feature.productUrl).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            setUrlCopied(true);
+            setTimeout(() => setUrlCopied(false), 2000);
         });
     };
 
@@ -21,7 +23,11 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ feature }) => {
     };
 
     return (
-        <div className="card h-100 shadow-sm feature-card">
+        <div
+            className="card h-100 shadow-sm feature-card"
+            onMouseEnter={() => setHoveredId(feature.id)}
+            onMouseLeave={() => setHoveredId(null)}
+        >
             <div className="card-body d-flex flex-column">
                 <h5 className="card-title">{feature.title}</h5>
                 <p className="card-text mb-1"><strong>Platform:</strong> {feature.platform}</p>
@@ -43,7 +49,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ feature }) => {
 
                     <button
                         className="btn btn-outline-info btn-sm"
-                        onClick={handleCopy}
+                        onClick={handleUrlCopy}
                         title="Copy Product URL"
                     >
                         <i className={`bi ${copied ? "bi-check" : "bi-clipboard"}`} />

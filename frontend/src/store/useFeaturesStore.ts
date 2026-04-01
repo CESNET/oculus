@@ -17,6 +17,9 @@ export interface FeaturesState {
     setFeatures: (features: Feature[]) => void;
     addFeatures: (features: Feature[]) => void;
     clearFeatures: () => void;
+
+    hoveredFeatureId: string | null;
+    setHoveredFeatureId: (id: string | null) => void;
 }
 
 export const useFeaturesStore = create<FeaturesState>((set) => ({
@@ -26,4 +29,7 @@ export const useFeaturesStore = create<FeaturesState>((set) => ({
         features: [...state.features, ...features]
     })),
     clearFeatures: () => set({ features: [] }),
+
+    hoveredFeatureId: null,
+    setHoveredFeatureId: (id) => set({ hoveredFeatureId: id }),
 }));

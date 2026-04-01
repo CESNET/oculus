@@ -4,7 +4,7 @@ import DatetimeFilter from "./filters/DatetimeFilter";
 import DatasetFilter from "./filters/DatasetFilter";
 import { fetchFeatures } from "../../api/fetchFeatures";
 import { useFeaturesStore } from "../../store/useFeaturesStore";
-import { useLoadingStore } from "../../store/useLoadingStore"; // Import storu
+import { useLoadingStore } from "../../store/useLoadingStore";
 import { getEffectiveFilters } from "../../utils/filterUtils.ts";
 
 interface FiltersTabProps {
