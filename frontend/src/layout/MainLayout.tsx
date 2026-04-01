@@ -2,6 +2,7 @@ import {Container, Row, Col} from "react-bootstrap";
 
 import {useRef} from "react";
 
+import LoadingOverlay from "../components/ui/LoadingOverlay";
 import NavbarLayout from "./NavbarLayout";
 import SidebarLayout from "./SidebarLayout";
 import MapLayout from "./MapLayout.tsx";
@@ -14,6 +15,8 @@ export default function MainLayout() {
 
     return (
         <div className="main-layout">
+            <LoadingOverlay />
+
             <NavbarLayout programmaticRef={programmaticRef} />
 
             <Container fluid className="main-container">
