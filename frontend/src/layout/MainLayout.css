@@ -1,8 +1,51 @@
-/* celá stránka 100% výška */
+/* =========================
+   Root / Globální proměnné
+   ========================= */
+:root {
+    --font-family: 'Inter', sans-serif;
+    --border-radius: 0.5rem;
+    --transition-fast: 0.2s;
+
+    /* Navbar */
+    --color-navbar-bg: #0f172a;
+    --color-navbar-text: #f1f5f9;
+    --color-navbar-input-bg: #1e293b;
+    --color-navbar-input-focus: #273449;
+    --color-navbar-input-placeholder: #94a3b8;
+    --color-navbar-dropdown-bg: #1e293b;
+
+    /* Sidebar */
+    --color-sidebar-bg: #f8fafc;
+    --color-sidebar-border: #cbd5e1;
+    --color-sidebar-text: #1e293b;
+    --color-sidebar-tab-bg: #f1f5f9;
+    --color-sidebar-tab-hover: #e2e8f0;
+    --color-sidebar-tab-active: #3b82f6;
+    --color-sidebar-tab-active-text: #1e40af;
+
+    /* Buttons */
+    --color-btn-primary: #3b82f6;
+    --color-btn-primary-hover: #2563eb;
+    --color-btn-outline-bg: #fff;
+    --color-btn-outline-text: #475569;
+    --color-btn-outline-hover: #e2e8f0;
+
+    /* Shadows */
+    --shadow-light: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-medium: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-dropdown: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* =========================
+   Global / Main Layout
+   ========================= */
 html, body, #root {
     height: 100%;
     width: 100%;
     margin: 0;
+    font-family: var(--font-family), sans-serif;
+    background-color: var(--color-sidebar-bg);
+    color: var(--color-sidebar-text);
 }
 
 .main-layout {
@@ -12,7 +55,6 @@ html, body, #root {
     overflow: hidden;
 }
 
-/* container pod navbar zabírá zbytek */
 .main-container {
     flex: 1;
     padding: 0;
@@ -31,4 +73,32 @@ html, body, #root {
 
 .map-col {
     height: 100%;
+}
+
+/* Buttony globálně */
+.btn {
+    border-radius: var(--border-radius);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btn-primary {
+    background-color: var(--color-btn-primary);
+    color: #fff;
+    border-color: var(--color-btn-primary);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-btn-primary-hover);
+}
+
+.btn-outline-secondary {
+    background-color: var(--color-btn-outline-bg);
+    color: var(--color-btn-outline-text);
+    border-color: var(--color-btn-outline-bg);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--color-btn-outline-hover);
 }

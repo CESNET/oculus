@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
-import { useMapStore } from '../../store/useMapStore';
-import { useFiltersStore } from '../../store/useFiltersStore';
+import React, {useEffect} from 'react';
+import {MapContainer, TileLayer, useMapEvents} from 'react-leaflet';
+import {useMapStore} from '../../store/useMapStore';
+import {useFiltersStore} from '../../store/useFiltersStore';
 import UserLocationMarker from './UserLocationMarker';
 import LocateButton from './LocateButton';
 import ProductLayer from './layers/ProductLayer';
-import type { LatLngExpression } from 'leaflet';
+import type {LatLngExpression} from 'leaflet';
 
 interface Props {
     center: LatLngExpression;
@@ -17,7 +17,7 @@ interface Props {
     programmaticRef: React.MutableRefObject<boolean>;
 }
 
-const MapUpdater = ({ programmaticRef }: { programmaticRef: React.MutableRefObject<boolean> }) => {
+const MapUpdater = ({programmaticRef}: { programmaticRef: React.MutableRefObject<boolean> }) => {
     const setView = useMapStore(state => state.setView);
     const setBboxFromMap = useFiltersStore(state => state.setBboxFromMap);
 
@@ -60,30 +60,32 @@ const MapUpdater = ({ programmaticRef }: { programmaticRef: React.MutableRefObje
     return null;
 };
 
-const Map: React.FC<Props> = ({ center, zoom, location, userLocation, loadingLocation, productUrl, programmaticRef }) => {
+const Map: React.FC<Props> = ({center, zoom, location, userLocation, loadingLocation, productUrl, programmaticRef}) => {
     return (
-        <MapContainer center={center} zoom={zoom} className="w-100 h-100">
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution="&copy; OpenStreetMap contributors"
-            />
-
-            {userLocation && (
-                <LocateButton
-                    lat={location?.lat ?? 0}
-                    lng={location?.lng ?? 0}
-                    zoom={13}
-                    userLocation={!!userLocation}
-                    loading={loadingLocation ?? false}
-                    programmaticRef={programmaticRef}
+        <>
+            <MapContainer center={center} zoom={zoom} className="w-100 h-100">
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution="&copy; OpenStreetMap contributors"
                 />
-            )}
 
-            {userLocation && location && <UserLocationMarker location={location} />}
-            {productUrl && <ProductLayer productUrl={productUrl} opacity={1} />}
+                {userLocation && (
+                    <LocateButton
+                        lat={location?.lat ?? 0}
+                        lng={location?.lng ?? 0}
+                        zoom={13}
+                        userLocation={!!userLocation}
+                        loading={loadingLocation ?? false}
+                        programmaticRef={programmaticRef}
+                    />
+                )}
 
-            <MapUpdater programmaticRef={programmaticRef} />
-        </MapContainer>
+                {userLocation && location && <UserLocationMarker location={location} />}
+                {productUrl && <ProductLayer productUrl={productUrl} opacity={1} />}
+
+                <MapUpdater programmaticRef={programmaticRef} />
+            </MapContainer>
+        </>
     );
 };
 

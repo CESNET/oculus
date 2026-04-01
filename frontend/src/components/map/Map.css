@@ -1,22 +1,36 @@
 /* =========================
    Layout
    ========================= */
-
-.map-wrapper {
+.map-wrapper, .leaflet-container {
     height: 100%;
     width: 100%;
     position: relative;
+    border-radius: var(--border-radius);
 }
 
-.leaflet-container {
-    height: 100%;
-    width: 100%;
+.leaflet-control-attribution {
+    position: absolute !important;
+    bottom: 3.5rem !important;  /* opravdu u dolního okraje */ /* TODO nevím, jestli se to bude vždycky zobrazovat dole */
+    right: 0 !important;   /* u pravého okraje */
+    left: auto !important;
+    top: auto !important;
+    z-index: 2000;
+
+    display: inline-flex;        /* zůstane v jedné řádce */
+    align-items: center;         /* vertikální centrování */
+    white-space: nowrap;         /* zabrání zalomení */
+    background-color: rgba(255,255,255,0.9);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0 !important;
+    font-size: 0.7rem;
+    color: #475569;
+    pointer-events: auto;
+    text-align: right;
 }
 
 /* =========================
    Map Controls
    ========================= */
-
 .map-locate-btn {
     position: absolute;
     top: 10px;
@@ -30,11 +44,22 @@
     width: 42px;
     height: 42px;
 
-    border-radius: 0.5rem; /* aligned with Bootstrap styling */
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    background-color: var(--color-btn-outline-bg);
+    border: 1px solid var(--color-sidebar-border);
+    color: var(--color-btn-outline-text);
+    font-family: var(--font-family), sans-serif;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    cursor: pointer;
 }
 
-.map-locate-btn.loading, .map-locate-btn.not-available {
+.map-locate-btn:hover:not(.loading):not(.not-available) {
+    background-color: var(--color-btn-outline-hover);
+}
+
+.map-locate-btn.loading,
+.map-locate-btn.not-available {
     cursor: not-allowed;
     opacity: 0.6;
 }
@@ -42,7 +67,6 @@
 /* =========================
    Map Overlays
    ========================= */
-
 .map-error {
     position: absolute;
     bottom: 10px;
@@ -50,24 +74,26 @@
     z-index: 1000;
 
     font-size: 0.85rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-medium);
+    background-color: var(--color-sidebar-bg);
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-sidebar-border);
+    color: var(--color-sidebar-text);
 }
-
 
 /* =========================
    User Location Marker
    ========================= */
-
 .user-location-marker .dot {
     position: relative;
 
     width: 14px;
     height: 14px;
 
-    background: #1a73e8;
+    background: #1a73e8; /* může být i var(--color-btn-primary) */
     border-radius: 50%;
-    border: 2px solid #ffffff;
-
+    border: 2px solid #fff;
     box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.2);
 }
 
@@ -79,7 +105,6 @@
 
     border-radius: 50%;
     background: rgba(26, 115, 232, 0.4);
-
     animation: pulse 1.6s infinite;
 }
 
@@ -94,18 +119,12 @@
     }
 }
 
-
 /* =========================
    Accuracy Circle
    ========================= */
-
 .accuracy-circle {
-    fill: #b6e2fa;
+    fill: #b6e2fa; /* nebo jemnější varianta s var(--color-btn-primary) */
     fill-opacity: 0.4;
-
-    /* soft visual edge */
     filter: blur(2px);
-
-    /* smooth transitions when radius changes */
     transition: all 0.3s ease;
 }
