@@ -1,4 +1,4 @@
-import {create} from "zustand";
+import { create } from "zustand";
 
 export interface Feature {
     id: string;
@@ -6,6 +6,10 @@ export interface Feature {
     platform: string;
     acquisitionDate: string;
     productUrl: string;
+    geometry: {
+        type: "Polygon";
+        coordinates: [number, number][][]; // [lat, lng] pro mapové knihovny
+    };
 }
 
 export interface FeaturesState {
@@ -17,7 +21,9 @@ export interface FeaturesState {
 
 export const useFeaturesStore = create<FeaturesState>((set) => ({
     features: [],
-    setFeatures: (features) => set({features}),
-    addFeatures: (features) => set((state) => ({features: [...state.features, ...features]})),
-    clearFeatures: () => set({features: []}),
+    setFeatures: (features) => set({ features }),
+    addFeatures: (features) => set((state) => ({
+        features: [...state.features, ...features]
+    })),
+    clearFeatures: () => set({ features: [] }),
 }));

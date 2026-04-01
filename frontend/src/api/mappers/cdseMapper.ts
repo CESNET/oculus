@@ -1,11 +1,42 @@
-import type { Feature } from "../../store/useFeaturesStore";
+import type {Feature} from "../../store/useFeaturesStore";
+import {Dataset} from "../../types/datasets"; // Importuj svůj enum
 
-export const mapCDSEToFeature = (item: any): Feature => {
+/**
+ * Parsování WKT na souřadnice (zůstává stejné)
+ */
+const parseWKTToCoordinates = (wkt: string): [number, number][] => {
+    try {
+        const match = wkt.match(/\(\((.*)\)\)/);
+        if (!match) return [];
+        const points = match[1].split(",");
+        return points.map(point => {
+            const [lng, lat] = point.trim().split(/\s+/).map(Number);
+            return [lat, lng];
+        });
+    } catch (e) {
+        return [];
+    }
+};
+
+/**
+ * Optimalizovaný mapper s rozlišením datasetu
+ */
+export const mapCDSEToFeature = (item: any, dataset: Dataset): Feature => {
+    const id = item.Id;
+
     return {
-        id: item.Id,
+        id: id,
         title: item.Name,
-        platform: item.Collection?.Name ?? "Unknown",
+        // Pokud API nevrátí název kolekce, použijeme přímo hodnotu z našeho Dataset "enumu"
+        platform: item.Collection?.Name ?? dataset,
         acquisitionDate: item.ContentDate?.Start ?? "",
-        productUrl: item["__metadata"]?.uri ?? "", // fallback
+        productUrl: `https://catalogue.dataspace.copernicus.eu/odata/v1/Products(${id})`,
+
+        geometry: {
+            type: "Polygon",
+            coordinates: item.Footprint
+                ? [parseWKTToCoordinates(item.Footprint)]
+                : []
+        },
     };
 };

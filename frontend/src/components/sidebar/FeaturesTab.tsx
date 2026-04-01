@@ -1,27 +1,17 @@
-import { useFeaturesStore } from "../../store/useFeaturesStore";
+import {type Feature, useFeaturesStore} from "../../store/useFeaturesStore";
+import FeatureCard from "./features/FeatureCard";
 
 export default function FeaturesTab() {
-    const { features } = useFeaturesStore();
+    const {features} = useFeaturesStore();
 
     if (!features.length) {
-        return <div>No features loaded</div>;
+        return <div className="text-center py-5">No features loaded</div>;
     }
 
-
-
     return (
-        <div>
-            {features.map((f) => (
-                <div key={f.id} className="feature-tile">
-                    <strong>{f.title}</strong>
-
-                    <div>Platform: {f.platform}</div>
-                    <div>Date: {f.acquisitionDate}</div>
-
-                    <a href={f.productUrl} target="_blank">
-                        Open
-                    </a>
-                </div>
+        <div className="features-list">
+            {features.map((f: Feature) => (
+                <FeatureCard key={f.id} feature={f} />
             ))}
         </div>
     );

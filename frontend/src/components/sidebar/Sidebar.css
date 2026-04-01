@@ -160,3 +160,78 @@
 .fetch-button-wrapper {
     margin-top: 1rem;
 }
+
+.features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* vzdálenost mezi kartami */
+    padding: 16px;
+}
+
+/* Feature cards v sidebaru */
+.features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem; /* vzdálenost mezi kartami */
+}
+
+.feature-card {
+    background-color: #f8fafc; /* ladí s pozadím sidebaru */
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    padding: 0.6rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.feature-card h5 {
+    font-size: 0.95rem;
+    margin-bottom: 0.3rem;
+    color: #1e293b;
+}
+
+.feature-card p {
+    margin: 0;
+    color: #475569;
+}
+
+/* Visualize button */
+.feature-card .btn-primary {
+    background-color: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
+}
+
+.feature-card .btn-primary:hover {
+    background-color: #2563eb;
+}
+
+/* Open page + copy URL tlačítka vedle sebe */
+.feature-card .btn-group-small {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.feature-card .btn-outline-secondary,
+.feature-card .btn-outline-info {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.3rem;
+    background-color: #fff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.feature-card .btn-outline-secondary:hover,
+.feature-card .btn-outline-info:hover {
+    background-color: #e2e8f0;
+}
+
+/* Ikona copy */
+.feature-card .btn-outline-info i {
+    font-size: 1rem;
+}
