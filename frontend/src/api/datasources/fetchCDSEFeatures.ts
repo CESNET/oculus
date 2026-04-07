@@ -1,7 +1,8 @@
-import type {FiltersState} from "../store/useFiltersStore";
-import type {Feature} from "../store/useFeaturesStore";
-import {Dataset} from "../types/datasets";
+import type {FiltersState} from "../../store/useFiltersStore.ts";
+import type {Feature} from "../../store/useFeaturesStore.ts";
+import {Dataset} from "../../types/datasets.ts";
 import {mapCDSEToFeature} from "./mappers/cdseFeatureMapper.ts";
+import {levelToApi} from "../../utils/filterUtils.ts";
 
 const API_ROOT_URL = "https://catalogue.dataspace.copernicus.eu/odata/v1/Products";
 const MAX_TOTAL_RESULTS = 5000;
@@ -45,7 +46,7 @@ export const fetchCDSEFeatures = async (
 };
 
 const buildCDSEQuery = (filters: FiltersState, dataset: Dataset): string => {
-    const { bbox, datetime, sentinel1, sentinel2 } = filters;
+    const {bbox, datetime, sentinel1, sentinel2} = filters;
     const parts: string[] = [];
 
     // 1. Spatial
@@ -59,13 +60,10 @@ const buildCDSEQuery = (filters: FiltersState, dataset: Dataset): string => {
 
     // 3. Dataset Specifics
     if (dataset === Dataset.Sentinel1) {
-        console.log("Sentinel-1: ", sentinel1);
         parts.push(`Collection/Name eq 'SENTINEL-1'`);
 
-        // Operational Mode (v původním kódu sensingTypesApiCall)
-        // Pozor: v TS ti chyběl filtr na operationalMode, který v JS byl
-        if (sentinel1.sensingTypes && sentinel1.sensingTypes.length) {
-            const sub = sentinel1.sensingTypes.map(t =>
+        if (sentinel1.operationalModes && sentinel1.operationalModes.length) {
+            const sub = sentinel1.operationalModes.map(t =>
                 `Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'operationalMode' and att/OData.CSC.StringAttribute/Value eq '${t}')`
             ).join(" or ");
             parts.push(`(${sub})`);
@@ -80,7 +78,7 @@ const buildCDSEQuery = (filters: FiltersState, dataset: Dataset): string => {
 
         if (sentinel1.levels.length) {
             const sub = sentinel1.levels.map(l =>
-                `Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'processingLevel' and att/OData.CSC.StringAttribute/Value eq 'LEVEL${l}')`
+                `Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'processingLevel' and att/OData.CSC.StringAttribute/Value eq '${levelToApi(dataset, l)}')`
             ).join(" or ");
             parts.push(`(${sub})`);
         }
@@ -104,7 +102,7 @@ const buildCDSEQuery = (filters: FiltersState, dataset: Dataset): string => {
     if (dataset === Dataset.Sentinel2) {
         parts.push(`Collection/Name eq 'SENTINEL-2'`);
         if (sentinel2.levels.length) {
-            const sub = sentinel2.levels.map(l => `Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'productType' and att/OData.CSC.StringAttribute/Value eq 'S2MSI${l}')`).join(" or ");
+            const sub = sentinel2.levels.map(l => `Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'productType' and att/OData.CSC.StringAttribute/Value eq '${levelToApi(dataset, l)}')`).join(" or ");
             parts.push(`(${sub})`);
         }
         if (sentinel2.cloudCover != null) {

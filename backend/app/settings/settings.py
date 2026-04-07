@@ -1,9 +1,8 @@
-import json
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from pydantic import field_validator, computed_field
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

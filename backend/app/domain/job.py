@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from .job_dataset import JobDataset
-from .job_status import JobStatus, ALLOWED_TRANSITIONS
+from .job_status import JobStatus, can_transition
 
 
 class Job:
@@ -21,7 +21,8 @@ class Job:
             last_accessed: datetime,
             downloaded_files: Optional[list[str]] = None,
             processed_files: Optional[list[str]] = None,
-            fail_reason: Optional[str] = None
+            fail_reason: Optional[str] = None,
+            cancel_reason: Optional[str] = None,
     ):
         self.id: str = id
 
@@ -33,6 +34,7 @@ class Job:
 
         self.data_directory: str = data_directory
 
+        self.previous_status: Optional[JobStatus] = None
         self.status: JobStatus = status
 
         self.created_at: datetime = created_at
@@ -40,7 +42,9 @@ class Job:
 
         self.downloaded_files: Optional[list[str]] = downloaded_files
         self.processed_files: Optional[list[str]] = processed_files
+
         self.fail_reason: Optional[str] = fail_reason
+        self.cancel_reason: Optional[str] = cancel_reason
 
     # ------------------------------------------------
     # helper methods
@@ -71,7 +75,12 @@ class Job:
         self.last_accessed = datetime.now(timezone.utc)
 
     def transition(self, to_status: JobStatus):
-        if to_status not in ALLOWED_TRANSITIONS[self.status]:
+        self.previous_status = self.status
+
+        if self.status == JobStatus.CANCELLED:
+            return
+
+        if not can_transition(from_status=self.status, to_status=to_status):
             self.status = JobStatus.FAILED
             self.fail_reason = f"Invalid transition {self.status} -> {to_status}"
 
@@ -117,6 +126,10 @@ class Job:
     def mark_finished(self):
         self.transition(JobStatus.FINISHED)
 
+    def mark_cancelled(self, cancel_reason: str):
+        self.cancel_reason = cancel_reason
+        self.transition(JobStatus.CANCELLED)
+
     # ------------------------------------------------
     # creation
     # ------------------------------------------------
@@ -133,7 +146,7 @@ class Job:
         now = datetime.now(timezone.utc)
 
         job_id = str(uuid.uuid4())  # TODO možná by to spíš mělo být metadata[dataset.product_id_key()]
-        product_id = metadata[dataset.product_id_key()]
+        product_id = metadata[dataset.product_id_key]
 
         data_directory: str = os.path.join(data_directory, job_id, "data")
 
@@ -158,27 +171,30 @@ class Job:
         if touch:
             self.touch()
 
-        return {
+        serialized_dict = {
             "_id": self.id,
             "product_id": self.product_id,
-            "dataset": self.dataset.value,
+            "dataset": self.dataset.name,
             "metadata": self.metadata,
             "properties": self.properties,
             "data_directory": self.data_directory,
-            "status": self.status.value,
+            "status": self.status.name,
             "created_at": self.created_at,
             "last_accessed": self.last_accessed,
             "downloaded_files": self.downloaded_files,
             "processed_files": self.processed_files,
             "fail_reason": self.fail_reason,
+            "cancel_reason": self.cancel_reason,
         }
+
+        return serialized_dict
 
     @classmethod
     def deserialize(cls, doc: dict) -> "Job":
         return cls(
             id=doc["_id"],
             product_id=doc["product_id"],
-            dataset=JobDataset(doc["dataset"]),
+            dataset=JobDataset.from_str(doc["dataset"]),
             metadata=doc["metadata"],
             properties=doc["properties"],
             data_directory=doc["data_directory"],
@@ -188,4 +204,5 @@ class Job:
             downloaded_files=doc.get("downloaded_files"),
             processed_files=doc.get("processed_files"),
             fail_reason=doc.get("fail_reason"),
+            cancel_reason=doc.get("cancel_reason"),
         )

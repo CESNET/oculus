@@ -8,6 +8,8 @@ export default function FeaturesTab() {
         return <div className="text-center py-5">No features loaded</div>;
     }
 
+    // TODO na horní okraj by to chtělo přidat možnosti pro vizualizaci - tedy formáty, JPEG quality...
+
     return (
         <div className="features-list">
             {features.map((f: Feature) => (

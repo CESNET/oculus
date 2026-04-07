@@ -3,6 +3,7 @@ import logging
 import redis
 
 from .application.orchestrators import BaseOrchestrator, CeleryOrchestrator
+from .application.use_cases.cancel_job_use_case import CancelJobUseCase
 from .application.use_cases.check_job_use_case import CheckJobUseCase
 from .application.use_cases.cleanup_job_use_case import CleanupJobUseCase
 from .application.use_cases.create_job_use_case import CreateJobUseCase
@@ -79,6 +80,12 @@ class BootstrapContainer:
 
     def finalize_job(self) -> FinalizeJobUseCase:
         return FinalizeJobUseCase(
+            repository=self.repository,
+            redis_pubsub=self.redis_pubsub
+        )
+
+    def cancel_job(self) -> CancelJobUseCase:
+        return CancelJobUseCase(
             repository=self.repository,
             redis_pubsub=self.redis_pubsub
         )

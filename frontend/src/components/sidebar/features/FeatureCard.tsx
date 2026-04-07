@@ -1,11 +1,13 @@
 import {type Feature, useFeaturesStore} from "../../../store/useFeaturesStore.ts";
-import { useState } from "react";
+import {useState} from "react";
+import {useLoadingStore} from "../../../store/useLoadingStore.ts";
+import {requestVisualization} from "../../../api/backend/requestVisualization.ts";
 
 interface FeatureCardProps {
     feature: Feature;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ feature }) => {
+const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
     const setHoveredId = useFeaturesStore(state => state.setHoveredFeatureId);
 
     const [copied, setUrlCopied] = useState(false);
@@ -17,9 +19,27 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ feature }) => {
         });
     };
 
-    const handleVisualize = () => {
-        alert(`Visualizing feature ${feature.title}`);
-        // TODO volat backend
+    const handleVisualize = async () => {
+        const { startLoading, stopLoading } = useLoadingStore.getState();
+        const controller = startLoading();
+
+        try {
+            const { job_id, processed_files } = await requestVisualization(feature, {
+                signal: controller.signal,
+                //onMessage: (status) => console.log("Job status:", status),
+            });
+
+            console.log("Visualization finished!", job_id, processed_files);
+
+        } catch (err: any) {
+            if (err.name === "AbortError") {
+                console.log("Visualization aborted by user");
+            } else {
+                console.error("Error during visualization:", err);
+            }
+        } finally {
+            stopLoading(); // zakryje overlay
+        }
     };
 
     return (

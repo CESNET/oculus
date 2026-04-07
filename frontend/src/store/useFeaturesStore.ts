@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type {Dataset} from "../types/datasets.ts";
 
 export interface Feature {
     id: string;
@@ -6,6 +7,7 @@ export interface Feature {
     platform: string;
     acquisitionDate: string;
     productUrl: string;
+    dataset: Dataset;
     geometry: {
         type: "Polygon";
         coordinates: [number, number][][]; // [lat, lng] pro mapové knihovny

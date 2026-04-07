@@ -1,5 +1,5 @@
-import { type FiltersState } from "../store/useFiltersStore";
-import { Dataset } from "../types/datasets";
+import { type FiltersState } from "../../store/useFiltersStore.ts";
+import { Dataset } from "../../types/datasets.ts";
 import { fetchCDSEFeatures } from "./fetchCDSEFeatures.ts";
 
 export const fetchFeatures = async (

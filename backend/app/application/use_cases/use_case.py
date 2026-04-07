@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from .exceptions import CheckJobUseCaseFailedException
+from .exceptions import CheckJobUseCaseFailedException, CheckJobUseCaseCancelledException
 from ...domain import Job, JobRepository, JobStatus, FAILED_STATUSES
 from ...infrastructure.redis.redis_pubsub import RedisPubSub
 from ...settings import settings
@@ -28,8 +28,13 @@ class UseCase:
 
         try:
             job = self._execute(job)
+
         except CheckJobUseCaseFailedException:
             raise
+
+        except CheckJobUseCaseCancelledException:
+            raise
+
         except Exception as e:
             if job.status not in FAILED_STATUSES:
                 job.status = JobStatus.FAILED

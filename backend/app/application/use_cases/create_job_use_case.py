@@ -15,13 +15,14 @@ class CreateJobUseCase:
 
         self.data_directory_root = data_directory_root
 
-
     def execute(self, dataset: str, metadata: dict, properties: dict) -> str:
-        if dataset not in settings.ENABLED_DATASETS:
+        job_dataset = JobDataset.from_str(dataset)
+
+        if job_dataset.family.value not in settings.ENABLED_DATASETS:
             raise ValueError("Requested dataset is not enabled!")
 
         job = Job.create(
-            dataset=JobDataset(dataset),
+            dataset=job_dataset,
             metadata=metadata,
             properties=properties,
             data_directory=self.data_directory_root

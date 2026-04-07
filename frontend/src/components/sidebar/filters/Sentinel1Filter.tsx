@@ -20,10 +20,10 @@ export default function Sentinel1Filter() {
             />
 
             <MultiButtonGroup
-                label="Sensing Types"
-                values={defaults.sensingTypes}
-                selected={sentinel1.sensingTypes}
-                onToggle={(v) => toggleSentinel1("sensingTypes", v)}
+                label="Operational Modes"
+                values={defaults.operationalModes}
+                selected={sentinel1.operationalModes}
+                onToggle={(v) => toggleSentinel1("operationalModes", v)}
             />
 
             <MultiButtonGroup

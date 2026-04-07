@@ -18,7 +18,7 @@ export interface Datetime {
 
 export interface Sentinel1FilterState {
     levels: string[];
-    sensingTypes: string[];
+    operationalModes: string[];
     productTypes: string[];
     polarizations: string[];
 }
@@ -94,7 +94,7 @@ export const useFiltersStore = create<FiltersState>((set) => ({
 
     sentinel1: {
         levels: [],
-        sensingTypes: [],
+        operationalModes: [],
         productTypes: [],
         polarizations: [],
     },

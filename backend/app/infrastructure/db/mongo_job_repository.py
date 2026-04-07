@@ -18,7 +18,7 @@ class MongoJobRepository(JobRepository):
 
         return Job.deserialize(doc)
 
-    def save(self, job: Job):
+    def _save(self, job: Job):
         now = datetime.now(tz=timezone.utc)
 
         data = job.serialize()

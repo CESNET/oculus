@@ -1,6 +1,6 @@
-import {Dataset} from "../types/datasets";
-import {type FiltersState} from "../store/useFiltersStore";
-import {type Sentinel1FilterState, type Sentinel2FilterState} from "../store/useFiltersStore";
+import { Dataset } from "../types/datasets";
+import { type FiltersState } from "../store/useFiltersStore";
+import { type Sentinel1FilterState, type Sentinel2FilterState } from "../store/useFiltersStore";
 
 // 1️⃣ Defaultní hodnoty pro všechny dataset typy
 export const getAllOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel2FilterState => {
@@ -9,7 +9,7 @@ export const getAllOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel
             return {
                 levels: ["0", "1", "2"],
                 productTypes: ["SLC", "GRD"],
-                sensingTypes: ["IW", "EW", "SM", "WV"],
+                operationalModes: ["IW", "EW", "SM", "WV"],
                 polarizations: ["HH", "HV", "VV", "VH"],
             } as Sentinel1FilterState;
 
@@ -21,12 +21,11 @@ export const getAllOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel
             } as Sentinel2FilterState;
 
         case Dataset.Landsat:
-            // ⭐ placeholder pro budoucí implementaci
             return {
-                levels: ["L1", "L2"],           // například levely L1 a L2
-                bands: ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9"],
-                cloudCover: 100,                // defaultně max 100%
-            } as Sentinel2FilterState;  // Landsat zatím používá stejný tvar jako Sentinel2Filters
+                levels: ["L1", "L2"],
+                bands: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+                cloudCover: 100,
+            } as Sentinel2FilterState; // Landsat zatím používá stejný tvar jako Sentinel2Filters
 
         default:
             throw new Error("Unknown dataset in getAllOptions");
@@ -50,9 +49,9 @@ export const getEffectiveFilters = (filters: FiltersState, dataset: Dataset): Fi
             productTypes: dataset === Dataset.Sentinel1
                 ? effectiveArray(filters.sentinel1.productTypes, (allOptions as Sentinel1FilterState).productTypes)
                 : filters.sentinel1.productTypes,
-            sensingTypes: dataset === Dataset.Sentinel1
-                ? effectiveArray(filters.sentinel1.sensingTypes, (allOptions as Sentinel1FilterState).sensingTypes)
-                : filters.sentinel1.sensingTypes,
+            operationalModes: dataset === Dataset.Sentinel1
+                ? effectiveArray(filters.sentinel1.operationalModes, (allOptions as Sentinel1FilterState).operationalModes)
+                : filters.sentinel1.operationalModes,
             polarizations: dataset === Dataset.Sentinel1
                 ? effectiveArray(filters.sentinel1.polarizations, (allOptions as Sentinel1FilterState).polarizations)
                 : filters.sentinel1.polarizations,
@@ -71,3 +70,33 @@ export const getEffectiveFilters = (filters: FiltersState, dataset: Dataset): Fi
         },
     };
 };
+
+// 3️⃣ Helper pro převod GUI hodnot na API hodnoty
+export const levelToApi = (dataset: Dataset, level: string): string => {
+    switch (dataset) {
+        case Dataset.Sentinel1:
+            return `LEVEL${level}`;
+        case Dataset.Sentinel2:
+            return `S2MSI${level}`;
+        case Dataset.Landsat:
+            return level.startsWith("L") ? level : `L${level}`;
+        default:
+            return level;
+    }
+};
+
+export const bandToApi = (dataset: Dataset, band: string): string => {
+    if (dataset === Dataset.Sentinel2) {
+        return band === "TCI" ? "TCI" : `B${band.padStart(2, "0")}`;
+    } else if (dataset === Dataset.Landsat) {
+        return `B${band.padStart(2, "0")}`;
+    }
+    return band; // Sentinel1 bands zatím nejsou relevantní
+};
+
+// 4️⃣ Helpery pro celé pole
+export const levelsToApi = (dataset: Dataset, levels: string[]): string[] =>
+    levels.map(l => levelToApi(dataset, l));
+
+export const bandsToApi = (dataset: Dataset, bands: string[]): string[] =>
+    bands.map(b => bandToApi(dataset, b));

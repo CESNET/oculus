@@ -2,7 +2,7 @@ import { useFiltersStore } from "../../store/useFiltersStore";
 import BoundingBoxFilter from "./filters/BoundingBoxFilter";
 import DatetimeFilter from "./filters/DatetimeFilter";
 import DatasetFilter from "./filters/DatasetFilter";
-import { fetchFeatures } from "../../api/fetchFeatures";
+import { fetchFeatures } from "../../api/datasources/fetchFeatures.ts";
 import { useFeaturesStore } from "../../store/useFeaturesStore";
 import { useLoadingStore } from "../../store/useLoadingStore";
 import { getEffectiveFilters } from "../../utils/filterUtils.ts";

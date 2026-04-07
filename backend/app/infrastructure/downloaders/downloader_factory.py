@@ -5,15 +5,24 @@ from ...domain import JobDataset
 
 
 class DownloaderFactory:
+    ###
+    # Puvodni z job.properties["platform"]
+    ###
+    # _DOWNLOADER_MAP = {
+    #     JobDataset.LANDSAT: LandsatDownloader,
+    #     JobDataset.SENTINEL: {
+    #         "selector": lambda job: job.properties["platform"],
+    #         "map": {
+    #             "SENTINEL-1": Sentinel1Downloader,
+    #             "SENTINEL-2": Sentinel2Downloader,
+    #         }
+    #     }
+    # }
+
     _DOWNLOADER_MAP = {
+        JobDataset.SENTINEL1: Sentinel1Downloader,
+        JobDataset.SENTINEL2: Sentinel2Downloader,
         JobDataset.LANDSAT: LandsatDownloader,
-        JobDataset.SENTINEL: {
-            "selector": lambda job: job.properties["platform"],
-            "map": {
-                "SENTINEL-1": Sentinel1Downloader,
-                "SENTINEL-2": Sentinel2Downloader,
-            }
-        }
     }
 
     def _resolve_downloader(self, entry, job):
@@ -39,6 +48,7 @@ class DownloaderFactory:
             raise TypeError(f"Invalid entry type: {type(entry)}")
 
     def get_downloader(self, job, logger=None):
+        #dataset_entry = self._DOWNLOADER_MAP.get(job.dataset.family) # Puvodni z job.properties["platform"]
         dataset_entry = self._DOWNLOADER_MAP.get(job.dataset)
 
         if dataset_entry is None:
