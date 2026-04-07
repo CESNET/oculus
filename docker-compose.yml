@@ -94,6 +94,8 @@ services:
       - /etc/letsencrypt/live/oculus.cesnet.cz/fullchain.pem:/etc/ssl/certs/fullchain.pem:ro
       - /etc/letsencrypt/live/oculus.cesnet.cz/privkey.pem:/etc/ssl/private/privkey.pem:ro
       - data_volume:/data:ro
+    env_file:
+      - frontend/.env
     depends_on:
       - app
     restart: always
