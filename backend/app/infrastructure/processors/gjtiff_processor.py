@@ -17,10 +17,6 @@ class GJTIFFProcessor(Processor):
     _GJTIFF_CONTAINER_NAME: str = "oculus_gjtiff"
 
     def _process(self) -> list[str]:
-        import time
-        time.sleep(10)
-        return ["1", "2"]
-
         quality = self._validate_int_param(
             self._job.properties.get("quality"),
             settings.DEFAULT_PROCESSING_QUALITY,
