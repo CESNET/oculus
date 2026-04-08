@@ -16,6 +16,7 @@ RUN npm run build
 FROM nginx:stable-alpine
 
 RUN rm /etc/nginx/conf.d/default.conf
+RUN mkdir -p /data
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
