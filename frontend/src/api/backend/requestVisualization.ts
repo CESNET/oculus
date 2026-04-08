@@ -119,7 +119,7 @@ const waitForJobCompletion = (
             }
         };
 
-        eventSource.onerror = (err) => {
+        eventSource.onerror = (_err) => {
             cleanup();
             reject(new Error("SSE connection error"));
         };
