@@ -13,8 +13,8 @@ export interface VisualizationOptions {
 /**
  * Load API URL from environment variables
  */
-// const API_URL: string = import.meta.env.VITE_API_URL || "/api";
-const API_URL: string = "http://localhost:8000";
+// const API_URL = import.meta.env.VITE_API_URL || "/api"; // TODO some problem with variable import
+const API_URL: string = "/api";
 
 if (!API_URL) {
     throw new Error("VITE_API_URL is not defined in environment variables");
