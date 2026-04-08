@@ -1,12 +1,15 @@
-import { useState } from "react";
 import { useVisualizationStore } from "../../store/useVisualizationStore";
 import ProcessedFileCard from "./visualization/ProcessedFileCard";
 
 export default function VisualizeTab() {
-    const { processedFiles, tileLayers, selectedTileLayerIndex, setSelectedTileLayerIndex } =
-        useVisualizationStore();
-
-    const [opacity, setOpacity] = useState(1);
+    const {
+        processedFiles,
+        tileLayers,
+        selectedTileLayerIndex,
+        setSelectedTileLayerIndex,
+        opacity,
+        setOpacity
+    } = useVisualizationStore();
 
     if (!processedFiles.length && !tileLayers.length) {
         return <div className="sidebar-panel">No visualization data available</div>;
@@ -44,7 +47,7 @@ export default function VisualizeTab() {
                             value={opacity}
                             onChange={(e) => setOpacity(Number(e.target.value))}
                         />
-                        <span className="opacity-number">{Math.round(opacity * 100)}%</span>
+                        <span className="opacity-number">{Math.round(opacity * 100)} %</span>
                     </div>
                 </div>
             )}
