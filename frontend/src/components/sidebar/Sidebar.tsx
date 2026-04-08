@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSidebarStore } from "../../store/useSidebarStore.ts";
 import FiltersTab from "./FiltersTab.tsx";
 import FeaturesTab from "./FeaturesTab.tsx";
 import VisualizationTab from "./VisualizationTab.tsx";
@@ -7,7 +7,8 @@ import "./Sidebar.css";
 const tabs = ["Filters", "Features", "Visualization"];
 
 export default function Sidebar() {
-    const [activeTab, setActiveTab] = useState(0);
+    const activeTab = useSidebarStore(state => state.activeTab);
+    const setActiveTab = useSidebarStore(state => state.setActiveTab);
 
     return (
         <div className="sidebar">
@@ -24,9 +25,7 @@ export default function Sidebar() {
             </div>
 
             <div className="sidebar-panel">
-                {activeTab === 0 && (
-                    <FiltersTab onFetched={() => setActiveTab(1)} />
-                )}
+                {activeTab === 0 && <FiltersTab onFetched={() => setActiveTab(1)} />}
                 {activeTab === 1 && <FeaturesTab />}
                 {activeTab === 2 && <VisualizationTab />}
             </div>

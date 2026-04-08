@@ -83,12 +83,23 @@ const waitForJobCompletion = (
         const cleanup = () => eventSource.close();
 
         // User-initiated cancel
+        const abortHandler = async () => {
+            cleanup();
+            try {
+                await cancelVisualizationJob(job_id);
+            } catch (err) {
+                console.error("Failed to send cancel request:", err);
+            }
+            if (onCancel) onCancel();
+            reject(new DOMException("Aborted by user", "AbortError"));
+        };
+
         if (signal) {
-            signal.addEventListener("abort", () => {
-                cleanup();
-                if (onCancel) onCancel();
-                reject(new DOMException("Aborted by user", "AbortError"));
-            });
+            if (signal.aborted) {
+                abortHandler();
+                return;
+            }
+            signal.addEventListener("abort", abortHandler);
         }
 
         eventSource.onmessage = (event) => {
@@ -112,7 +123,6 @@ const waitForJobCompletion = (
                         cleanup();
                         reject(new Error(`Visualization job ended with status: ${data.status}`));
                         break;
-                    // other statuses: ACCEPTED, DOWNLOADING, PROCESSING, FINALIZING...
                 }
             } catch (err) {
                 console.error("Invalid SSE data received:", event.data, err);

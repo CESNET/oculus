@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import docker
 from docker.errors import DockerException
@@ -88,4 +89,9 @@ class GJTIFFProcessor(Processor):
 
         # TODO tady jinak pracovat s outfiles. A nevím, jestli to teda vlastně nakonec potřebujeme..? Jestli není jednodušší předpokládat, že prostě v processed jsou soubory jen podle return code gjtiffu?
 
-        return [item["outfile"] for item in gjtiff_output if "outfile" in item]
+        outfiles = [item["outfile"] for item in gjtiff_output if "outfile" in item]
+        outfiles_without_ext = [
+            str(Path(item["outfile"]).with_suffix('')) for item in gjtiff_output if "outfile" in item
+        ]
+
+        return outfiles_without_ext

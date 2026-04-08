@@ -233,3 +233,104 @@
 .feature-card .btn-outline-info i {
     font-size: 1rem;
 }
+
+/* Kontejner tabu */
+.visualize-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Horní lišta s nastavením vrstvy */
+.viz-settings-card {
+    background-color: var(--color-sidebar-tab-bg);
+    border: 1px solid var(--color-sidebar-border);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+.viz-control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Opacity slider */
+.opacity-control {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+}
+
+.opacity-control input[type="range"] {
+    flex: 1;
+    height: 6px;
+    background: var(--color-sidebar-border);
+    border-radius: 5px;
+    appearance: none;
+    accent-color: var(--color-btn-primary);
+}
+
+.opacity-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 2.5rem;
+    text-align: right;
+}
+
+/* =========================
+   Visualize Tab & Cards
+   ========================= */
+
+/* Seznam karet pod sebou */
+.processed-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Karta využívající tvé globální buttony */
+.processed-file-card {
+    /* Základ z tvých stylů */
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    height: auto;
+    padding: 0.8rem 1rem;
+    text-decoration: none;
+}
+
+.processed-file-card .file-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.processed-file-card .file-path {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    word-break: break-all;
+    font-weight: normal;
+}
+
+/* Opacity slider v rámci .filter-section */
+.viz-opacity-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.viz-opacity-wrapper input[type="range"] {
+    flex: 1;
+}
+
+.opacity-number {
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 2.5rem;
+}

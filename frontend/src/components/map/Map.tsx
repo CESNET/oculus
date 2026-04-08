@@ -7,6 +7,7 @@ import UserLocationMarker from './UserLocationMarker';
 import LocateButton from './LocateButton';
 import ProductLayer from './layers/ProductLayer';
 import type {LatLngExpression} from 'leaflet';
+import {useVisualizationStore} from "../../store/useVisualizationStore.ts";
 
 
 interface Props {
@@ -68,44 +69,59 @@ const Map: React.FC<Props> = ({center, zoom, location, userLocation, loadingLoca
         state.features.find(f => f.id === hoveredId)
     );
 
+    const {tileLayers, selectedTileLayerIndex, opacity} = useVisualizationStore();
+
+    // aktuální tile layer
+    const selectedTile = (selectedTileLayerIndex !== null && tileLayers[selectedTileLayerIndex])
+        ? tileLayers[selectedTileLayerIndex]
+        : null;
+
     return (
-        <>
-            <MapContainer center={center} zoom={zoom} className="w-100 h-100">
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution="&copy; OpenStreetMap contributors"
+        <MapContainer center={center} zoom={zoom} className="w-100 h-100">
+            <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="&copy; OpenStreetMap contributors"
+            />
+
+            {/* Vykreslení hover polygonu */}
+            {hoveredFeature && (
+                <Polygon
+                    positions={hoveredFeature.geometry.coordinates}
+                    pathOptions={{
+                        color: 'gray',
+                        fillColor: 'gray',
+                        fillOpacity: 0.3,
+                        weight: 3
+                    }}
                 />
+            )}
 
-                {/* Vykreslení polygonu při hoveru */}
-                {hoveredFeature && (
-                    <Polygon
-                        positions={hoveredFeature.geometry.coordinates}
-                        pathOptions={{
-                            color: 'gray',
-                            fillColor: 'gray',
-                            fillOpacity: 0.3,
-                            weight: 3
-                        }}
-                    />
-                )}
+            {/* User location */}
+            {userLocation && (
+                <LocateButton
+                    lat={location?.lat ?? 0}
+                    lng={location?.lng ?? 0}
+                    zoom={13}
+                    userLocation={!!userLocation}
+                    loading={loadingLocation ?? false}
+                    programmaticRef={programmaticRef}
+                />
+            )}
+            {userLocation && location && <UserLocationMarker location={location} />}
 
-                {userLocation && (
-                    <LocateButton
-                        lat={location?.lat ?? 0}
-                        lng={location?.lng ?? 0}
-                        zoom={13}
-                        userLocation={!!userLocation}
-                        loading={loadingLocation ?? false}
-                        programmaticRef={programmaticRef}
-                    />
-                )}
+            {/* Product Layer */}
+            {productUrl && <ProductLayer productUrl={productUrl} opacity={1} />}
 
-                {userLocation && location && <UserLocationMarker location={location} />}
-                {productUrl && <ProductLayer productUrl={productUrl} opacity={1} />}
+            {/* TileLayer z VisualizationStore */}
+            {selectedTile && (
+                <TileLayer
+                    url={`${selectedTile.path}/{z}/{x}/{y}.${selectedTile.format}`}
+                    opacity={opacity}
+                />
+            )}
 
-                <MapUpdater programmaticRef={programmaticRef} />
-            </MapContainer>
-        </>
+            <MapUpdater programmaticRef={programmaticRef} />
+        </MapContainer>
     );
 };
 

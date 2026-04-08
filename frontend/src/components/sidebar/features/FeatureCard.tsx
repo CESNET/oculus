@@ -1,7 +1,10 @@
 import {type Feature, useFeaturesStore} from "../../../store/useFeaturesStore.ts";
+import {useVisualizationStore} from "../../../store/useVisualizationStore.ts";
+import {useSidebarStore} from "../../../store/useSidebarStore.ts";
 import {useState} from "react";
 import {useLoadingStore} from "../../../store/useLoadingStore.ts";
 import {requestVisualization} from "../../../api/backend/requestVisualization.ts";
+import {applyVisualizationResults} from "../../../utils/featureUtils.ts";
 
 interface FeatureCardProps {
     feature: Feature;
@@ -20,25 +23,25 @@ const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
     };
 
     const handleVisualize = async () => {
-        const { startLoading, stopLoading } = useLoadingStore.getState();
+        const {startLoading, stopLoading} = useLoadingStore.getState();
         const controller = startLoading();
 
         try {
-            const { job_id, processed_files } = await requestVisualization(feature, {
+            const {job_id, processed_files} = await requestVisualization(feature, {
                 signal: controller.signal,
-                //onMessage: (status) => console.log("Job status:", status),
+                onMessage: (status) => console.log("Job status:", status)
             });
 
-            console.log("Visualization finished!", job_id, processed_files);
+            useVisualizationStore.getState().setJobId(job_id);
+            applyVisualizationResults(processed_files, useVisualizationStore.getState().outputs);
+            useSidebarStore.getState().setActiveTab(2);
 
         } catch (err: any) {
-            if (err.name === "AbortError") {
-                console.log("Visualization aborted by user");
-            } else {
-                console.error("Error during visualization:", err);
-            }
+            if (err.name === "AbortError") console.log("Visualization aborted");
+            else console.error("Error during visualization:", err);
+
         } finally {
-            stopLoading(); // zakryje overlay
+            stopLoading();
         }
     };
 
