@@ -91,9 +91,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - certs:/etc/letsencrypt
-      - data_volume:/data:ro
+      - ./frontend/nginx/certs:/etc/letsencrypt
       - ./frontend/dist:/var/www/html
+      - data_volume:/data:ro
     env_file:
       - frontend/.env
     depends_on:
@@ -104,13 +104,12 @@ services:
     image: certbot/certbot
     container_name: oculus_certbot
     volumes:
-      - certs:/etc/letsencrypt
+      - ./frontend/nginx/certs:/etc/letsencrypt
       - ./frontend/dist:/var/www/html
     entrypoint: >
       sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/html --non-interactive; sleep 12h & wait $${!}; done"
     restart: always
 
 volumes:
-  certs:
   data_volume:
     name: oculus_data_volume
