@@ -1,5 +1,5 @@
 services:
-  app:
+  oculus-backend:
     build: ./backend
     container_name: oculus_backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -84,7 +84,7 @@ services:
       - ./gjtiff:/gjtiff
       - data_volume:/data
 
-  nginx:
+  oculus-nginx:
     build: ./frontend
     container_name: oculus_nginx
     ports:
@@ -97,7 +97,7 @@ services:
     env_file:
       - frontend/.env
     depends_on:
-      - app
+      - oculus-backend
     restart: always
 
 volumes:
