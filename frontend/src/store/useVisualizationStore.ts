@@ -32,7 +32,7 @@ export const useVisualizationStore = create<VisualizationState>((set) => ({
     jobId: null,
     outputs: {
         jpg: { product: true, tiles: false },
-        png: { product: true, tiles: false },
+        png: { product: false, tiles: false },
         webp: { product: false, tiles: true }
     },
     processedFiles: [],
