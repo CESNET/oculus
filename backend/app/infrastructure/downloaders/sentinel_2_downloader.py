@@ -63,7 +63,7 @@ class Sentinel2Downloader(SentinelDownloader):
     def _prune_low_resolution_files(self, files: list[str]):
         """
         Keep only files with the highest resolution in the list of files that have resolution.
-        All other files (without standard resolution format) are kept as-is.
+        All other files (without resolution specification) are kept as-is.
         """
         if not files:
             return []
@@ -76,7 +76,7 @@ class Sentinel2Downloader(SentinelDownloader):
             filename_parts = re.split(r'[_.]', filename)
 
             if len(filename_parts) != 5:
-                # other_files.append(f)  # keep files without proper resolution format
+                other_files.append(f)  # keep files without proper resolution format
                 continue
 
             band = filename_parts[2]
