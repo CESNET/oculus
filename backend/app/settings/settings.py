@@ -45,12 +45,20 @@ class Settings(BaseSettings):
         return datasets
 
     # Sentinel credentials
-    SENTINEL_ENABLE_GSS: bool = False
     SENTINEL_CDSE_CATALOG_ROOT: str = "https://catalogue.dataspace.copernicus.eu/odata/v1/"
     SENTINEL_CDSE_S3_ENDPOINT_URL: str = "https://eodata.dataspace.copernicus.eu/"
     SENTINEL_CDSE_S3_REGION_NAME: str = "default"
     SENTINEL_CDSE_S3_ACCESS_KEY: Optional[str] = None
     SENTINEL_CDSE_S3_SECRET_KEY: Optional[str] = None
+
+    ENABLE_GSS: bool = False
+    GSS_ODATA_CATALOG_ROOT: Optional[str] = None
+    GSS_STAC_CATALOG_ROOT: Optional[str] = None
+    GSS_CLIENT_ID: Optional[str] = None
+    GSS_CLIENT_SECRET: Optional[str] = None
+    GSS_TOKEN_URL: Optional[str] = None
+    GSS_USERNAME: Optional[str] = None
+    GSS_PASSWORD: Optional[str] = None
 
     @computed_field
     @property
@@ -60,6 +68,18 @@ class Settings(BaseSettings):
             "aws_secret_access_key": self.SENTINEL_CDSE_S3_SECRET_KEY,
             "region_name": self.SENTINEL_CDSE_S3_REGION_NAME,
             "endpoint_url": self.SENTINEL_CDSE_S3_ENDPOINT_URL
+        }
+
+    @computed_field
+    @property
+    def GSS_CREDENTIALS(self) -> dict[str, Optional[str]]:
+        return {
+            "odata_catalog_root": self.GSS_ODATA_CATALOG_ROOT,
+            "stac_catalog_root": self.GSS_STAC_CATALOG_ROOT,
+            "client_id": self.GSS_CLIENT_ID,
+            "token_url": self.GSS_TOKEN_URL,
+            "username": self.GSS_USERNAME,
+            "password": self.GSS_PASSWORD
         }
 
     # ------------------------------------------------------------------
