@@ -20,11 +20,12 @@ class Sentinel1Downloader(SentinelDownloader):
             )
         )
 
+        self._logger.info(f"Available files: {available_files}")
         for file in available_files:
             file_strip_lower = file.strip().lower()
 
-            # only measurement TIFFs
-            if "/measurement/" not in file_strip_lower or not re.search(r"\.(tif|tiff)$", file_strip_lower):
+            # only TIFFs
+            if not re.search(r"\.(tif|tiff)$", file_strip_lower):
                 continue
 
             # loose filter
