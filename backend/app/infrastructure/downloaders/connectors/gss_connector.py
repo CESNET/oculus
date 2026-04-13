@@ -1,7 +1,8 @@
+import requests
 import logging
 from pathlib import Path
-
-import httpx
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 from .token_manager import TokenManager
 from ....settings import settings
@@ -34,6 +35,15 @@ class GSSConnector:
             "S5P": "SENTINEL-5P"
         }
 
+        retry_strategy = Retry(
+            total=3,
+            status_forcelist=[429],
+            backoff_factor=2
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self._http = requests.Session()
+        self._http.mount("https://", adapter)
+
     # -----------------------
     # Feature API
     # -----------------------
@@ -42,7 +52,7 @@ class GSSConnector:
             url = f"{settings.GSS_ODATA_CATALOG_ROOT.rstrip('/')}/Products({self._feature_id})"
             self._logger.debug(f"Querying GSS Odata for product {self._feature_id} from API: {url}")
 
-            response = httpx.get(url,
+            response = self._http.get(url,
                                  headers={"Authorization": f"Bearer {self._token_manager.get_token()}"}
                                  )
 
@@ -72,7 +82,7 @@ class GSSConnector:
 
         url = f"{settings.GSS_STAC_CATALOG_ROOT.rstrip('/')}/collections/{collection_name}/items/{product_name}"
         self._logger.debug(f"Fetching STAC metadata from API: {url}")
-        response = httpx.get(url,
+        response = self._http.get(url,
                              headers={"Authorization": f"Bearer {self._token_manager.get_token()}"}
                              )
         if response.status_code != 200:
@@ -94,20 +104,21 @@ class GSSConnector:
             try:
                 self._logger.debug(f"Downloading from {https_url}")
 
-                response = httpx.get(
+                response = self._http.get(
                     https_url,
-                    headers={"Authorization": f"Bearer {self._token_manager.get_token()}"},
-                    follow_redirects=True
+                    headers={"Authorization": f"Bearer {self._token_manager.get_token()}"}
                 )
 
                 if response.status_code == 200:
                     with open(out_path, 'wb') as f:
-                        for chunk in response.iter_bytes():
-                            f.write(chunk)
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
 
                     downloaded.append(str(out_path))
                     self._logger.info(f"Downloaded {https_url} to {out_path}")
                 else:
+                    self._logger.error(response.headers)
                     self._logger.error(f"Failed to download {https_url}: HTTP {response.status_code}")
 
             except Exception as e:
