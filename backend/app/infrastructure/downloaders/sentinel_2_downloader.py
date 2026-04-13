@@ -17,7 +17,7 @@ class Sentinel2Downloader(SentinelDownloader):
         # selected_bands_pattern = "|".join(self._get_selected_bands())
         extensions = ['jp2', 'j2k', 'jpf', 'jpm', 'jpg2', 'j2c', 'jpc', 'jpx', 'mj2']
         extensions_pattern = "|".join(extensions)
-        regex_pattern = rf"(?:.*/)?(?!.*MSK)[^/]+\.({extensions_pattern})$"  # anything ending with correct extension and not being a mask file (MSK)
+        regex_pattern = rf"(?:.*/)?(?!.*MSK)(?!.*_PVI\.)[^/]+\.({extensions_pattern})$"  # anything ending with correct extension and not being a mask file (MSK) or PVI file
         # csde_regex_pattern = rf"([^/]+)/GRANULE/([^/]+)/IMG_DATA/(?:R\d{{2}}m/)?([^/]+_({selected_bands_pattern})(?:_\d{{2}}m)?\.({extensions_pattern}))"
 
         for available_file in available_files:
@@ -47,13 +47,8 @@ class Sentinel2Downloader(SentinelDownloader):
             filename = file.split("/")[-1]
             filename_parts = re.split(r'[_.]', filename)
 
-            if len(filename_parts) != 5:
-                filtered_files.append(file)
-                continue
-
-            band = filename_parts[2]
-
-            if band not in bands:
+            # Check if any band matches any part of the filename
+            if not any(band in filename_parts for band in bands):
                 continue
 
             filtered_files.append(file)
