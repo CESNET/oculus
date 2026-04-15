@@ -37,7 +37,7 @@ export const visualizeFeature = (feature: Feature) => {
         dataset: feature.dataset,
         properties: {
             quality: 80,
-            zoom_levels: [8, 9, 10, 11, 12, 13, 14, 15],
+            zoom_levels: [8, 9, 10, 11, 12, 13, 14], // TODO Zoom levels by se asi měly počítat na backendu, tohle by měl být override, ale ne defaultně posílané
             outputs,
         }
     };
