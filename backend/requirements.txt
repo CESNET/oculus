@@ -9,3 +9,4 @@ pydantic-settings~=2.13.1
 httpx~=0.28.1
 boto3~=1.42.63
 botocore~=1.42.63
+requests~=2.32.4
