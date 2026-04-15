@@ -36,6 +36,4 @@ class CDSEProvider(BaseProvider):
 
         downloaded_files: list[str] = self._connector.download_selected_files(files_to_download=files_to_download)
 
-        self._logger.info(f"Finished downloading {len(downloaded_files)} files for product {self._job.product_id}")
-
         return downloaded_files
