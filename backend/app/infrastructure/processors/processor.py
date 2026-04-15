@@ -26,7 +26,7 @@ class Processor(ABC):
 
         end = time.perf_counter()
 
-        self._logger.debug(f"Processed {len(processed_files)} files in {end - start}")
+        self._logger.info(f"Processed {len(processed_files)} files in {end - start}")
 
         return processed_files
 

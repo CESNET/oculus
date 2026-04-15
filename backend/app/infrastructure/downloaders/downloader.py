@@ -45,6 +45,6 @@ class Downloader(ABC):
 
         end = time.perf_counter()
 
-        self._logger.debug(f"Downloaded {len(downloaded_files)} files in {end - start}")
+        self._logger.info(f"Downloaded {len(downloaded_files)} files in {end - start}")
 
         return downloaded_files
