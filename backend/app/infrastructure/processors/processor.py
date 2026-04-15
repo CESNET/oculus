@@ -2,6 +2,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from typing import Optional
+import time
 
 from ...domain import Job
 from ...settings import settings
@@ -19,7 +20,14 @@ class Processor(ABC):
         self._ensure_input_files()
         self._ensure_output_dir()
 
+        start = time.perf_counter()
+
         processed_files: list[str] = self._process()
+
+        end = time.perf_counter()
+
+        self._logger.debug(f"Processed {len(processed_files)} files in {end - start}")
+
         return processed_files
 
     @abstractmethod

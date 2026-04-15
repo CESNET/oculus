@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import Optional, List
+import time
 
 from .providers.base_provider import BaseProvider
 from ...domain.job import Job
@@ -38,8 +39,12 @@ class Downloader(ABC):
 
         files_to_download: list[str] = self._filter_files(available_files=available_files)
 
+        start = time.perf_counter()
+
         downloaded_files: list[str] = self._provider.download_product_files(files_to_download=files_to_download)
 
-        self._logger.info(f"Total {len(downloaded_files)} files for job {self._job.id} downloaded")
+        end = time.perf_counter()
+
+        self._logger.debug(f"Downloaded {len(downloaded_files)} files in {end - start}")
 
         return downloaded_files
