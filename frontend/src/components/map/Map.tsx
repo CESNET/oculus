@@ -149,6 +149,7 @@ const Map: React.FC<Props> = ({
                     url={`${selectedTile.path}/{z}/{x}/{y}.${selectedTile.format}`}
                     opacity={opacity}
                     maxNativeZoom={availableZoomLevels.at(-1)}
+                    minNativeZoom={availableZoomLevels.at(0)}
                 />
             )}
 
