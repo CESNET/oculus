@@ -104,12 +104,6 @@ const Map: React.FC<Props> = ({
         hoveredFeatureId ? s.featuresById[hoveredFeatureId] : undefined
     );
 
-    const featureId = useVisualizationStore((s) => s.featureId);
-
-    const feature = useFeaturesStore((s) =>
-        featureId ? s.featuresById[featureId] : undefined
-    );
-
     // =============================
     // VISUALIZATION
     // =============================
@@ -117,8 +111,13 @@ const Map: React.FC<Props> = ({
         tileLayers,
         selectedTileLayerIndex,
         availableZoomLevels,
-        opacity
+        opacity,
+        featureId
     } = useVisualizationStore();
+
+    const feature = useFeaturesStore((s) =>
+        featureId ? s.featuresById[featureId] : undefined
+    );
 
     const selectedTile =
         selectedTileLayerIndex !== null
