@@ -40,7 +40,7 @@ export default function ProcessedFileCard({file}: Props) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-outline-secondary btn-sm flex-fill"
-                        title={fullPath}
+                        title="Open file in new tab"
                     >
                         <i className="bi bi-box-arrow-up-right" />
                     </a>
