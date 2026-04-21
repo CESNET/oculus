@@ -1,11 +1,7 @@
 import { useVisualizationStore } from "../../store/useVisualizationStore";
 import ProcessedFileCard from "./visualization/ProcessedFileCard";
 
-/**
- * VisualizeTab
- * Uses same layout system as filters (filter-section, input styles, grid system).
- */
-export default function VisualizeTab() {
+export default function VisualizationTab() {
     const {
         processedFiles,
         tileLayers,
@@ -23,8 +19,11 @@ export default function VisualizeTab() {
     }
 
     return (
-        <div className="sidebar-panel visualize-tab">
+        <div className="sidebar-panel">
 
+            {/* =========================
+                TILE LAYERS
+               ========================= */}
             {hasLayers && (
                 <div className="filter-section">
                     <h3>Visualization Settings</h3>
@@ -68,8 +67,11 @@ export default function VisualizeTab() {
                 </div>
             )}
 
+            {/* =========================
+                PROCESSED FILES
+               ========================= */}
             {hasFiles && (
-                <div className="filter-section" style={{ borderBottom: "none" }}>
+                <div className="filter-section">
                     <h3>Processed Files</h3>
 
                     <div className="processed-files-list">
