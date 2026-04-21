@@ -22,16 +22,19 @@ export default function ProcessedFileCard({ file }: Props) {
                     {file.name}.{file.format}
                 </h5>
 
+                {/*
                 <p className="card-text">
                     <strong>Format:</strong> {file.format}
                 </p>
+                */}
 
+                {/*
                 <p className="card-text">
                     <strong>Path:</strong> {file.path}
                 </p>
+                */}
 
                 <div className="d-flex gap-2 mt-auto">
-
                     <a
                         href={fullPath}
                         target="_blank"
@@ -39,19 +42,25 @@ export default function ProcessedFileCard({ file }: Props) {
                         className="btn btn-outline-secondary btn-sm flex-grow-1"
                         title={fullPath}
                     >
-                        Download
+                        Open in new tab
+                    </a>
+
+                    <a
+                        href={fullPath}
+                        download
+                        className="btn btn-outline-secondary btn-sm"
+                        title="Download file"
+                    >
+                        <i className="bi bi-download" />
                     </a>
 
                     <button
                         className="btn btn-outline-secondary btn-sm"
-                        onClick={() =>
-                            navigator.clipboard.writeText(fullPath)
-                        }
-                        title="Copy full path"
+                        onClick={() => navigator.clipboard.writeText(fullPath)}
+                        title="Copy link"
                     >
                         <i className="bi bi-clipboard" />
                     </button>
-
                 </div>
             </div>
         </div>
