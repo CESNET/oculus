@@ -44,7 +44,7 @@ class Job:
         self.downloaded_files: Optional[list[str]] = downloaded_files
         self.processed_files: Optional[list[str]] = processed_files
 
-        self.available_zoom_levels: Optional[list[int]] = available_zoom_levels
+        self.available_zoom_levels: Optional[list[int]] = available_zoom_levels # TODO Tohle se bude držet v nějaké doméně produktu
 
         self.fail_reason: Optional[str] = fail_reason
         self.cancel_reason: Optional[str] = cancel_reason
@@ -138,8 +138,7 @@ class Job:
     # ------------------------------------------------
 
     def set_available_zoom_levels(self, zoom_levels: list[int]):
-        # TODO tohle provolávání bude různé pro různé produkty podle jejich rozlišení.
-        # Bude se to upravovat v nějaké doméně feature... Nebo tak něco - ještě to nemám úplně rozmyšlené
+        # TODO tohle se bude držet v nějaké doméně produktu, tady je to teď v tuhle chvíli placeholder
         self.available_zoom_levels = zoom_levels
 
     # ------------------------------------------------
@@ -157,7 +156,7 @@ class Job:
 
         now = datetime.now(timezone.utc)
 
-        job_id = str(uuid.uuid4())  # TODO možná by to spíš mělo být metadata[dataset.product_id_key()]
+        job_id = str(uuid.uuid4())
         product_id = metadata[dataset.product_id_key]
 
         data_directory: str = os.path.join(data_directory, job_id, "data")

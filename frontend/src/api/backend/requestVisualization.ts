@@ -41,6 +41,7 @@ interface JobEventData {
     job_id: string;
     status: JobStatus;
     processed_files?: string[];
+    available_zoom_levels?: number[];
 }
 
 /**
@@ -76,7 +77,13 @@ const createVisualizationJob = async (feature: Feature, signal?: AbortSignal): P
 const waitForJobCompletion = (
     job_id: string,
     {signal, onMessage, onCancel}: VisualizationOptions = {}
-): Promise<{ job_id: string; processed_files: string[] }> => {
+): Promise<
+    {
+        job_id: string;
+        processed_files: string[];
+        available_zoom_levels: number[]
+    }
+> => {
     return new Promise((resolve, reject) => {
         const eventSource = new EventSource(`${API_URL}/jobs/${job_id}/events`);
 
@@ -113,6 +120,7 @@ const waitForJobCompletion = (
                         resolve({
                             job_id: data.job_id,
                             processed_files: data.processed_files || [],
+                            available_zoom_levels: data.available_zoom_levels || [] // TODO tohle budeš dostávat pro každej processed file
                         });
                         break;
                     case "FAILED":

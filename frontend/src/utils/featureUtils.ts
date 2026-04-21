@@ -6,6 +6,7 @@ import {bandsToApi, levelsToApi} from "./filterUtils.ts";
 
 export const applyVisualizationResults = (
     processed_files: string[],
+    available_zoom_levels: number[],
     outputs: Record<string, { product: boolean; tiles?: boolean }>
 ) => {
     const newProcessedFiles: ProductFile[] = [];
@@ -22,6 +23,7 @@ export const applyVisualizationResults = (
     const visualizationStore = useVisualizationStore.getState();
     visualizationStore.setProcessedFiles(newProcessedFiles);
     visualizationStore.setTileLayers(newTileLayers);
+    visualizationStore.setAvailableZoomLevels(available_zoom_levels);
     visualizationStore.setSelectedTileLayerIndex(newTileLayers.length ? 0 : null);
 };
 

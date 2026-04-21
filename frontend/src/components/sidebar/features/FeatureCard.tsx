@@ -27,13 +27,17 @@ const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
         const controller = startLoading();
 
         try {
-            const {job_id, processed_files} = await requestVisualization(feature, {
+            const {job_id, processed_files, available_zoom_levels} = await requestVisualization(feature, {
                 signal: controller.signal,
                 onMessage: (status) => console.log("Job status:", status)
             });
 
             useVisualizationStore.getState().setJobId(job_id);
-            applyVisualizationResults(processed_files, useVisualizationStore.getState().outputs);
+            applyVisualizationResults(
+                processed_files,
+                available_zoom_levels,
+                useVisualizationStore.getState().outputs
+            );
             useSidebarStore.getState().setActiveTab(2);
 
         } catch (err: any) {

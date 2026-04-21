@@ -98,7 +98,7 @@ const Map: React.FC<Props> = ({
         state.features.find(f => f.id === hoveredId)
     );
 
-    const { tileLayers, selectedTileLayerIndex, opacity } = useVisualizationStore();
+    const { tileLayers, selectedTileLayerIndex, availableZoomLevels, opacity } = useVisualizationStore();
 
     const selectedTile =
         selectedTileLayerIndex !== null
@@ -148,6 +148,7 @@ const Map: React.FC<Props> = ({
                 <TileLayer
                     url={`${selectedTile.path}/{z}/{x}/{y}.${selectedTile.format}`}
                     opacity={opacity}
+                    maxNativeZoom={availableZoomLevels.at(-1)}
                 />
             )}
 
