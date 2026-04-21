@@ -33,7 +33,10 @@ const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
             });
 
             useVisualizationStore.getState().setJobId(job_id);
+            console.log("previous feature_id stored: ", useVisualizationStore.getState().featureId);
+            console.log("feature_id to store: ", feature.id);
             useVisualizationStore.getState().setFeatureId(feature.id);
+            console.log("feature_id stored: ", useVisualizationStore.getState().featureId);
             applyVisualizationResults(
                 processed_files,
                 available_zoom_levels,
