@@ -125,7 +125,7 @@ class Settings(BaseSettings):
     # PROCESSING
     # ------------------------------------------------------------------
     DEFAULT_PROCESSING_QUALITY: int = 80
-    DEFAULT_PROCESSING_ZOOM_LEVELS: list[int] = [8, 9, 10, 11, 12, 13, 14, 15]
+    DEFAULT_PROCESSING_ZOOM_LEVELS: list[int] = [8, 9, 10, 11, 12, 13, 14]
     DEFAULT_PROCESSING_OUTPUT_FORMATS: dict[str, dict[str, bool]] = {"webp": {"product": True, "tiles": True}}
 
 
