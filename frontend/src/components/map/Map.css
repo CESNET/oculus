@@ -5,7 +5,7 @@
     height: 100%;
     width: 100%;
     position: relative;
-    border-radius: var(--border-radius);
+    border-radius: 0 !important;
 }
 
 .leaflet-control-attribution {

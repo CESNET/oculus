@@ -1,49 +1,55 @@
 import { useFiltersStore } from "../../../store/useFiltersStore";
 
+/**
+ * Datetime filter component
+ * - Start & End date stacked vertically
+ * - Prevents selecting future dates
+ * - Uses YYYY-MM-DD format
+ */
 export default function DatetimeFilter() {
     const { datetime, setDatetime } = useFiltersStore();
 
-    // 👉 lokální datum bez UTC posunu
-    const today = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD
+    const today = new Date().toISOString().split("T")[0];
 
-    // 👉 z ISO stringu vezmeme jen datum
-    const displayStart = datetime.start.slice(0, 10);
-    const displayEnd = datetime.end.slice(0, 10);
+    const start = datetime.start?.slice(0, 10) ?? "";
+    const end = datetime.end?.slice(0, 10) ?? "";
 
-    const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
+    const updateDate = (key: "start" | "end", value: string) => {
         if (!value) return;
 
-        // zákaz budoucnosti
-        if (value > today) return;
+        const selectedDate = new Date(value);
+        const todayDate = new Date(today);
 
-        setDatetime({ start: value });
-    };
+        if (selectedDate > todayDate) return;
 
-    const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        if (!value) return;
-
-        // zákaz budoucnosti
-        if (value > today) return;
-
-        setDatetime({ end: value });
+        setDatetime({ [key]: value });
     };
 
     return (
         <div className="filter-section">
             <h3>Date Range</h3>
 
-            <div className="input-pair">
-                <label>
-                    Start:
-                    <input type="date" value={displayStart} max={displayEnd} onChange={handleStartChange}/>
-                </label>
+            <div className="date-stack">
+                <div className="date-field">
+                    <span className="date-label">Start</span>
+                    <input
+                        type="date"
+                        value={start}
+                        max={end || today}
+                        onChange={(e) => updateDate("start", e.target.value)}
+                    />
+                </div>
 
-                <label>
-                    End:
-                    <input type="date" value={displayEnd} min={displayStart} max={today} onChange={handleEndChange}/>
-                </label>
+                <div className="date-field">
+                    <span className="date-label">End</span>
+                    <input
+                        type="date"
+                        value={end}
+                        min={start || undefined}
+                        max={today}
+                        onChange={(e) => updateDate("end", e.target.value)}
+                    />
+                </div>
             </div>
         </div>
     );

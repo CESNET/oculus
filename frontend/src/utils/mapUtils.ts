@@ -1,6 +1,6 @@
 import L from 'leaflet';
-import type {LatLngExpression} from 'leaflet';
-import {useMapStore} from '../store/useMapStore';
+import type { LatLngExpression } from 'leaflet';
+import { useMapStore } from '../store/useMapStore';
 
 export function toLatLngTuple(expr: LatLngExpression): [number, number] {
     const latLng = L.latLng(expr);
@@ -35,14 +35,10 @@ export function moveMap(
         mapInstance.panTo(target, options);
     }
 
-    // optional sync do store (UI stav)
     const currentZoom = mapInstance.getZoom();
     useMapStore.getState().setView(target, zoom ?? currentZoom);
 }
 
-/**
- * Nominatim search
- */
 export async function searchLocation(query: string) {
     if (!query) return [];
 

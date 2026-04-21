@@ -69,10 +69,17 @@ html, body, #root {
 .sidebar-col {
     height: 100%;
     overflow-y: auto;
+
+    width: 20vw;
+    min-width: 250px;
+    max-width: 350px;
 }
 
 .map-col {
     height: 100%;
+
+    flex: 1;
+    min-width: 0;
 }
 
 /* Buttony globálně */

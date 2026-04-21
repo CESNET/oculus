@@ -12,7 +12,7 @@ export default function VisualizeTab() {
     } = useVisualizationStore();
 
     if (!processedFiles.length && !tileLayers.length) {
-        return <div className="sidebar-panel">No visualization data available</div>;
+        return <div className="text-center py-5">No visualization data</div>;
     }
 
     return (

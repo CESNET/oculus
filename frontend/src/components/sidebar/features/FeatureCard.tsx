@@ -53,8 +53,9 @@ const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
         >
             <div className="card-body d-flex flex-column">
                 <h5 className="card-title">{feature.title}</h5>
-                <p className="card-text mb-1"><strong>Platform:</strong> {feature.platform}</p>
-                <p className="card-text mb-3"><strong>Date:</strong> {feature.acquisitionDate}</p>
+                <p className="card-text mb-1"><strong>Platform:</strong>&nbsp;{feature.platform}</p>
+                <p className="card-text mb-1"><strong>Date:</strong>&nbsp;{feature.acquisitionDate}</p>
+                <p className="card-text mb-3"><strong>ID:</strong>&nbsp;{feature.id}</p>
 
                 <button className="btn btn-primary mb-2" onClick={handleVisualize}>
                     Visualize
@@ -67,13 +68,13 @@ const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
                         rel="noopener noreferrer"
                         className="btn btn-outline-secondary btn-sm flex-grow-1"
                     >
-                        Open Product Page
+                        Open product page
                     </a>
 
                     <button
-                        className="btn btn-outline-info btn-sm"
+                        className="btn btn-outline-secondary btn-sm btn-sm"
                         onClick={handleUrlCopy}
-                        title="Copy Product URL"
+                        title="Copy product URL"
                     >
                         <i className={`bi ${copied ? "bi-check" : "bi-clipboard"}`} />
                     </button>

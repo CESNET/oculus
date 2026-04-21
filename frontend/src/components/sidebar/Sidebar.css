@@ -1,336 +1,304 @@
 /* =========================
-   Sidebar
+   SIDEBAR BASE
    ========================= */
 .sidebar {
     height: 100%;
     display: flex;
     flex-direction: column;
-    background-color: var(--color-sidebar-bg);
-    border-right: 1px solid var(--color-sidebar-border);
+
+    background-color: #f4f7fc;
+    color: #1e293b;
+
     font-family: var(--font-family);
-    font-size: 0.95rem;
-    color: var(--color-sidebar-text);
+
+    font-size: 1rem;
+    line-height: 1.55;
 }
 
 /* =========================
-   Tabs
+   TABS
    ========================= */
 .sidebar-tabs {
     display: flex;
-    border-bottom: 1px solid var(--color-sidebar-border);
-    background-color: var(--color-sidebar-tab-bg);
+    border-bottom: 1px solid #d6deea;
+    background-color: #eef2f8;
 }
 
 .sidebar-tabs button {
     flex: 1;
-    padding: 0.6rem 0.5rem;
+    padding: 0.75rem 0.5rem;
+
     background: none;
     border: none;
     cursor: pointer;
-    color: #475569;
+
+    font-size: 0.95rem;
     font-weight: 500;
-    transition: all var(--transition-fast);
+
+    color: #475569;
+
+    transition: background-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .sidebar-tabs button:hover {
-    background-color: var(--color-sidebar-tab-hover);
+    background-color: #e3eaf5;
 }
 
 .sidebar-tabs button.active {
-    border-bottom: 3px solid var(--color-sidebar-tab-active);
-    font-weight: bold;
-    color: var(--color-sidebar-tab-active-text);
+    border-bottom: 3px solid var(--color-btn-primary);
+    color: #1e40af;
+    font-weight: 600;
 }
 
 /* =========================
-   Panel
+   PANEL
    ========================= */
 .sidebar-panel {
     flex: 1;
     overflow-y: auto;
-    padding: 1rem;
+    padding: 1.1rem;
 }
 
 /* =========================
-   Sections & Inputs
+   FILTER SECTIONS
    ========================= */
 .filter-section {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.4rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid #e2e8f0;
-    width: 100%;
-    box-sizing: border-box;
+    border-bottom: 1px solid #d6deea;
 }
 
 .filter-section h3 {
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.85rem;
 }
 
-.filter-section > label {
+/* labels */
+.filter-section label {
     display: flex;
     flex-direction: column;
-    margin-bottom: 0.5rem;
+    gap: 0.4rem;
+
+    margin-bottom: 0.85rem;
+
+    font-size: 0.95rem;
     font-weight: 500;
 }
 
-/* Inputs and select */
+/* =========================
+   INPUTS
+   ========================= */
 .filter-section input,
 .filter-section select {
     width: 100%;
-    box-sizing: border-box;
-    padding: 0.4rem 0.5rem;
-    border: 1px solid var(--color-sidebar-border);
+    padding: 0.5rem 0.65rem;
+
+    border: 1px solid #cbd5e1;
     border-radius: var(--border-radius);
+
     background-color: #fff;
-    transition: all var(--transition-fast);
+
+    font-size: 0.95rem;
+
+    transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .filter-section input:focus,
 .filter-section select:focus {
     outline: none;
     border-color: var(--color-btn-primary);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
 /* =========================
-   Grid input-pair
+   DATE STACK
+   ========================= */
+.filter-section .date-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.filter-section .date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+/* =========================
+   INPUT GRID (generic 2x2)
    ========================= */
 .input-pair {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.5rem;
-    margin-bottom: 0.6rem;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.input-pair label {
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-}
-
-/* Helper text */
-.helper-text {
-    grid-column: span 2;
-    font-size: 0.75rem;
-    color: #64748b;
-    margin-top: 0.2rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
 }
 
 /* =========================
-   Button groups
+   BOUNDING BOX GRID (coords)
+   ========================= */
+.bbox-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    padding: 0;
+    background: none;
+    border: none;
+}
+
+.bbox-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* =========================
+   BUTTONS
    ========================= */
 .btn-group,
 .btn-group-small {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.3rem;
-    margin-top: 0.5rem;
-    width: 100%;
-    box-sizing: border-box;
+    gap: 0.6rem;
+    align-items: center;
 }
 
-.btn-group .btn {
-    flex: 1 1 auto; /* roztahuje tlačítka rovnoměrně */
-}
-
-.btn-group-small .btn {
-    flex: 0 0 auto; /* malé tlačítko si drží vlastní šířku */
-}
-
-/* =========================
-   Buttons styling
-   ========================= */
+/* base button */
 .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0.45rem 0.75rem;
+
     border-radius: var(--border-radius);
-    transition: all var(--transition-fast);
     cursor: pointer;
-    border: 1px solid transparent;
+
+    font-size: 1rem;
+    font-weight: 500;
+
+    line-height: 1.2;
+
+    transition: all var(--transition-fast);
 }
 
+/* primary */
 .btn-primary {
     background-color: var(--color-btn-primary);
     color: #fff;
-    border-color: var(--color-btn-primary);
+    border: 1px solid var(--color-btn-primary);
 }
 
 .btn-primary:hover {
     background-color: var(--color-btn-primary-hover);
 }
 
+/* outline */
 .btn-outline-secondary {
-    background-color: var(--color-btn-outline-bg);
-    color: var(--color-btn-outline-text);
-    border-color: var(--color-sidebar-border);
+    background-color: #fff;
+    color: #475569;
+    border: 1px solid #cbd5e1 !important;
 }
 
 .btn-outline-secondary:hover {
-    background-color: var(--color-btn-outline-hover);
+    color: #475569;
+    background-color: #bdc0ca;
 }
 
+/* small */
 .btn-sm {
-    font-size: 0.8rem;
-    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.6rem;
 }
 
 /* =========================
-   Feature cards
+   LISTS
    ========================= */
-.features-list {
+.features-list,
+.processed-files-list {
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
-    padding: 0.8rem;
+    gap: 0.85rem;
 }
 
-.feature-card {
-    background-color: var(--color-sidebar-bg);
-    border: 1px solid var(--color-sidebar-border);
+/* =========================
+   CARDS
+   ========================= */
+.feature-card,
+.processed-file-card {
+    background-color: #fbfcfe;
+    border: 1px solid #d6deea;
     border-radius: var(--border-radius);
-    padding: 0.6rem;
-    box-shadow: var(--shadow-light);
-    font-size: 0.9rem;
+    box-shadow: none;
+}
+
+.feature-card .card-body,
+.processed-file-card .card-body {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.6rem;
+    padding: 0.9rem;
 }
 
-.feature-card h5 {
+.feature-card .card-title,
+.processed-file-card .card-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.feature-card .card-text,
+.processed-file-card .card-text {
     font-size: 0.95rem;
-    margin-bottom: 0.3rem;
-    color: var(--color-sidebar-text);
-}
-
-.feature-card p {
     margin: 0;
     color: #475569;
 }
 
-.feature-card .btn-group-small {
+/* actions */
+.feature-card .d-flex,
+.processed-file-card .d-flex {
     display: flex;
-    gap: 0.3rem;
+    gap: 0.5rem;
+    margin-top: auto;
 }
 
-.feature-card .btn-outline-secondary,
-.feature-card .btn-outline-info {
-    font-size: 0.8rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--border-radius);
-    background-color: var(--color-btn-outline-bg);
-    color: var(--color-btn-outline-text);
-    border: 1px solid var(--color-sidebar-border);
-    transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.feature-card .btn-outline-secondary:hover,
-.feature-card .btn-outline-info:hover {
-    background-color: var(--color-btn-outline-hover);
-}
-
-.feature-card .btn-outline-info i {
-    font-size: 1rem;
-}
-
-/* Kontejner tabu */
+/* =========================
+   VISUALIZE TAB
+   ========================= */
 .visualize-tab {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.2rem;
 }
 
-/* Horní lišta s nastavením vrstvy */
 .viz-settings-card {
-    background-color: var(--color-sidebar-tab-bg);
-    border: 1px solid var(--color-sidebar-border);
+    background-color: #eef2f8;
+    border: 1px solid #d6deea;
     border-radius: var(--border-radius);
     padding: 1rem;
 }
 
-.viz-control-row {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-/* Opacity slider */
+/* opacity */
 .opacity-control {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    width: 100%;
+    gap: 0.75rem;
 }
 
 .opacity-control input[type="range"] {
     flex: 1;
-    height: 6px;
-    background: var(--color-sidebar-border);
-    border-radius: 5px;
-    appearance: none;
     accent-color: var(--color-btn-primary);
 }
 
 .opacity-value {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
     min-width: 2.5rem;
     text-align: right;
-}
-
-/* =========================
-   Visualize Tab & Cards
-   ========================= */
-
-/* Seznam karet pod sebou */
-.processed-files-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-/* Karta využívající tvé globální buttony */
-.processed-file-card {
-    /* Základ z tvých stylů */
-    display: flex !important;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    height: auto;
-    padding: 0.8rem 1rem;
-    text-decoration: none;
-}
-
-.processed-file-card .file-name {
-    font-weight: 600;
-    font-size: 0.9rem;
-    display: block;
-    margin-bottom: 0.2rem;
-}
-
-.processed-file-card .file-path {
-    font-size: 0.75rem;
-    opacity: 0.6;
-    word-break: break-all;
-    font-weight: normal;
-}
-
-/* Opacity slider v rámci .filter-section */
-.viz-opacity-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-top: 0.5rem;
-}
-
-.viz-opacity-wrapper input[type="range"] {
-    flex: 1;
-}
-
-.opacity-number {
-    font-size: 0.85rem;
-    font-weight: 600;
-    min-width: 2.5rem;
 }
