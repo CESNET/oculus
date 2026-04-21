@@ -1,4 +1,4 @@
-import type { ProductFile } from "../../../store/useVisualizationStore";
+import type {ProductFile} from "../../../store/useVisualizationStore";
 
 /**
  * ProcessedFileCard
@@ -8,7 +8,7 @@ type Props = {
     file: ProductFile;
 };
 
-export default function ProcessedFileCard({ file }: Props) {
+export default function ProcessedFileCard({file}: Props) {
     const fullPath = `${file.path}.${file.format}`;
 
     return (
@@ -39,24 +39,29 @@ export default function ProcessedFileCard({ file }: Props) {
                         href={fullPath}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-outline-secondary btn-sm flex-grow-1"
+                        className="btn btn-outline-secondary btn-sm flex-fill"
                         title={fullPath}
                     >
-                        Open in new tab
+                        <i className="bi bi-box-arrow-up-right" />
                     </a>
 
                     <a
                         href={fullPath}
                         download
-                        className="btn btn-outline-secondary btn-sm"
+                        className="btn btn-outline-secondary btn-sm flex-fill"
                         title="Download file"
                     >
                         <i className="bi bi-download" />
                     </a>
 
                     <button
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() => navigator.clipboard.writeText(fullPath)}
+                        className="btn btn-outline-secondary btn-sm flex-fill"
+                        onClick={
+                            () => {
+                                const fullUrl = new URL(fullPath, window.location.origin).href;
+                                navigator.clipboard.writeText(fullUrl)
+                            }
+                        }
                         title="Copy link"
                     >
                         <i className="bi bi-clipboard" />

@@ -1,4 +1,4 @@
-import { useVisualizationStore } from "../../store/useVisualizationStore";
+import {useVisualizationStore} from "../../store/useVisualizationStore";
 import ProcessedFileCard from "./visualization/ProcessedFileCard";
 
 export default function VisualizationTab() {
@@ -19,8 +19,7 @@ export default function VisualizationTab() {
     }
 
     return (
-        <div className="sidebar-panel">
-
+        <>
             {/* =========================
                 TILE LAYERS
                ========================= */}
@@ -46,7 +45,7 @@ export default function VisualizationTab() {
                         ))}
                     </select>
 
-                    <label style={{ marginTop: "1rem" }}>
+                    <label style={{marginTop: "1rem"}}>
                         Layer Opacity
                     </label>
 
@@ -81,6 +80,6 @@ export default function VisualizationTab() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
