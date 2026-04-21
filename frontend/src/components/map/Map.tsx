@@ -69,6 +69,17 @@ const MapUpdater = ({ programmaticRef }: any) => {
         }
     });
 
+    useEffect(() => {
+        const bounds = map.getBounds();
+
+        setBboxFromMap(
+            bounds.getNorth(),
+            bounds.getSouth(),
+            bounds.getEast(),
+            bounds.getWest()
+        );
+    }, [map, setBboxFromMap]);
+
     return null;
 };
 
