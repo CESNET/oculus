@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { searchLocation, goToLocation } from "../../utils/mapUtils";
+import { searchLocation, moveMap } from "../../utils/mapUtils";
 import { useDebounce } from "../../hooks/useDebounce";
 import "./Navbar.css";
 
@@ -12,7 +12,7 @@ export default function SearchField({ programmaticRef }: SearchBarProps) {
     const [results, setResults] = useState<any[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
 
-    const debouncedQuery = useDebounce(searchQuery, 1000); // 1 sekunda debounce
+    const debouncedQuery = useDebounce(searchQuery, 300);
 
     useEffect(() => {
         if (!debouncedQuery) {
@@ -40,7 +40,11 @@ export default function SearchField({ programmaticRef }: SearchBarProps) {
         const lat = parseFloat(item.lat);
         const lon = parseFloat(item.lon);
 
-        goToLocation(lat, lon, programmaticRef);
+        programmaticRef.current = true;
+
+        moveMap([lat, lon], 13, {
+            duration: 1.2,
+        });
 
         setSearchQuery(item.display_name);
         setResults([]);
@@ -52,12 +56,13 @@ export default function SearchField({ programmaticRef }: SearchBarProps) {
             <input
                 type="text"
                 className="search-input"
-                placeholder="Search... NOT WORKING ATM!" //TODO
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setShowDropdown(results.length > 0)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
             />
+
             <button
                 type="button"
                 className="search-button"
@@ -69,7 +74,10 @@ export default function SearchField({ programmaticRef }: SearchBarProps) {
             {showDropdown && results.length > 0 && (
                 <ul className="search-dropdown">
                     {results.map((item) => (
-                        <li key={item.place_id} onClick={() => handleSelect(item)}>
+                        <li
+                            key={item.place_id}
+                            onClick={() => handleSelect(item)}
+                        >
                             {item.display_name}
                         </li>
                     ))}

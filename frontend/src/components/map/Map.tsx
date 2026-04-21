@@ -1,14 +1,21 @@
-import React, {useEffect} from 'react';
-import {MapContainer, TileLayer, useMapEvents, Polygon} from 'react-leaflet';
-import {useMapStore} from '../../store/useMapStore';
-import {useFiltersStore} from '../../store/useFiltersStore';
-import {useFeaturesStore} from "../../store/useFeaturesStore.ts";
+import React, { useEffect } from 'react';
+import {
+    MapContainer,
+    TileLayer,
+    useMapEvents,
+    useMap,
+    Polygon
+} from 'react-leaflet';
+
+import { useMapStore } from '../../store/useMapStore';
+import { useFiltersStore } from '../../store/useFiltersStore';
+import { useFeaturesStore } from "../../store/useFeaturesStore";
 import UserLocationMarker from './UserLocationMarker';
 import LocateButton from './LocateButton';
 import ProductLayer from './layers/ProductLayer';
-import type {LatLngExpression} from 'leaflet';
-import {useVisualizationStore} from "../../store/useVisualizationStore.ts";
-
+import type { LatLngExpression } from 'leaflet';
+import { useVisualizationStore } from "../../store/useVisualizationStore";
+import { registerMap } from '../../utils/mapUtils';
 
 interface Props {
     center: LatLngExpression;
@@ -20,36 +27,48 @@ interface Props {
     programmaticRef: React.MutableRefObject<boolean>;
 }
 
-const MapUpdater = ({programmaticRef}: { programmaticRef: React.MutableRefObject<boolean> }) => {
+/**
+ * Registrace Leaflet instance
+ */
+const MapRegistrar = () => {
+    const map = useMap();
+
+    useEffect(() => {
+        registerMap(map);
+    }, [map]);
+
+    return null;
+};
+
+/**
+ * Sync zoom + bbox
+ */
+const MapUpdater = ({ programmaticRef }: any) => {
     const setView = useMapStore(state => state.setView);
     const setBboxFromMap = useFiltersStore(state => state.setBboxFromMap);
 
     const map = useMapEvents({
         moveend: () => {
-            const c = map.getCenter();
-            const z = map.getZoom();
+            const center = map.getCenter();
+            const zoom = map.getZoom();
             const bounds = map.getBounds();
 
-            // 1. Vždy synchronizujeme URL/střed (pro MapStore)
-            setView([c.lat, c.lng], z);
+            setView([center.lat, center.lng], zoom);
 
-            // 2. Pokud je pohyb "programový", ignorujeme update filtrů a vypneme flag
             if (programmaticRef.current) {
                 programmaticRef.current = false;
                 return;
             }
 
-            // 3. Jinak aktualizujeme BBox ve filtrech
             setBboxFromMap(
                 bounds.getNorth(),
                 bounds.getSouth(),
                 bounds.getEast(),
                 bounds.getWest()
             );
-        },
+        }
     });
 
-    // Inicializace BBoxu při prvním renderu mapy
     useEffect(() => {
         const bounds = map.getBounds();
         setBboxFromMap(
@@ -63,27 +82,36 @@ const MapUpdater = ({programmaticRef}: { programmaticRef: React.MutableRefObject
     return null;
 };
 
-const Map: React.FC<Props> = ({center, zoom, location, userLocation, loadingLocation, productUrl, programmaticRef}) => {
+const Map: React.FC<Props> = ({
+                                  center,
+                                  zoom,
+                                  location,
+                                  userLocation,
+                                  loadingLocation,
+                                  productUrl,
+                                  programmaticRef
+                              }) => {
+
     const hoveredId = useFeaturesStore(state => state.hoveredFeatureId);
     const hoveredFeature = useFeaturesStore(state =>
         state.features.find(f => f.id === hoveredId)
     );
 
-    const {tileLayers, selectedTileLayerIndex, opacity} = useVisualizationStore();
+    const { tileLayers, selectedTileLayerIndex, opacity } = useVisualizationStore();
 
-    // aktuální tile layer
-    const selectedTile = (selectedTileLayerIndex !== null && tileLayers[selectedTileLayerIndex])
-        ? tileLayers[selectedTileLayerIndex]
-        : null;
+    const selectedTile =
+        selectedTileLayerIndex !== null
+            ? tileLayers[selectedTileLayerIndex]
+            : null;
 
     return (
         <MapContainer center={center} zoom={zoom} className="w-100 h-100">
+
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap contributors"
             />
 
-            {/* Vykreslení hover polygonu */}
             {hoveredFeature && (
                 <Polygon
                     positions={hoveredFeature.geometry.coordinates}
@@ -96,7 +124,6 @@ const Map: React.FC<Props> = ({center, zoom, location, userLocation, loadingLoca
                 />
             )}
 
-            {/* User location */}
             {userLocation && (
                 <LocateButton
                     lat={location?.lat ?? 0}
@@ -107,12 +134,15 @@ const Map: React.FC<Props> = ({center, zoom, location, userLocation, loadingLoca
                     programmaticRef={programmaticRef}
                 />
             )}
-            {userLocation && location && <UserLocationMarker location={location} />}
 
-            {/* Product Layer */}
-            {productUrl && <ProductLayer productUrl={productUrl} opacity={1} />}
+            {userLocation && location && (
+                <UserLocationMarker location={location} />
+            )}
 
-            {/* TileLayer z VisualizationStore */}
+            {productUrl && (
+                <ProductLayer productUrl={productUrl} opacity={1} />
+            )}
+
             {selectedTile && (
                 <TileLayer
                     url={`${selectedTile.path}/{z}/{x}/{y}.${selectedTile.format}`}
@@ -120,6 +150,7 @@ const Map: React.FC<Props> = ({center, zoom, location, userLocation, loadingLoca
                 />
             )}
 
+            <MapRegistrar />
             <MapUpdater programmaticRef={programmaticRef} />
         </MapContainer>
     );

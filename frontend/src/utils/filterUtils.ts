@@ -1,6 +1,6 @@
-import { Dataset } from "../types/datasets";
-import { type FiltersState } from "../store/useFiltersStore";
-import { type Sentinel1FilterState, type Sentinel2FilterState } from "../store/useFiltersStore";
+import {Dataset} from "../types/datasets";
+import {type FiltersState} from "../store/useFiltersStore";
+import {type Sentinel1FilterState, type Sentinel2FilterState} from "../store/useFiltersStore";
 
 // 1️⃣ Defaultní hodnoty pro všechny dataset typy
 export const getAllOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel2FilterState => {
@@ -8,7 +8,8 @@ export const getAllOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel
         case Dataset.Sentinel1:
             return {
                 levels: ["0", "1", "2"],
-                productTypes: ["SLC", "GRD"],
+                // productTypes: ["SLC", "GRD"],
+                productTypes: ["GRD"], // Only GRD will be filtered since SLC is "partial product" and can't be quite visualized
                 operationalModes: ["IW", "EW", "SM", "WV"],
                 polarizations: ["HH", "HV", "VV", "VH"],
             } as Sentinel1FilterState;
