@@ -10,7 +10,6 @@
     color: #1e293b;
 
     font-family: var(--font-family);
-
     font-size: 1rem;
     line-height: 1.55;
 }
@@ -75,7 +74,6 @@
     margin-bottom: 0.85rem;
 }
 
-/* labels */
 .filter-section label {
     display: flex;
     flex-direction: column;
@@ -138,7 +136,7 @@
 }
 
 /* =========================
-   BOUNDING BOX GRID (coords)
+   BOUNDING BOX GRID (IMPORTANT - restored)
    ========================= */
 .bbox-grid {
     display: grid;
@@ -169,7 +167,6 @@
     align-items: center;
 }
 
-/* base button */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -188,7 +185,6 @@
     transition: all var(--transition-fast);
 }
 
-/* primary */
 .btn-primary {
     background-color: var(--color-btn-primary);
     color: #fff;
@@ -199,7 +195,6 @@
     background-color: var(--color-btn-primary-hover);
 }
 
-/* outline */
 .btn-outline-secondary {
     background-color: #fff;
     color: #475569;
@@ -207,14 +202,7 @@
 }
 
 .btn-outline-secondary:hover {
-    color: #475569;
-    background-color: #bdc0ca;
-}
-
-/* small */
-.btn-sm {
-    font-size: 0.85rem;
-    padding: 0.3rem 0.6rem;
+    background-color: #e2e8f0;
 }
 
 /* =========================
@@ -260,16 +248,8 @@
     color: #475569;
 }
 
-/* actions */
-.feature-card .d-flex,
-.processed-file-card .d-flex {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: auto;
-}
-
 /* =========================
-   VISUALIZE TAB
+   VISUALIZE TAB (aligned, NOT separate system)
    ========================= */
 .visualize-tab {
     display: flex;
@@ -277,14 +257,12 @@
     gap: 1.2rem;
 }
 
-.viz-settings-card {
+/* reuse filter-section instead of separate card system */
+.visualize-tab .filter-section {
     background-color: #eef2f8;
-    border: 1px solid #d6deea;
-    border-radius: var(--border-radius);
-    padding: 1rem;
 }
 
-/* opacity */
+/* opacity control aligned with form system */
 .opacity-control {
     display: flex;
     align-items: center;

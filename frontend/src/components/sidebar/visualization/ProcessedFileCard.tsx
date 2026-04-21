@@ -1,5 +1,9 @@
-import type { ProductFile } from "../../../store/useVisualizationStore.ts";
+import type { ProductFile } from "../../../store/useVisualizationStore";
 
+/**
+ * ProcessedFileCard
+ * Displays processed file metadata in unified sidebar card system.
+ */
 type Props = {
     file: ProductFile;
 };
@@ -8,21 +12,26 @@ export default function ProcessedFileCard({ file }: Props) {
     const fullPath = `${file.path}.${file.format}`;
 
     return (
-        <div className="card h-100 shadow-sm feature-card processed-file-card">
-            <div className="card-body d-flex flex-column">
-                <h5 className="card-title text-truncate" title={`${file.name}.${file.format}`}>
+        <div className="card feature-card processed-file-card">
+            <div className="card-body">
+
+                <h5
+                    className="card-title"
+                    title={`${file.name}.${file.format}`}
+                >
                     {file.name}.{file.format}
                 </h5>
 
-                <p className="card-text mb-1 text-truncate">
+                <p className="card-text">
                     <strong>Format:</strong> {file.format}
                 </p>
 
-                <p className="card-text mb-3 file-path">
+                <p className="card-text">
                     <strong>Path:</strong> {file.path}
                 </p>
 
                 <div className="d-flex gap-2 mt-auto">
+
                     <a
                         href={fullPath}
                         target="_blank"
@@ -35,11 +44,14 @@ export default function ProcessedFileCard({ file }: Props) {
 
                     <button
                         className="btn btn-outline-secondary btn-sm"
-                        onClick={() => navigator.clipboard.writeText(fullPath)}
+                        onClick={() =>
+                            navigator.clipboard.writeText(fullPath)
+                        }
                         title="Copy full path"
                     >
                         <i className="bi bi-clipboard" />
                     </button>
+
                 </div>
             </div>
         </div>
