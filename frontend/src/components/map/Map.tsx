@@ -128,6 +128,10 @@ const Map: React.FC<Props> = ({
         ? polygonToBounds(feature.geometry.coordinates)
         : undefined;
 
+    console.log("Feature ID: ", featureId);
+    console.log("Feature: ", feature);
+    console.log("Feature bound: ", featureBounds);
+
     // =============================
     // RENDER
     // =============================
