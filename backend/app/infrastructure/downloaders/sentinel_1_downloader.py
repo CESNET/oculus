@@ -15,7 +15,7 @@ class Sentinel1Downloader(SentinelDownloader):
         filtered_files = []
 
         requested_polarizations = set(
-            self._job.properties.get("filters", {}).get(
+            self._job.request_properties.get("filters", {}).get(
                 "polarisation_channels", ["VV", "VH", "HH", "HV"]  # default all polarizations
             )
         )

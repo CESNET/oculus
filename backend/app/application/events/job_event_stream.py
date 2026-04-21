@@ -19,6 +19,7 @@ def _build_event_payload(job: Job) -> dict:
 
     if job.status == JobStatus.FINISHED:
         payload["processed_files"] = job.processed_files
+        payload["available_zoom_levels"] = job.available_zoom_levels
 
     if job.status in FAILED_STATUSES:
         payload["fail_reason"] = job.fail_reason

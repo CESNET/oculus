@@ -56,6 +56,9 @@ class Processor(ABC):
             return default
 
     def _validate_zoom_levels(self, zoom_levels, default_zoom_levels: list[int]) -> list[int]:
+        # TODO tady bude asi spíš něco ve smyslu _compute_zoom_levels
+        # Budou se počítat podle rozlišení snímku a oblasti, kterou pokrývá
+
         """
         Validate zoom levels: if any value invalid, use default. Fill missing values between min..max.
         """
@@ -72,5 +75,7 @@ class Processor(ABC):
 
         zoom_min, zoom_max = min(zoom_levels), max(zoom_levels)
         zoom_levels = list(range(zoom_min, zoom_max + 1))
+
+        self._job.set_available_zoom_levels(zoom_levels)
 
         return zoom_levels

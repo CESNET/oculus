@@ -36,7 +36,7 @@ class Sentinel2Downloader(SentinelDownloader):
         if not files:
             return []
 
-        bands = self._job.properties.get("filters", {}).get("bands")
+        bands = self._job.request_properties.get("filters", {}).get("bands")
 
         if not bands:
             return files

@@ -19,18 +19,18 @@ class GJTIFFProcessor(Processor):
 
     def _process(self) -> list[str]:
         quality = self._validate_int_param(
-            self._job.properties.get("quality"),
+            self._job.request_properties.get("quality"),
             settings.DEFAULT_PROCESSING_QUALITY,
             "quality"
         )
 
         zoom_levels = self._validate_zoom_levels(
-            self._job.properties.get("zoom_levels"),
+            self._job.request_properties.get("zoom_levels"),
             settings.DEFAULT_PROCESSING_ZOOM_LEVELS
         )
         zoom_levels_str = ",".join(map(str, zoom_levels))
 
-        output_formats = self._job.properties.get(
+        output_formats = self._job.request_properties.get(
             "outputs",
             settings.DEFAULT_PROCESSING_OUTPUT_FORMATS  # default fallback
         )

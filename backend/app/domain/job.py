@@ -14,13 +14,14 @@ class Job:
             product_id: str,
             dataset: JobDataset,
             metadata: dict,
-            properties: dict,
+            request_properties: dict,
             data_directory: str,
             status: JobStatus,
             created_at: datetime,
             last_accessed: datetime,
             downloaded_files: Optional[list[str]] = None,
             processed_files: Optional[list[str]] = None,
+            available_zoom_levels: Optional[list[int]] = None,
             fail_reason: Optional[str] = None,
             cancel_reason: Optional[str] = None,
     ):
@@ -30,7 +31,7 @@ class Job:
         self.dataset: JobDataset = dataset
 
         self.metadata: dict = metadata
-        self.properties: dict = properties
+        self.request_properties: dict = request_properties
 
         self.data_directory: str = data_directory
 
@@ -42,6 +43,8 @@ class Job:
 
         self.downloaded_files: Optional[list[str]] = downloaded_files
         self.processed_files: Optional[list[str]] = processed_files
+
+        self.available_zoom_levels: Optional[list[int]] = available_zoom_levels
 
         self.fail_reason: Optional[str] = fail_reason
         self.cancel_reason: Optional[str] = cancel_reason
@@ -131,6 +134,15 @@ class Job:
         self.transition(JobStatus.CANCELLED)
 
     # ------------------------------------------------
+    # setters
+    # ------------------------------------------------
+
+    def set_available_zoom_levels(self, zoom_levels: list[int]):
+        # TODO tohle provolávání bude různé pro různé produkty podle jejich rozlišení.
+        # Bude se to upravovat v nějaké doméně feature... Nebo tak něco - ještě to nemám úplně rozmyšlené
+        self.available_zoom_levels = zoom_levels
+
+    # ------------------------------------------------
     # creation
     # ------------------------------------------------
 
@@ -155,7 +167,7 @@ class Job:
             product_id=product_id,
             dataset=dataset,
             metadata=metadata,
-            properties=properties,
+            request_properties=properties,
             data_directory=data_directory,
             status=JobStatus.ACCEPTED,
             created_at=now,
@@ -176,13 +188,14 @@ class Job:
             "product_id": self.product_id,
             "dataset": self.dataset.name,
             "metadata": self.metadata,
-            "properties": self.properties,
+            "request_properties": self.request_properties,
             "data_directory": self.data_directory,
             "status": self.status.name,
             "created_at": self.created_at,
             "last_accessed": self.last_accessed,
             "downloaded_files": self.downloaded_files,
             "processed_files": self.processed_files,
+            "available_zoom_levels": self.available_zoom_levels,
             "fail_reason": self.fail_reason,
             "cancel_reason": self.cancel_reason,
         }
@@ -196,13 +209,14 @@ class Job:
             product_id=doc["product_id"],
             dataset=JobDataset.from_str(doc["dataset"]),
             metadata=doc["metadata"],
-            properties=doc["properties"],
+            request_properties=doc["request_properties"],
             data_directory=doc["data_directory"],
             status=JobStatus(doc["status"]),
             created_at=doc["created_at"],
             last_accessed=doc["last_accessed"],
             downloaded_files=doc.get("downloaded_files"),
             processed_files=doc.get("processed_files"),
+            available_zoom_levels=doc.get("available_zoom_levels"),
             fail_reason=doc.get("fail_reason"),
             cancel_reason=doc.get("cancel_reason"),
         )
