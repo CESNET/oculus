@@ -14,6 +14,7 @@ export interface TileLayer {
 
 interface VisualizationState {
     jobId: string | null;
+    featureId: string | null;
     outputs: Record<string, { product: boolean; tiles: boolean }>;
     processedFiles: ProductFile[];
     tileLayers: TileLayer[];
@@ -22,6 +23,7 @@ interface VisualizationState {
     opacity: number; // globální pro vybraný tileLayer (0..1)
 
     setJobId: (id: string | null) => void;
+    setFeatureId: (id: string | null) => void;
     setOutputs: (outputs: Record<string, { product: boolean; tiles: boolean }>) => void;
     setProcessedFiles: (files: ProductFile[]) => void;
     setTileLayers: (tiles: TileLayer[]) => void;
@@ -32,6 +34,7 @@ interface VisualizationState {
 
 export const useVisualizationStore = create<VisualizationState>((set) => ({
     jobId: null,
+    featureId: null,
     outputs: {
         jpg: {product: true, tiles: false},
         png: {product: false, tiles: false},
@@ -44,6 +47,7 @@ export const useVisualizationStore = create<VisualizationState>((set) => ({
     opacity: 0.8,
 
     setJobId: (id) => set({jobId: id}),
+    setFeatureId: (id) => set({featureId: id}),
     setOutputs: (outputs) => set({outputs}),
     setProcessedFiles: (files) => set({processedFiles: files}),
     setTileLayers: (tiles) => set({tileLayers: tiles}),

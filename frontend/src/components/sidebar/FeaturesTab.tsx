@@ -2,7 +2,12 @@ import {type Feature, useFeaturesStore} from "../../store/useFeaturesStore";
 import FeatureCard from "./features/FeatureCard";
 
 export default function FeaturesTab() {
-    const {features} = useFeaturesStore();
+    const featureIds = useFeaturesStore((s) => s.featureIds);
+    const featuresById = useFeaturesStore((s) => s.featuresById);
+
+    const features = featureIds
+        .map((id) => featuresById[id])
+        .filter(Boolean);
 
     if (!features.length) {
         return <div className="text-center py-5">No features loaded</div>;

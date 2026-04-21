@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type {Dataset} from "../types/datasets.ts";
+import type { Dataset } from "../types/datasets";
 
 export interface Feature {
     id: string;
@@ -10,27 +10,77 @@ export interface Feature {
     dataset: Dataset;
     geometry: {
         type: "Polygon";
-        coordinates: [number, number][][]; // [lat, lng] pro mapové knihovny
+        coordinates: [number, number][][];
     };
 }
 
 export interface FeaturesState {
-    features: Feature[];
+    // normalized state
+    featuresById: Record<string, Feature>;
+    featureIds: string[];
+
+    // actions
     setFeatures: (features: Feature[]) => void;
     addFeatures: (features: Feature[]) => void;
+    removeFeature: (id: string) => void;
     clearFeatures: () => void;
 
+    // helpers
+    getFeatureById: (id: string) => Feature | undefined;
+
+    // UI state
     hoveredFeatureId: string | null;
     setHoveredFeatureId: (id: string | null) => void;
 }
 
-export const useFeaturesStore = create<FeaturesState>((set) => ({
-    features: [],
-    setFeatures: (features) => set({ features }),
-    addFeatures: (features) => set((state) => ({
-        features: [...state.features, ...features]
-    })),
-    clearFeatures: () => set({ features: [] }),
+export const useFeaturesStore = create<FeaturesState>((set, get) => ({
+    featuresById: {},
+    featureIds: [],
+
+    setFeatures: (features) =>
+        set({
+            featuresById: Object.fromEntries(
+                features.map((f) => [f.id, f])
+            ),
+            featureIds: features.map((f) => f.id),
+        }),
+
+    addFeatures: (features) =>
+        set((state) => {
+            const nextById = { ...state.featuresById };
+            const nextIds = [...state.featureIds];
+
+            for (const f of features) {
+                nextById[f.id] = f;
+
+                if (!nextIds.includes(f.id)) {
+                    nextIds.push(f.id);
+                }
+            }
+
+            return {
+                featuresById: nextById,
+                featureIds: nextIds,
+            };
+        }),
+
+    removeFeature: (id) =>
+        set((state) => {
+            const { [id]: _, ...rest } = state.featuresById;
+
+            return {
+                featuresById: rest,
+                featureIds: state.featureIds.filter((fid) => fid !== id),
+            };
+        }),
+
+    clearFeatures: () =>
+        set({
+            featuresById: {},
+            featureIds: [],
+        }),
+
+    getFeatureById: (id) => get().featuresById[id],
 
     hoveredFeatureId: null,
     setHoveredFeatureId: (id) => set({ hoveredFeatureId: id }),

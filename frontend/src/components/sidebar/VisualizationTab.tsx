@@ -8,7 +8,7 @@ export default function VisualizationTab() {
         selectedTileLayerIndex,
         setSelectedTileLayerIndex,
         opacity,
-        setOpacity
+        setOpacity,
     } = useVisualizationStore();
 
     const hasLayers = tileLayers.length > 0;

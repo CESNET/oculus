@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import {
     MapContainer,
     TileLayer,
@@ -7,15 +7,17 @@ import {
     Polygon
 } from 'react-leaflet';
 
-import { useMapStore } from '../../store/useMapStore';
-import { useFiltersStore } from '../../store/useFiltersStore';
-import { useFeaturesStore } from "../../store/useFeaturesStore";
+import type {LatLngExpression} from 'leaflet';
+
+import {polygonToBounds, registerMap} from '../../utils/mapUtils';
+import {useMapStore} from '../../store/useMapStore';
+import {useFiltersStore} from '../../store/useFiltersStore';
+import {useFeaturesStore} from '../../store/useFeaturesStore';
+import {useVisualizationStore} from '../../store/useVisualizationStore';
+
 import UserLocationMarker from './UserLocationMarker';
 import LocateButton from './LocateButton';
 import ProductLayer from './layers/ProductLayer';
-import type { LatLngExpression } from 'leaflet';
-import { useVisualizationStore } from "../../store/useVisualizationStore";
-import { registerMap } from '../../utils/mapUtils';
 
 interface Props {
     center: LatLngExpression;
@@ -43,9 +45,9 @@ const MapRegistrar = () => {
 /**
  * Sync zoom + bbox
  */
-const MapUpdater = ({ programmaticRef }: any) => {
-    const setView = useMapStore(state => state.setView);
-    const setBboxFromMap = useFiltersStore(state => state.setBboxFromMap);
+const MapUpdater = ({programmaticRef}: any) => {
+    const setView = useMapStore((s) => s.setView);
+    const setBboxFromMap = useFiltersStore((s) => s.setBboxFromMap);
 
     const map = useMapEvents({
         moveend: () => {
@@ -93,26 +95,53 @@ const Map: React.FC<Props> = ({
                                   programmaticRef
                               }) => {
 
-    const hoveredId = useFeaturesStore(state => state.hoveredFeatureId);
-    const hoveredFeature = useFeaturesStore(state =>
-        state.features.find(f => f.id === hoveredId)
+    // =============================
+    // FEATURES
+    // =============================
+    const hoveredFeatureId = useFeaturesStore((s) => s.hoveredFeatureId);
+
+    const hoveredFeature = useFeaturesStore((s) =>
+        hoveredFeatureId ? s.featuresById[hoveredFeatureId] : undefined
     );
 
-    const { tileLayers, selectedTileLayerIndex, availableZoomLevels, opacity } = useVisualizationStore();
+    const featureId = useVisualizationStore((s) => s.featureId);
+
+    const feature = useFeaturesStore((s) =>
+        featureId ? s.featuresById[featureId] : undefined
+    );
+
+    // =============================
+    // VISUALIZATION
+    // =============================
+    const {
+        tileLayers,
+        selectedTileLayerIndex,
+        availableZoomLevels,
+        opacity
+    } = useVisualizationStore();
 
     const selectedTile =
         selectedTileLayerIndex !== null
             ? tileLayers[selectedTileLayerIndex]
             : null;
 
+    const featureBounds = feature
+        ? polygonToBounds(feature.geometry.coordinates)
+        : undefined;
+
+    // =============================
+    // RENDER
+    // =============================
     return (
         <MapContainer center={center} zoom={zoom} className="w-100 h-100">
 
+            {/* Base map */}
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap contributors"
             />
 
+            {/* Hover highlight */}
             {hoveredFeature && (
                 <Polygon
                     positions={hoveredFeature.geometry.coordinates}
@@ -125,6 +154,7 @@ const Map: React.FC<Props> = ({
                 />
             )}
 
+            {/* User location controls */}
             {userLocation && (
                 <LocateButton
                     lat={location?.lat ?? 0}
@@ -140,16 +170,19 @@ const Map: React.FC<Props> = ({
                 <UserLocationMarker location={location} />
             )}
 
+            {/* Product layer */}
             {productUrl && (
                 <ProductLayer productUrl={productUrl} opacity={1} />
             )}
 
+            {/* Visualization tile layer */}
             {selectedTile && (
                 <TileLayer
                     url={`${selectedTile.path}/{z}/{x}/{y}.${selectedTile.format}`}
                     opacity={opacity}
                     maxNativeZoom={availableZoomLevels.at(-1)}
                     minNativeZoom={availableZoomLevels.at(0)}
+                    bounds={featureBounds}
                 />
             )}
 

@@ -1,10 +1,39 @@
 import L from 'leaflet';
-import type { LatLngExpression } from 'leaflet';
-import { useMapStore } from '../store/useMapStore';
+import type {LatLngExpression} from 'leaflet';
+import {useMapStore} from '../store/useMapStore';
 
 export function toLatLngTuple(expr: LatLngExpression): [number, number] {
     const latLng = L.latLng(expr);
     return [latLng.lat, latLng.lng];
+}
+
+export function polygonToBounds(
+    polygon: LatLngExpression[] | LatLngExpression[][]
+): L.LatLngBoundsExpression {
+    const flatPoints: L.LatLng[] = Array.isArray(polygon[0])
+        ? (polygon as LatLngExpression[][]).flat().map(p => L.latLng(p))
+        : (polygon as LatLngExpression[]).map(p => L.latLng(p));
+
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+
+    for (const p of flatPoints) {
+        const lat = p.lat;
+        const lng = p.lng;
+
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+    }
+
+    const southWest: L.LatLngTuple = [minLat, minLng];
+    const northEast: L.LatLngTuple = [maxLat, maxLng];
+
+    return [southWest, northEast];
 }
 
 let mapInstance: L.Map | null = null;
