@@ -10,12 +10,12 @@ from ...infrastructure.redis.redis_pubsub import RedisPubSub
 class CheckJobUseCase(UseCase):
     def __init__(
             self,
-            repository: JobRepository,
+            job_repository: JobRepository,
             redis_pubsub: RedisPubSub,
             logger: Optional[logging.Logger] = None
     ):
         super().__init__(
-            repository=repository,
+            job_repository=job_repository,
             redis_pubsub=redis_pubsub,
             logger=logger
         )

@@ -38,7 +38,7 @@ def job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
     subscribe_client = bootstrap_container.redis_pubsub.subscribe(job_id=job_id)
 
     try:
-        job = bootstrap_container.repository.get(job_id)
+        job = bootstrap_container.job_repository.get(job_id)
         last_status = job.status
 
         yield _format_sse(_build_event_payload(job))
@@ -51,7 +51,7 @@ def job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
         while True:
             message = subscribe_client.get_message(timeout=1.0)
             if message and message["type"] == "message":
-                job = bootstrap_container.repository.get(job_id)
+                job = bootstrap_container.job_repository.get(job_id)
                 last_status = job.status
                 yield _format_sse(_build_event_payload(job))
 
@@ -60,7 +60,7 @@ def job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
 
             now = time.time()
             if (now - last_heartbeat) > heartbeat_interval:
-                job = bootstrap_container.repository.get(job_id)
+                job = bootstrap_container.job_repository.get(job_id)
 
                 if job.status != last_status:
                     last_status = job.status

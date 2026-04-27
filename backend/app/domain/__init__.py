@@ -1,8 +1,5 @@
-from .job import Job
-from .job_dataset import JobDataset
-from .job_dataset_family import JobDatasetFamily
-from .job_repository import JobRepository
-from .job_status import JobStatus, FAILED_STATUSES
+from .job import *
+from .feature_state import *
 
 __all__ = [
     "Job",
@@ -10,4 +7,7 @@ __all__ = [
     "JobDatasetFamily",
     "JobRepository",
     "JobStatus", "FAILED_STATUSES",
+    "FeatureState",
+    "calculate_uuid",
+    "FeatureStateRepository",
 ]

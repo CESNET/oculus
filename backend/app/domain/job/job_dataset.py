@@ -12,18 +12,18 @@ class JobDataset(Enum):
     LANDSAT8 = ("LANDSAT8", JobDatasetFamily.LANDSAT, "landsat:display_id")  # TODO možná scene_id
     LANDSAT9 = ("LANDSAT9", JobDatasetFamily.LANDSAT, "landsat:display_id")  # TODO možná scene_id
 
-    def __init__(self, dataset_name: str, family: JobDatasetFamily, product_key: str):
+    def __init__(self, dataset_name: str, family: JobDatasetFamily, feature_id_key_name: str):
         self._dataset_name = dataset_name
         self._family = family
-        self._product_key = product_key
+        self._feature_id_key_name = feature_id_key_name
 
     @property
     def family(self) -> JobDatasetFamily:
         return self._family
 
     @property
-    def product_id_key(self) -> str:
-        return self._product_key
+    def feature_id_key_name(self) -> str:
+        return self._feature_id_key_name
 
     @classmethod
     def from_str(cls, name: str) -> "JobDataset":

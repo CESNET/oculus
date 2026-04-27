@@ -2,14 +2,17 @@ from pymongo import MongoClient
 
 from ...settings import settings
 
-_mongo_client = None
+
+class MongoProvider:
+    def __init__(self):
+        self._client = MongoClient(settings.MONGO_URI)
+
+    @property
+    def db(self):
+        return self._client[settings.MONGO_CLIENT_RESOLVED]
+
+    def get_collection(self, name: str):
+        return self.db[name]
 
 
-def get_collection():
-    global _mongo_client
-
-    if _mongo_client is None:
-        _mongo_client = MongoClient(settings.MONGO_URI)
-
-    db = _mongo_client[settings.MONGO_CLIENT_RESOLVED]
-    return db[settings.MONGO_DB_RESOLVED]
+mongo_provider = MongoProvider()

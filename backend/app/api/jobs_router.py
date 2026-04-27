@@ -27,7 +27,7 @@ def create_job(request: CreateJobRequestModel):
 
 @jobs_router.get("/{job_id}")
 def get_job(job_id: str):
-    return bootstrap_container.repository.get(job_id).serialize()
+    return bootstrap_container.job_repository.get(job_id).serialize()
 
 
 @jobs_router.get("/{job_id}/events")
@@ -44,7 +44,7 @@ class CancelJobRequestModel(BaseModel):
 
 @jobs_router.post("/cancel")
 def cancel_job(request: CancelJobRequestModel):
-    job = bootstrap_container.repository.get(request.job_id)
+    job = bootstrap_container.job_repository.get(request.job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 

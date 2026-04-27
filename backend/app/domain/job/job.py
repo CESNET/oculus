@@ -11,40 +11,34 @@ class Job:
     def __init__(
             self,
             id: str,
-            product_id: str,
+
+            feature_id: str,
             dataset: JobDataset,
+
             metadata: dict,
             request_properties: dict,
-            data_directory: str,
+
             status: JobStatus,
+
             created_at: datetime,
             last_accessed: datetime,
-            downloaded_files: Optional[list[str]] = None,
-            processed_files: Optional[list[str]] = None,
-            available_zoom_levels: Optional[list[int]] = None,
+
             fail_reason: Optional[str] = None,
             cancel_reason: Optional[str] = None,
     ):
         self.id: str = id
 
-        self.product_id: str = product_id
+        self.feature_id: str = feature_id
         self.dataset: JobDataset = dataset
 
         self.metadata: dict = metadata
         self.request_properties: dict = request_properties
-
-        self.data_directory: str = data_directory
 
         self.previous_status: Optional[JobStatus] = None
         self.status: JobStatus = status
 
         self.created_at: datetime = created_at
         self.last_accessed: datetime = last_accessed
-
-        self.downloaded_files: Optional[list[str]] = downloaded_files
-        self.processed_files: Optional[list[str]] = processed_files
-
-        self.available_zoom_levels: Optional[list[int]] = available_zoom_levels # TODO Tohle se bude držet v nějaké doméně produktu
 
         self.fail_reason: Optional[str] = fail_reason
         self.cancel_reason: Optional[str] = cancel_reason
@@ -151,23 +145,19 @@ class Job:
             dataset: JobDataset,
             metadata: dict,
             properties: dict,
-            data_directory: str
     ) -> "Job":
 
         now = datetime.now(timezone.utc)
 
         job_id = str(uuid.uuid4())
-        product_id = metadata[dataset.product_id_key]
-
-        data_directory: str = os.path.join(data_directory, job_id, "data")
+        feature_id = metadata[dataset.feature_id_key_name]
 
         return cls(
             id=job_id,
-            product_id=product_id,
+            feature_id=feature_id,
             dataset=dataset,
             metadata=metadata,
             request_properties=properties,
-            data_directory=data_directory,
             status=JobStatus.ACCEPTED,
             created_at=now,
             last_accessed=now
@@ -184,17 +174,18 @@ class Job:
 
         serialized_dict = {
             "_id": self.id,
-            "product_id": self.product_id,
+
+            "feature_id": self.feature_id,
             "dataset": self.dataset.name,
+
             "metadata": self.metadata,
             "request_properties": self.request_properties,
-            "data_directory": self.data_directory,
+
             "status": self.status.name,
+
             "created_at": self.created_at,
             "last_accessed": self.last_accessed,
-            "downloaded_files": self.downloaded_files,
-            "processed_files": self.processed_files,
-            "available_zoom_levels": self.available_zoom_levels,
+
             "fail_reason": self.fail_reason,
             "cancel_reason": self.cancel_reason,
         }
@@ -205,17 +196,18 @@ class Job:
     def deserialize(cls, doc: dict) -> "Job":
         return cls(
             id=doc["_id"],
-            product_id=doc["product_id"],
+
+            feature_id=doc["feature_id"],
             dataset=JobDataset.from_str(doc["dataset"]),
+
             metadata=doc["metadata"],
             request_properties=doc["request_properties"],
-            data_directory=doc["data_directory"],
+
             status=JobStatus(doc["status"]),
+
             created_at=doc["created_at"],
             last_accessed=doc["last_accessed"],
-            downloaded_files=doc.get("downloaded_files"),
-            processed_files=doc.get("processed_files"),
-            available_zoom_levels=doc.get("available_zoom_levels"),
+
             fail_reason=doc.get("fail_reason"),
             cancel_reason=doc.get("cancel_reason"),
         )

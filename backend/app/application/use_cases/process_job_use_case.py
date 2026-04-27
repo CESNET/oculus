@@ -10,7 +10,7 @@ from ...infrastructure.redis.redis_pubsub import RedisPubSub
 class ProcessJobUseCase(UseCase):
     def __init__(
             self,
-            repository: JobRepository,
+            job_repository: JobRepository,
             processor_class: Type[Processor],
             redis_pubsub: RedisPubSub,
             logger: Optional[logging.Logger] = None
@@ -18,7 +18,7 @@ class ProcessJobUseCase(UseCase):
         self._processor_class: Type[Processor] = processor_class
 
         super().__init__(
-            repository=repository,
+            job_repository=job_repository,
             redis_pubsub=redis_pubsub,
             logger=logger
         )

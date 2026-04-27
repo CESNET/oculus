@@ -4,7 +4,7 @@ from typing import Optional, List
 import time
 
 from .providers.base_provider import BaseProvider
-from ...domain.job import Job
+from backend.app.domain.job.job import Job
 from ...settings import settings
 
 
@@ -22,11 +22,11 @@ class Downloader(ABC):
         for provider in self._providers:
             if provider.has_product():
                 self._logger.info(
-                    f"Product {self._job.product_id} found in {provider.__class__.__name__}"
+                    f"Product {self._job.feature_id} found in {provider.__class__.__name__}"
                 )
                 return provider
 
-        raise ValueError(f"Product {self._job.product_id} not found in any provider")
+        raise ValueError(f"Product {self._job.feature_id} not found in any provider")
 
     @abstractmethod
     def _filter_files(self, available_files: list[str]) -> list[str]:

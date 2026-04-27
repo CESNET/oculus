@@ -15,19 +15,19 @@ class CleanupJobUseCase(UseCase):
 
     def __init__(
             self,
-            repository: JobRepository,
+            job_repository: JobRepository,
             redis_pubsub:RedisPubSub,
             logger: Optional[logging.Logger] = None
     ):
         super().__init__(
-            repository=repository,
+            job_repository=job_repository,
             redis_pubsub=redis_pubsub,
             logger=logger
         )
 
     def execute(self, job_id: Optional[str]) -> int:
         threshold = datetime.now(tz=timezone.utc) - timedelta(minutes=1)
-        expired_jobs: list[Job] = self._repository.find_expired(threshold)
+        expired_jobs: list[Job] = self._job_repository.find_expired(threshold)
         deleted_count = 0
 
         for job in expired_jobs:
@@ -35,7 +35,7 @@ class CleanupJobUseCase(UseCase):
 
             # TODO tady bude mazání
 
-            self._repository.delete(job_id)
+            self._job_repository.delete(job_id)
             self._logger.debug(f"Job {job_id} deleted from repository")
             deleted_count += 1
 

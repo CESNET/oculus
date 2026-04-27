@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+from domain import FeatureStateRepository
 from .use_case import UseCase
 from ...domain import Job, JobRepository
 from ...infrastructure.downloaders import Downloader, downloader_factory
@@ -10,12 +11,14 @@ from ...infrastructure.redis.redis_pubsub import RedisPubSub
 class DownloadJobUseCase(UseCase):
     def __init__(
             self,
-            repository: JobRepository,
+            job_repository: JobRepository,
+            feature_state_repository: FeatureStateRepository,
             redis_pubsub: RedisPubSub,
             logger: Optional[logging.Logger] = None
     ):
         super().__init__(
-            repository=repository,
+            job_repository=job_repository,
+            feature_state_repository=feature_state_repository,
             redis_pubsub=redis_pubsub,
             logger=logger
         )
