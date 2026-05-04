@@ -1,5 +1,5 @@
+from .feature_state import FeatureState, FeatureStateId, FeatureStateRepository
 from .job import *
-from .feature_state import *
 
 __all__ = [
     "Job",
@@ -8,6 +8,6 @@ __all__ = [
     "JobRepository",
     "JobStatus", "FAILED_STATUSES",
     "FeatureState",
-    "calculate_uuid",
+    "FeatureStateId",
     "FeatureStateRepository",
 ]

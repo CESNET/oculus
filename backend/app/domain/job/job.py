@@ -23,6 +23,8 @@ class Job:
             created_at: datetime,
             last_accessed: datetime,
 
+            version: int = 0,
+
             fail_reason: Optional[str] = None,
             cancel_reason: Optional[str] = None,
     ):
@@ -34,8 +36,10 @@ class Job:
         self.metadata: dict = metadata
         self.request_properties: dict = request_properties
 
-        self.previous_status: Optional[JobStatus] = None
         self.status: JobStatus = status
+
+        # Optimistic locking version
+        self.version: int = version
 
         self.created_at: datetime = created_at
         self.last_accessed: datetime = last_accessed
@@ -43,36 +47,19 @@ class Job:
         self.fail_reason: Optional[str] = fail_reason
         self.cancel_reason: Optional[str] = cancel_reason
 
-    # ------------------------------------------------
-    # helper methods
-    # ------------------------------------------------
-
-    def get_tile_path(self, processed_file: str, zoom: int, x: int, y: int) -> str:
-        """
-        Returns path to the tile in WebMercator mosaic file path
-        Expected structure:
-        <processed_file>/<zoom>/<x>/<y>.{processed_file_extension}
-        """
-        from pathlib import Path
-
-        p = Path(processed_file)
-        base_path = str(p.with_suffix(''))
-        extension = p.suffix
-
-        return os.path.join(base_path, str(zoom), str(x), f"{y}{extension}")
-
-    # ------------------------------------------------
+    # -------------------------
     # lifecycle helpers
-    # ------------------------------------------------
+    # -------------------------
 
     def touch(self):
-        """
-        Update last access timestamp.
-        """
+        """Update last access timestamp."""
         self.last_accessed = datetime.now(timezone.utc)
 
     def transition(self, to_status: JobStatus):
-        self.previous_status = self.status
+        """
+        Transition job to a new status with validation.
+        """
+        print(f"transition from {self.status} to status: {to_status}")
 
         if self.status == JobStatus.CANCELLED:
             return
@@ -80,16 +67,14 @@ class Job:
         if not can_transition(from_status=self.status, to_status=to_status):
             self.status = JobStatus.FAILED
             self.fail_reason = f"Invalid transition {self.status} -> {to_status}"
-
             raise ValueError(self.fail_reason)
 
         self.status = to_status
-
         self.touch()
 
-    # ------------------------------------------------
+    # -------------------------
     # status helpers
-    # ------------------------------------------------
+    # -------------------------
 
     def mark_downloading(self):
         self.transition(JobStatus.DOWNLOADING)
@@ -127,17 +112,9 @@ class Job:
         self.cancel_reason = cancel_reason
         self.transition(JobStatus.CANCELLED)
 
-    # ------------------------------------------------
-    # setters
-    # ------------------------------------------------
-
-    def set_available_zoom_levels(self, zoom_levels: list[int]):
-        # TODO tohle se bude držet v nějaké doméně produktu, tady je to teď v tuhle chvíli placeholder
-        self.available_zoom_levels = zoom_levels
-
-    # ------------------------------------------------
+    # -------------------------
     # creation
-    # ------------------------------------------------
+    # -------------------------
 
     @classmethod
     def create(
@@ -146,33 +123,35 @@ class Job:
             metadata: dict,
             properties: dict,
     ) -> "Job":
-
+        """
+        Create a new job instance.
+        """
         now = datetime.now(timezone.utc)
 
-        job_id = str(uuid.uuid4())
-        feature_id = metadata[dataset.feature_id_key_name]
-
         return cls(
-            id=job_id,
-            feature_id=feature_id,
+            id=str(uuid.uuid4()),
+            feature_id=metadata[dataset.feature_id_key_name],
             dataset=dataset,
             metadata=metadata,
             request_properties=properties,
             status=JobStatus.ACCEPTED,
             created_at=now,
-            last_accessed=now
+            last_accessed=now,
+            version=0,
         )
 
-    # --- Serialization ---
+    # -------------------------
+    # serialization
+    # -------------------------
+
     def serialize(self, touch: bool = True) -> dict:
         """
-        Convert Job to dictionary.
-        If touch=True, last_accessed timestamp is updated
+        Convert job to dictionary for persistence.
         """
         if touch:
             self.touch()
 
-        serialized_dict = {
+        return {
             "_id": self.id,
 
             "feature_id": self.feature_id,
@@ -183,6 +162,9 @@ class Job:
 
             "status": self.status.name,
 
+            # Optimistic locking version
+            "version": self.version,
+
             "created_at": self.created_at,
             "last_accessed": self.last_accessed,
 
@@ -190,10 +172,11 @@ class Job:
             "cancel_reason": self.cancel_reason,
         }
 
-        return serialized_dict
-
     @classmethod
     def deserialize(cls, doc: dict) -> "Job":
+        """
+        Create Job instance from persistence layer document.
+        """
         return cls(
             id=doc["_id"],
 
@@ -204,6 +187,8 @@ class Job:
             request_properties=doc["request_properties"],
 
             status=JobStatus(doc["status"]),
+
+            version=doc.get("version", 0),
 
             created_at=doc["created_at"],
             last_accessed=doc["last_accessed"],

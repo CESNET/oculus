@@ -14,9 +14,9 @@ class CDSEConnector:
     Provides methods to fetch feature metadata, list available files, and download them.
     """
 
-    def __init__(self, feature_id: str, workdir: str, logger: logging.Logger | None = None):
+    def __init__(self, feature_id: str, workdir: Path, logger: logging.Logger | None = None):
         self._feature_id: str = feature_id
-        self._workdir: Path = Path(workdir)
+        self._workdir: Path = workdir
         self._logger: logging.Logger = logger or logging.getLogger(__name__)
         self._feature: dict | None = None
         self._cached_files: list[str] | None = None

@@ -73,6 +73,8 @@ class GJTIFFProcessor(Processor):
 
     def _run_command(self, container, command: list[str]) -> list[str]:
         self._logger.info(f"Running GJTIFF command: {' '.join(command)}")
+
+        """
         exec_result = container.exec_run(cmd=command, stdout=True, stderr=True, tty=False, demux=True)
         stdout, stderr = exec_result.output
 
@@ -80,7 +82,12 @@ class GJTIFFProcessor(Processor):
             raise RuntimeError(f"GJTIFF failed! Error: {stderr.decode('utf-8')}")
 
         output_str = stdout.decode("utf-8")
-        self._logger.debug(output_str)
+        """
+
+        # DEBUG only vvv, for production uncomment above for executing gjtiff ^^^
+        output_str = '[{"infile":"/data/oculus/2206d810-dacf-4017-8d74-56bbd9d070f1/data/downloaded/T39RWJ_20260503T070731_TCI_10m.jp2","outfile":"/data/oculus/2206d810-dacf-4017-8d74-56bbd9d070f1/data/processed/T39RWJ_20260503T070731_TCI_10m.jpg"}]'
+
+        self._logger.info(output_str)
 
         try:
             gjtiff_output = json.loads(output_str)

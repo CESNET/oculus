@@ -5,14 +5,21 @@ from ..common.base_repository import BaseRepository
 
 
 class JobRepository(BaseRepository[Job]):
+    """
+    Repository abstraction for Job persistence.
+    """
 
     def save(self, job: Job):
-        current = self.get(job.id)
-        if job.previous_status and current.status != job.previous_status:
-            raise ValueError("Concurrency conflict")
-
+        """
+        Save job entity.
+        Version-based concurrency control is handled in concrete implementation.
+        """
         self._save(job)
 
     @abstractmethod
     def _save(self, job: Job):
+        """
+        Persist job to storage backend.
+        Must implement optimistic locking using job.version.
+        """
         pass

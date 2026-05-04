@@ -1,17 +1,19 @@
-import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-DEFAULT_NAMESPACE: uuid.UUID = uuid.NAMESPACE_DNS
 
+class FeatureStateId(str):
+    @classmethod
+    def from_parts(cls, dataset: str, feature_id: str) -> "FeatureStateId":
+        return cls(f"{dataset}:{feature_id}")
 
-def calculate_uuid(
-        dataset: str,
-        feature_id: str,
-        namespace: uuid.UUID = DEFAULT_NAMESPACE,
-) -> uuid.UUID:
-    name = f"{dataset}:{feature_id}"
-    return uuid.uuid5(namespace, name)
+    @property
+    def dataset(self) -> str:
+        return self.split(":", 1)[0]
+
+    @property
+    def feature_id(self) -> str:
+        return self.split(":", 1)[1]
 
 
 class FeatureState:
@@ -20,33 +22,54 @@ class FeatureState:
             dataset: str,
             feature_id: str,
 
-            data_directory: str,
+            feature_root_directory: Path | str,
 
-            files: Optional[list[dict[str, Any]]] = None,
+            downloaded_files: Optional[list[dict[str, Any]]] = None,
     ):
         self.dataset = dataset
         self.feature_id = feature_id
-        self.id = calculate_uuid(
-            dataset=dataset,
-            feature_id=feature_id
-        )
+        self.id = FeatureStateId.from_parts(dataset, feature_id)
 
-        self.data_directory = data_directory
+        self.feature_root_directory = Path(feature_root_directory)
 
-        self.files: Optional[list[dict[str, Any]]] = files or []
+        self.downloaded_files = list(downloaded_files) if downloaded_files else []
 
     @classmethod
     def create(
             cls,
             dataset: str,
             feature_id: str,
-            data_directory: str,
+            feature_root_directory: str,
     ) -> "FeatureState":
-        data_directory = str(Path(data_directory) / dataset / feature_id)
+        feature_root_directory = Path(feature_root_directory) / dataset / feature_id
 
         return cls(
             dataset=dataset,
             feature_id=feature_id,
-
-            data_directory=data_directory
+            feature_root_directory=feature_root_directory,
         )
+
+    def serialize(self) -> dict:
+        return {
+            "_id": self.id,
+            "dataset": self.dataset,
+            "feature_id": self.feature_id,
+            "feature_root_directory": str(self.feature_root_directory),
+            "downloaded_files": self.downloaded_files,
+        }
+
+    @classmethod
+    def deserialize(cls, data: dict) -> "FeatureState":
+        obj = cls(
+            dataset=data["dataset"],
+            feature_id=data["feature_id"],
+            feature_root_directory=data["feature_root_directory"],
+            downloaded_files=data.get("downloaded_files", []),
+        )
+
+        obj.id = FeatureStateId(data["_id"])
+        return obj
+
+    def add_downloaded_files(self, new_files: list[str]) -> None:
+        existing = set(self.downloaded_files)
+        self.downloaded_files = list(existing.union(new_files))

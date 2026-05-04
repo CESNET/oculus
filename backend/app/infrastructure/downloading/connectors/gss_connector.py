@@ -1,6 +1,7 @@
-import requests
 import logging
 from pathlib import Path
+
+import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -13,10 +14,10 @@ class GSSConnector:
     GSS Connector: interacts with the GSS APIs.
     """
 
-    def __init__(self, feature_id: str, workdir: str):
+    def __init__(self, feature_id: str, workdir: Path, logger: logging.Logger | None = None):
         self._feature_id: str = feature_id
-        self._workdir: Path = Path(workdir)
-        self._logger = logging.getLogger(__name__)
+        self._workdir: Path = workdir
+        self._logger = logger or logging.getLogger(__name__)
         self._feature: dict | None = None
         self._cached_files: list[str] | None = None
 
@@ -28,7 +29,7 @@ class GSSConnector:
 
         self._logger.debug(f"Initialized GSS connector for feature {self._feature_id}")
 
-        self._collections_map = { # this is temporary fix, until GSS STAC learns itself to search by ID
+        self._collections_map = {  # this is temporary fix, until GSS STAC learns itself to search by ID
             "S1": "SENTINEL-1",
             "S2": "SENTINEL-2",
             "S3": "SENTINEL-3",
@@ -50,15 +51,17 @@ class GSSConnector:
     def get_feature(self) -> dict:
         if self._feature is None:
             url = f"{settings.GSS_ODATA_CATALOG_ROOT.rstrip('/')}/Products({self._feature_id})"
-            self._logger.debug(f"Querying GSS Odata for product {self._feature_id} from API: {url}")
+            self._logger.debug(f"Querying GSS OData for product {self._feature_id} from API: {url}")
 
-            response = self._http.get(url,
-                                 headers={"Authorization": f"Bearer {self._token_manager.get_token()}"}
-                                 )
+            response = self._http.get(
+                url,
+                headers={"Authorization": f"Bearer {self._token_manager.get_token()}"}
+            )
 
-            if response.status_code == 400 or response.status_code == 404: # Feature not found in GSS
+            if response.status_code == 400 or response.status_code == 404:  # Feature not found in GSS
                 self._logger.debug(f"Feature {self._feature_id} not found in GSS")
                 return None
+
             elif response.status_code != 200:
                 self._logger.error(f"GSS API returned {response.status_code}: {response.text}")
                 return None
@@ -74,7 +77,12 @@ class GSSConnector:
             self.get_feature()
 
         product_name = self._feature["Name"]
-        collection_name = next((self._collections_map[collection] for collection in self._collections_map.keys() if product_name.startswith(collection)), None)
+        collection_name = next(
+            (self._collections_map[collection]
+             for collection in self._collections_map.keys()
+             if product_name.startswith(collection))
+            , None
+        )
 
         if collection_name is None:
             self._logger.error(f"Could not determine collection for feature {product_name}")
@@ -83,8 +91,8 @@ class GSSConnector:
         url = f"{settings.GSS_STAC_CATALOG_ROOT.rstrip('/')}/collections/{collection_name}/items/{product_name}"
         self._logger.debug(f"Fetching STAC metadata from API: {url}")
         response = self._http.get(url,
-                             headers={"Authorization": f"Bearer {self._token_manager.get_token()}"}
-                             )
+                                  headers={"Authorization": f"Bearer {self._token_manager.get_token()}"}
+                                  )
         if response.status_code != 200:
             self._logger.error(f"GSS STAC API returned {response.status_code}: {response.text}")
             raise RuntimeError(f"GSS STAC API error: {response.status_code}, response: {response.text}")

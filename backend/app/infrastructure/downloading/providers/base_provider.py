@@ -1,22 +1,25 @@
 import logging
 import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 
-from ....domain import Job
 from ....settings import settings
 
 
 class BaseProvider(ABC):
     def __init__(
             self,
-            job: Job,
+            feature_id: str,
+            feature_root_directory: Path,
             logger: logging.Logger | None = None
     ):
         self._logger = logger or logging.getLogger(settings.APP_NAME)
 
-        self._job = job
+        self._job = ""
 
-        self._path_to_downloaded: str = os.path.join(self._job.data_directory, "downloaded")
+        self._feature_id = feature_id
+
+        self._feature_download_directory: Path = feature_root_directory / "downloaded"
 
     @abstractmethod
     def has_product(self) -> bool:

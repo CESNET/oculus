@@ -1,12 +1,21 @@
 import re
 
-from .sentinel_downloader import SentinelDownloader
-from ...domain import Job
+from .sentinel_download_service import SentinelDownloadService
+from ...domain import Job, FeatureState
 
 
-class Sentinel1Downloader(SentinelDownloader):
-    def __init__(self, job: Job, logger=None):
-        super().__init__(job, logger)
+class Sentinel1DownloadService(SentinelDownloadService):
+    def __init__(
+            self,
+            job: Job,
+            feature_state: FeatureState,
+            logger=None
+    ):
+        super().__init__(
+            job=job,
+            feature_state=feature_state,
+            logger=logger
+        )
 
     def _filter_files(self, available_files: list[str] = None) -> list[str]:
         if not available_files:

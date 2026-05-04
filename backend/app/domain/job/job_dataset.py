@@ -18,6 +18,10 @@ class JobDataset(Enum):
         self._feature_id_key_name = feature_id_key_name
 
     @property
+    def dataset_name(self) -> str:
+        return self._dataset_name
+
+    @property
     def family(self) -> JobDatasetFamily:
         return self._family
 

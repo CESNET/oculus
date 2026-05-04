@@ -1,6 +1,6 @@
-from infrastructure.db.mongo_feature_state_repository import MongoFeatureRepositoryNotFoundException
 from ..orchestrators import BaseOrchestrator
-from ...domain import Job, JobDataset, JobRepository, FeatureState, calculate_uuid, FeatureStateRepository
+from ...domain import FeatureState, Job, JobDataset, JobRepository, FeatureStateRepository
+from ...infrastructure.db import MongoFeatureRepositoryNotFoundException
 from ...settings import settings
 
 
@@ -8,12 +8,12 @@ class CreateJobUseCase:
     def __init__(
             self,
             job_repository: JobRepository,
-            product_repository: FeatureStateRepository,
+            feature_state_repository: FeatureStateRepository,
             orchestrator: BaseOrchestrator,
-            data_directory_root: str
+            data_directory_root: str,
     ):
         self.job_repository = job_repository
-        self.product_repository = product_repository
+        self.feature_state_repository = feature_state_repository
         self.orchestrator = orchestrator
         self.data_directory_root = data_directory_root
 
@@ -25,28 +25,29 @@ class CreateJobUseCase:
 
         feature_id = metadata[job_dataset.feature_id_key_name]
 
-        # 1. create product
+        # 1. create or get FeatureState
         try:
-            product = self.product_repository.get(
-                entity_id=str(calculate_uuid(
-                    dataset=dataset,
-                    feature_id=feature_id
-                )
-            ))
-        except MongoFeatureRepositoryNotFoundException:
-            product = FeatureState.create(
-                dataset=dataset,
-                feature_id=feature_id,
-                data_directory=self.data_directory_root,
+            feature_state = self.feature_state_repository.get_by_dataset(
+                job_dataset.dataset_name,
+                feature_id,
             )
-            self.product_repository.save(product)
 
-        # 2. create job
+        except MongoFeatureRepositoryNotFoundException:
+            feature_state = self.feature_state_repository.save(
+                FeatureState.create(
+                    dataset=job_dataset.dataset_name,
+                    feature_id=feature_id,
+                    feature_root_directory=self.data_directory_root,
+                )
+            )
+
+        # 2. create Job
         job = Job.create(
             dataset=job_dataset,
             metadata=metadata,
             properties=properties,
         )
+
         self.job_repository.save(job)
 
         # 3. start pipeline

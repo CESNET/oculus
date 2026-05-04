@@ -1,12 +1,21 @@
 import re
 
-from .sentinel_downloader import SentinelDownloader
-from ...domain import Job
+from .sentinel_download_service import SentinelDownloadService
+from ...domain import Job, FeatureState
 
 
-class Sentinel2Downloader(SentinelDownloader):
-    def __init__(self, job: Job, logger=None):
-        super().__init__(job, logger)
+class Sentinel2DownloadService(SentinelDownloadService):
+    def __init__(
+            self,
+            job: Job,
+            feature_state: FeatureState,
+            logger=None
+    ):
+        super().__init__(
+            job=job,
+            feature_state=feature_state,
+            logger=logger
+        )
 
     def _filter_files(self, available_files: list[str] = None) -> list[str]:
         if available_files is None:
@@ -55,10 +64,14 @@ class Sentinel2Downloader(SentinelDownloader):
 
         return filtered_files
 
-    def _prune_low_resolution_files(self, files: list[str]):
+    def _prune_low_resolution_files(self, files: list[str]) -> list[str]:
         """
         Keep only files with the highest resolution in the list of files that have resolution.
         All other files (without resolution specification) are kept as-is.
+
+        Returns:
+            List[str]: A list containing the best resolution files for each band,
+                       followed by all files that did not match the resolution format.
         """
         if not files:
             return []
@@ -75,12 +88,19 @@ class Sentinel2Downloader(SentinelDownloader):
                 continue
 
             band = filename_parts[2]
-            resolution = int(filename_parts[3].replace("m", ""))
+            try:
+                resolution = int(filename_parts[3].replace("m", ""))
+            except ValueError:
+                # Fallback if resolution string is malformed
+                other_files.append(f)
+                continue
 
+            # Keep the file with the lowest resolution value (e.g., 10m is better than 20m)
             if band not in best_resolution or resolution < best_resolution[band][0]:
                 best_resolution[band] = (resolution, i)
 
         # combine best-resolution files and the others
-        pruned_files = [files[i] for r, i in best_resolution.values()]
+        pruned_files = [files[i] for _, i in best_resolution.values()]
         pruned_files.extend(other_files)
+
         return pruned_files

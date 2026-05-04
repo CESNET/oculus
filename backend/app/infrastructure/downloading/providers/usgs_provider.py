@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from . import BaseProvider
 from ....domain import Job
@@ -7,11 +8,13 @@ from ....domain import Job
 class USGSProvider(BaseProvider):
     def __init__(
             self,
-            job: Job,
+            feature_id: str,
+            feature_root_directory: Path,
             logger: logging.Logger | None = None
     ):
         super().__init__(
-            job=job,
+            feature_id=feature_id,
+            feature_root_directory=feature_root_directory,
             logger=logger
         )
 
