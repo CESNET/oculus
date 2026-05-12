@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional
+from urllib.parse import quote_plus
 
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -109,7 +110,7 @@ class Settings(BaseSettings):
     @property
     def MONGO_URI(self) -> str:
         return (
-            f"mongodb://{self.MONGO_USERNAME}:{self.MONGO_PASSWORD}@"
+            f"mongodb://{self.MONGO_USERNAME}:{quote_plus(self.MONGO_PASSWORD)}@"
             f"{self.MONGO_HOST}:{self.MONGO_PORT}/{self.MONGO_DATABASE}"
             f"?authSource={self.MONGO_DATABASE}"
         )
@@ -132,10 +133,10 @@ class Settings(BaseSettings):
         if self.REDIS_USERNAME:
             auth = self.REDIS_USERNAME
             if self.REDIS_PASSWORD:
-                auth += f":{self.REDIS_PASSWORD}"
+                auth += f":{quote_plus(self.REDIS_PASSWORD)}"
             auth += "@"
         elif self.REDIS_PASSWORD:
-            auth = f":{self.REDIS_PASSWORD}@"
+            auth = f":{quote_plus(self.REDIS_PASSWORD)}@"
 
         return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
