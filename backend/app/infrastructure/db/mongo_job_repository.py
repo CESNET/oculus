@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from pymongo import ReturnDocument
+
 from .mongo import get_collection
 from ...domain import Job, JobRepository
 
@@ -23,17 +25,15 @@ class MongoJobRepository(JobRepository):
 
     def _save(self, job: Job):
 
-        # TODO začni tady a nějak vyřeš to ukládání!!!
-
         current_version = job.version
 
         data = job.serialize()
         data["last_accessed"] = datetime.now(timezone.utc)
         data.pop("version", None)
 
+        # INSERT path (new job)
         if current_version == 0:
-            # INSERT path (new job)
-            result = self._get_collection().insert_one({
+            self._get_collection().insert_one({
                 **data,
                 "version": 0
             })
@@ -41,8 +41,8 @@ class MongoJobRepository(JobRepository):
             job.version = 0
             return
 
-        # UPDATE path (existing job)
-        result = self._get_collection().update_one(
+        # UPDATE path (existing job) - optimistic locking
+        updated = self._get_collection().find_one_and_update(
             {
                 "_id": job.id,
                 "version": current_version
@@ -50,26 +50,24 @@ class MongoJobRepository(JobRepository):
             {
                 "$set": data,
                 "$inc": {"version": 1}
-            }
+            },
+            return_document=ReturnDocument.AFTER
         )
 
-        if result.matched_count == 0:
-            raise ValueError(
-                f"Optimistic lock failed for job {job.id} "
-                f"(expected version {current_version})"
+        if updated is None:
+            current = self._get_collection().find_one(
+                {"_id": job.id},
+                {"version": 1}
             )
 
-        job.version += 1
+            db_version = current.get("version") if current else None
 
-    def find_expired(self, threshold: datetime) -> list[Job]:
-        return list(self._get_collection().find({"last_accessed": {"$lt": threshold}}))
-        if result.matched_count == 0:
             raise ValueError(
                 f"Optimistic lock failed for job {job.id} "
-                f"(expected version {current_version})"
+                f"(expected version {current_version}, db version {db_version})"
             )
 
-        job.version += 1
+        job.version = updated["version"]
 
     def find_expired(self, threshold: datetime):
         return list(self._get_collection().find(
@@ -77,4 +75,6 @@ class MongoJobRepository(JobRepository):
         ))
 
     def delete(self, job_id: str):
-        self._get_collection().delete_one({"_id": job_id})
+        self._get_collection().delete_one(
+            {"_id": job_id}
+        )

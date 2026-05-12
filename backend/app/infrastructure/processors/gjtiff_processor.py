@@ -85,6 +85,8 @@ class GJTIFFProcessor(Processor):
         """
 
         # DEBUG only vvv, for production uncomment above for executing gjtiff ^^^
+        import time
+        time.sleep(3)
         output_str = '[{"infile":"/data/oculus/2206d810-dacf-4017-8d74-56bbd9d070f1/data/downloaded/T39RWJ_20260503T070731_TCI_10m.jp2","outfile":"/data/oculus/2206d810-dacf-4017-8d74-56bbd9d070f1/data/processed/T39RWJ_20260503T070731_TCI_10m.jpg"}]'
 
         self._logger.info(output_str)
