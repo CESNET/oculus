@@ -10,7 +10,7 @@ def get_redis_client() -> redis.Redis:
 
     if _redis_client is None:
         _redis_client = redis.from_url(
-            settings.REDIS_BROKER,
+            settings.REDIS_BROKER_URL,
             decode_responses=True
         )
 
