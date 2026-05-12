@@ -2,7 +2,7 @@ import redis
 
 from ...settings import settings
 
-_redis_client: redis.Redis | None = None
+_redis_client: redis.Redis
 
 
 def get_redis_client() -> redis.Redis:

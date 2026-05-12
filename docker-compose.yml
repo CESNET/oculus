@@ -1,89 +1,5 @@
 services:
-  backend:
-    build: ./backend
-    container_name: oculus_backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    ports:
-      - "8000:8000"
-    volumes:
-      - data_volume:/data
-    env_file:
-      - backend/.env
-    depends_on:
-      - redis
-      - mongo
-      - gjtiff
-
-  celery-worker:
-    container_name: oculus_celery-worker
-    build: ./backend
-    command: celery -A app.infrastructure.celery.celery_app.celery worker -l info
-    volumes:
-      - data_volume:/data
-    env_file:
-      - backend/.env
-    depends_on:
-      - redis
-      - mongo
-    restart: always
-
-  celery-worker-processing:
-    build: ./backend
-    container_name: oculus_celery-worker-processing
-    command: celery -A app.infrastructure.celery.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
-    volumes:
-      - data_volume:/data
-      - /var/run/docker.sock:/var/run/docker.sock
-    env_file:
-      - backend/.env
-    depends_on:
-      - redis
-      - mongo
-    restart: always
-
-  celery-beat:
-    build: ./backend
-    container_name: oculus_celery-beat
-    command: celery -A app.infrastructure.celery.celery_app.celery beat --loglevel=info
-    volumes:
-      - data_volume:/data
-    depends_on:
-      - redis
-      - mongo
-    env_file:
-      - backend/.env
-    restart: always
-
-  redis:
-    image: redis:7
-    container_name: oculus_redis
-    ports:
-      - "6379:6379"
-    restart: always
-
-  mongo:
-    image: mongo:6
-    container_name: oculus_mongo
-    ports:
-      - "27017:27017"
-    command: --quiet
-    restart: always
-
-  gjtiff:
-    build: ./gjtiff
-    container_name: oculus_gjtiff # !!! This container must be named 'oculus_gjtiff' as GJTIFFProcessor Python class is hardcoded to this name !!!
-    command: [ "sleep", "infinity" ]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
-    volumes:
-      - ./gjtiff:/gjtiff
-      - data_volume:/data
-
+  # ==================== FRONTEND (public network) ====================
   nginx:
     build: ./frontend
     container_name: oculus_nginx
@@ -93,12 +9,15 @@ services:
     volumes:
       - ./frontend/nginx/certs:/etc/letsencrypt
       - ./frontend/dist:/var/www/html
-      - data_volume:/data:ro
+      - oculus_data:/data:ro
     env_file:
-      - frontend/.env
+      - ./env/frontend.env
     depends_on:
       - backend
     restart: always
+    networks:
+      - public # external access
+      - internal # internal access - needed for backend
 
   certbot:
     image: certbot/certbot
@@ -109,7 +28,131 @@ services:
     entrypoint: >
       sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/html --non-interactive; sleep 12h & wait $${!}; done"
     restart: always
+    networks:
+      - public # external access for cert renewal
+
+  # ==================== BACKEND (internal network) ====================
+  backend:
+    build: ./backend
+    container_name: oculus_backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - oculus_data:/data
+    env_file:
+      - ./env/backend.env
+      - ./env/mongo.env
+      - ./env/redis.env
+    depends_on:
+      - redis
+      - mongo
+      - gjtiff
+    restart: always
+    networks:
+      - internal
+
+  # ==================== CELERY (internal network) ====================
+  celery-worker:
+    container_name: oculus_celery-worker
+    build: ./backend
+    command: celery -A app.infrastructure.celery.celery_app.celery worker -l info
+    volumes:
+      - oculus_data:/data
+    env_file:
+      - ./env/backend.env
+      - ./env/mongo.env
+      - ./env/redis.env
+    depends_on:
+      - redis
+      - mongo
+    restart: always
+    networks:
+      - internal
+
+  celery-worker-processing:
+    container_name: oculus_celery-worker-processing
+    build: ./backend
+    command: celery -A app.infrastructure.celery.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
+    volumes:
+      - oculus_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ./env/backend.env
+      - ./env/mongo.env
+      - ./env/redis.env
+    depends_on:
+      - redis
+      - mongo
+    restart: always
+    networks:
+      - internal
+
+  celery-beat:
+    container_name: oculus_celery-beat
+    build: ./backend
+    command: celery -A app.infrastructure.celery.celery_app.celery beat --loglevel=info
+    volumes:
+      - oculus_data:/data
+    depends_on:
+      - redis
+      - mongo
+    env_file:
+      - ./env/backend.env
+      - ./env/mongo.env
+      - ./env/redis.env
+    restart: always
+    networks:
+      - internal
+
+  # ==================== Redis + Mongo (internal network) ====================
+  redis:
+    image: redis:7
+    container_name: oculus_redis
+    restart: always
+    env_file:
+      - ./env/redis.env
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    networks:
+      - internal
+
+  mongo:
+    image: mongo:6
+    container_name: oculus_mongo
+    command: --quiet
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+      - ./utils/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    env_file:
+      - ./env/mongo.env
+    networks:
+      - internal
+
+  gjtiff:
+    build: ./gjtiff
+    container_name: oculus_gjtiff
+    command: [ "sleep", "infinity" ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    volumes:
+      - ./gjtiff:/gjtiff
+      - oculus_data:/data
+    networks:
+      - internal
 
 volumes:
-  data_volume:
-    name: oculus_data_volume
+  oculus_data:
+    name: oculus_data
+  mongo_data:
+    name: mongo_data
+
+networks:
+  public:
+    driver: bridge
+  internal:
+    driver: bridge
+    internal: true # access from host and external/public networks is blocked
