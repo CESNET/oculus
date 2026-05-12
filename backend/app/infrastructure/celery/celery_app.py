@@ -1,14 +1,12 @@
-import os
-
 from celery import Celery
 
-from ...settings import settings
 from ..logging.logger import configure_logging
+from ...settings import settings
 
 celery = Celery(
     settings.APP_NAME,
-    broker=settings.REDIS_BROKER,
-    backend=settings.REDIS_BACKEND
+    broker=settings.REDIS_BROKER_URL,
+    backend=settings.REDIS_BACKEND_URL
 )
 
 celery.autodiscover_tasks(["app.infrastructure.celery.tasks"])

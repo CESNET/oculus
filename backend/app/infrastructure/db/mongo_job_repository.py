@@ -1,23 +1,22 @@
 from datetime import datetime, timezone
 
-from ...domain.job import Job, JobRepository
-from .mongo import mongo_provider
+from .mongo import get_collection
+from ...domain import Job, JobRepository
 
 
 class MongoJobRepository(JobRepository):
 
-    def __init__(self):
-        self.collection = mongo_provider.get_collection("jobs")
+    def _get_collection(self):
+        return get_collection(collection_name="jobs")
 
     def get(self, job_id: str) -> Job:
-        doc = self.collection.find_one({"_id": job_id})
+        doc = self._get_collection().find_one({"_id": job_id})
         if not doc:
-            raise ValueError("Job not found")
+            raise ValueError("Job not found in the database")
 
-        # Update last access timestamp (non-critical metadata update)
-        self.collection.update_one(
+        self._get_collection().find_one_and_update(
             {"_id": job_id},
-            {"$set": {"last_accessed": datetime.now(timezone.utc)}}
+            {"$set": {"last_accessed": datetime.now(tz=timezone.utc)}}
         )
 
         return Job.deserialize(doc)
@@ -34,7 +33,7 @@ class MongoJobRepository(JobRepository):
 
         if current_version == 0:
             # INSERT path (new job)
-            result = self.collection.insert_one({
+            result = self._get_collection().insert_one({
                 **data,
                 "version": 0
             })
@@ -43,7 +42,7 @@ class MongoJobRepository(JobRepository):
             return
 
         # UPDATE path (existing job)
-        result = self.collection.update_one(
+        result = self._get_collection().update_one(
             {
                 "_id": job.id,
                 "version": current_version
@@ -62,10 +61,20 @@ class MongoJobRepository(JobRepository):
 
         job.version += 1
 
+    def find_expired(self, threshold: datetime) -> list[Job]:
+        return list(self._get_collection().find({"last_accessed": {"$lt": threshold}}))
+        if result.matched_count == 0:
+            raise ValueError(
+                f"Optimistic lock failed for job {job.id} "
+                f"(expected version {current_version})"
+            )
+
+        job.version += 1
+
     def find_expired(self, threshold: datetime):
-        return list(self.collection.find(
+        return list(self._get_collection().find(
             {"last_accessed": {"$lt": threshold}}
         ))
 
     def delete(self, job_id: str):
-        self.collection.delete_one({"_id": job_id})
+        self._get_collection().delete_one({"_id": job_id})
