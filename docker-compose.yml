@@ -1,5 +1,6 @@
 services:
-  # ==================== FRONTEND (public network) ====================
+
+  # ==================== FRONTEND / ENTRYPOINT ====================
   nginx:
     build: ./frontend
     container_name: oculus_nginx
@@ -16,8 +17,9 @@ services:
       - backend
     restart: always
     networks:
-      - public # external access
-      - internal # internal access - needed for backend
+      - public
+      - internal-app
+
 
   certbot:
     image: certbot/certbot
@@ -29,9 +31,10 @@ services:
       sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/html --non-interactive; sleep 12h & wait $${!}; done"
     restart: always
     networks:
-      - public # external access for cert renewal
+      - public
 
-  # ==================== BACKEND (internal network) ====================
+
+  # ==================== BACKEND ====================
   backend:
     build: ./backend
     container_name: oculus_backend
@@ -48,12 +51,14 @@ services:
       - gjtiff
     restart: always
     networks:
-      - internal
+      - internal-app
+      - internal-db
 
-  # ==================== CELERY (internal network) ====================
+
+  # ==================== CELERY ====================
   celery-worker:
-    container_name: oculus_celery-worker
     build: ./backend
+    container_name: oculus_celery-worker
     command: celery -A app.infrastructure.celery.celery_app.celery worker -l info
     volumes:
       - oculus_data:/data
@@ -66,11 +71,13 @@ services:
       - mongo
     restart: always
     networks:
-      - internal
+      - internal-app
+      - internal-db
+
 
   celery-worker-processing:
-    container_name: oculus_celery-worker-processing
     build: ./backend
+    container_name: oculus_celery-worker-processing
     command: celery -A app.infrastructure.celery.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
     volumes:
       - oculus_data:/data
@@ -84,49 +91,56 @@ services:
       - mongo
     restart: always
     networks:
-      - internal
+      - internal-app
+      - internal-db
+
 
   celery-beat:
-    container_name: oculus_celery-beat
     build: ./backend
+    container_name: oculus_celery-beat
     command: celery -A app.infrastructure.celery.celery_app.celery beat --loglevel=info
     volumes:
       - oculus_data:/data
-    depends_on:
-      - redis
-      - mongo
     env_file:
       - ./env/backend.env
       - ./env/mongo.env
       - ./env/redis.env
+    depends_on:
+      - redis
+      - mongo
     restart: always
     networks:
-      - internal
+      - internal-app
+      - internal-db
 
-  # ==================== Redis + Mongo (internal network) ====================
+
+  # ==================== DATABASE (NO INTERNET) ====================
   redis:
     image: redis:7
     container_name: oculus_redis
-    restart: always
+    command: sh -c "redis-server --requirepass $$REDIS_PASSWORD"
     env_file:
       - ./env/redis.env
-    command: sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+    restart: always
     networks:
-      - internal
+      - internal-db
+
 
   mongo:
     image: mongo:6
     container_name: oculus_mongo
     command: --quiet
-    restart: always
     volumes:
       - mongo_data:/data/db
       - ./utils/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     env_file:
       - ./env/mongo.env
+    restart: always
     networks:
-      - internal
+      - internal-db
 
+
+  # ==================== GPU / PROCESSING ====================
   gjtiff:
     build: ./gjtiff
     container_name: oculus_gjtiff
@@ -142,17 +156,29 @@ services:
       - ./gjtiff:/gjtiff
       - oculus_data:/data
     networks:
-      - internal
+      - internal-app
 
+
+# ==================== VOLUMES ====================
 volumes:
   oculus_data:
     name: oculus_data
   mongo_data:
     name: mongo_data
 
+
+# ==================== NETWORKS ====================
 networks:
+
+  # public network (nginx)
   public:
     driver: bridge
-  internal:
+
+  # application network (backend + celery workers)
+  internal-app:
     driver: bridge
-    internal: true # access from host and external/public networks is blocked
+
+  # internal separated network (mongo + redis)
+  internal-db:
+    driver: bridge
+    internal: true
