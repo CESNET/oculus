@@ -10,7 +10,7 @@ services:
     volumes:
       - ./frontend/nginx/certs:/etc/letsencrypt
       - ./frontend/dist:/var/www/html
-      - oculus_data:/data:ro
+      - data:/data:ro
     env_file:
       - ./env/frontend.env
     depends_on:
@@ -40,7 +40,7 @@ services:
     container_name: oculus_backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
-      - oculus_data:/data
+      - data:/data
     env_file:
       - ./env/backend.env
       - ./env/mongo.env
@@ -61,7 +61,7 @@ services:
     container_name: oculus_celery-worker
     command: celery -A app.infrastructure.celery.celery_app.celery worker -l info
     volumes:
-      - oculus_data:/data
+      - data:/data
     env_file:
       - ./env/backend.env
       - ./env/mongo.env
@@ -80,7 +80,7 @@ services:
     container_name: oculus_celery-worker-processing
     command: celery -A app.infrastructure.celery.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
     volumes:
-      - oculus_data:/data
+      - data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     env_file:
       - ./env/backend.env
@@ -100,7 +100,7 @@ services:
     container_name: oculus_celery-beat
     command: celery -A app.infrastructure.celery.celery_app.celery beat --loglevel=info
     volumes:
-      - oculus_data:/data
+      - data:/data
     env_file:
       - ./env/backend.env
       - ./env/mongo.env
@@ -131,7 +131,7 @@ services:
     container_name: oculus_mongo
     command: --quiet
     volumes:
-      - mongo_data:/data/db
+      - mongo:/data/db
       - ./utils/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     env_file:
       - ./env/mongo.env
@@ -154,17 +154,15 @@ services:
               capabilities: [ gpu ]
     volumes:
       - ./gjtiff:/gjtiff
-      - oculus_data:/data
+      - data:/data
     networks:
       - internal-app
 
 
 # ==================== VOLUMES ====================
 volumes:
-  oculus_data:
-    name: oculus_data
-  mongo_data:
-    name: mongo_data
+  data:
+  mongo:
 
 
 # ==================== NETWORKS ====================
