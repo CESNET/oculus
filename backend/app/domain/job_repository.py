@@ -21,10 +21,10 @@ class JobRepository(ABC):
             if already_saved_job.status == JobStatus.CANCELLED:
                 return
 
-            if already_saved_job.status != job.previous_status:
-                raise ValueError(
-                    f"Cannot save job {job.id}: expected status {job.previous_status} but got {already_saved_job.status} from DB!"
-                )
+            #if already_saved_job.status != job.previous_status:
+            #    raise ValueError(
+            #        f"Cannot save job {job.id}: expected status {job.previous_status} but got {already_saved_job.status} from DB!"
+            #    )
 
         self._save(job)
 

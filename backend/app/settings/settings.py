@@ -1,15 +1,17 @@
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional
+from urllib.parse import quote_plus
 
-from pydantic import computed_field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore"
     )
 
     # ------------------------------------------------------------------
@@ -51,6 +53,7 @@ class Settings(BaseSettings):
     SENTINEL_CDSE_S3_ACCESS_KEY: Optional[str] = None
     SENTINEL_CDSE_S3_SECRET_KEY: Optional[str] = None
 
+    # GSS credentials
     ENABLE_GSS: bool = False
     GSS_ODATA_CATALOG_ROOT: Optional[str] = None
     GSS_STAC_CATALOG_ROOT: Optional[str] = None
@@ -67,7 +70,7 @@ class Settings(BaseSettings):
             "aws_access_key_id": self.SENTINEL_CDSE_S3_ACCESS_KEY,
             "aws_secret_access_key": self.SENTINEL_CDSE_S3_SECRET_KEY,
             "region_name": self.SENTINEL_CDSE_S3_REGION_NAME,
-            "endpoint_url": self.SENTINEL_CDSE_S3_ENDPOINT_URL
+            "endpoint_url": self.SENTINEL_CDSE_S3_ENDPOINT_URL,
         }
 
     @computed_field
@@ -79,7 +82,7 @@ class Settings(BaseSettings):
             "client_id": self.GSS_CLIENT_ID,
             "token_url": self.GSS_TOKEN_URL,
             "username": self.GSS_USERNAME,
-            "password": self.GSS_PASSWORD
+            "password": self.GSS_PASSWORD,
         }
 
     # ------------------------------------------------------------------
@@ -96,37 +99,60 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # MONGO
     # ------------------------------------------------------------------
-    MONGO_URI: str = "mongodb://localhost:27017"
-    MONGO_CLIENT: Optional[str] = None
-    MONGO_DB: Optional[str] = None
+    MONGO_HOST: str = Field(default="mongo")
+    MONGO_PORT: int = Field(default=27017, ge=1, le=65535)
+
+    MONGO_DATABASE: str
+    MONGO_USERNAME: str
+    MONGO_PASSWORD: str
 
     @computed_field
     @property
-    def MONGO_CLIENT_RESOLVED(self) -> str:
-        return self.MONGO_CLIENT or f"{self.APP_NAME}-mongouser"
-
-    @computed_field
-    @property
-    def MONGO_DB_RESOLVED(self) -> str:
-        return self.MONGO_DB or f"{self.APP_NAME}-jobs"
+    def MONGO_URI(self) -> str:
+        return (
+            f"mongodb://{self.MONGO_USERNAME}:{quote_plus(self.MONGO_PASSWORD)}@"
+            f"{self.MONGO_HOST}:{self.MONGO_PORT}/{self.MONGO_DATABASE}"
+            f"?authSource={self.MONGO_DATABASE}"
+        )
 
     # ------------------------------------------------------------------
-    # CELERY
+    # CELERY & REDIS
     # ------------------------------------------------------------------
     CELERY_MAX_CONCURRENT_PROCESS_TASKS: int = 1
 
-    # ------------------------------------------------------------------
-    # REDIS
-    # ------------------------------------------------------------------
-    REDIS_BROKER: str = "redis://redis:6379/0"
-    REDIS_BACKEND: str = "redis://redis:6379/0"
+    REDIS_HOST: str = Field(default="redis")
+    REDIS_PORT: int = Field(default=6379, ge=1, le=65535)
+    REDIS_DB: int = Field(default=0, ge=0)
+    REDIS_PASSWORD: Optional[str] = None
+    REDIS_USERNAME: Optional[str] = None
+
+    @computed_field
+    @property
+    def REDIS_BROKER_URL(self) -> str:
+        auth = ""
+        if self.REDIS_USERNAME:
+            auth = self.REDIS_USERNAME
+            if self.REDIS_PASSWORD:
+                auth += f":{quote_plus(self.REDIS_PASSWORD)}"
+            auth += "@"
+        elif self.REDIS_PASSWORD:
+            auth = f":{quote_plus(self.REDIS_PASSWORD)}@"
+
+        return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    @computed_field
+    @property
+    def REDIS_BACKEND_URL(self) -> str:
+        return self.REDIS_BROKER_URL
 
     # ------------------------------------------------------------------
     # PROCESSING
     # ------------------------------------------------------------------
     DEFAULT_PROCESSING_QUALITY: int = 80
     DEFAULT_PROCESSING_ZOOM_LEVELS: list[int] = [8, 9, 10, 11, 12, 13, 14]
-    DEFAULT_PROCESSING_OUTPUT_FORMATS: dict[str, dict[str, bool]] = {"webp": {"product": True, "tiles": True}}
+    DEFAULT_PROCESSING_OUTPUT_FORMATS: dict[str, dict[str, bool]] = {
+        "webp": {"product": True, "tiles": True}
+    }
 
 
 settings = Settings()

@@ -5,11 +5,15 @@ from ...settings import settings
 _mongo_client = None
 
 
-def get_collection():
+def get_database():
     global _mongo_client
 
     if _mongo_client is None:
         _mongo_client = MongoClient(settings.MONGO_URI)
 
-    db = _mongo_client[settings.MONGO_CLIENT_RESOLVED]
-    return db[settings.MONGO_DB_RESOLVED]
+    return _mongo_client[settings.MONGO_DATABASE]
+
+
+def get_collection(collection_name: str):
+    db = get_database()
+    return db[collection_name]
