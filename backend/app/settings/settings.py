@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from pydantic import Field, computed_field, RedisDsn
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -127,7 +127,7 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def REDIS_BROKER_URL(self) -> RedisDsn:
+    def REDIS_BROKER_URL(self) -> str:
         auth = ""
         if self.REDIS_USERNAME:
             auth = self.REDIS_USERNAME
@@ -137,11 +137,11 @@ class Settings(BaseSettings):
         elif self.REDIS_PASSWORD:
             auth = f":{self.REDIS_PASSWORD}@"
 
-        return RedisDsn(f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}")
+        return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     @computed_field
     @property
-    def REDIS_BACKEND_URL(self) -> RedisDsn:
+    def REDIS_BACKEND_URL(self) -> str:
         return self.REDIS_BROKER_URL
 
     # ------------------------------------------------------------------
