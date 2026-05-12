@@ -110,7 +110,7 @@ services:
     restart: always
     env_file:
       - ./env/redis.env
-    command: sh -c 'redis-server --requirepass "$REDIS_PASSWORD"'
+    command: sh -c "redis-server --requirepass $$REDIS_PASSWORD"
     networks:
       - internal
 
