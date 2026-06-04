@@ -27,52 +27,34 @@ FAILED_STATUSES = [
 
 ALLOWED_TRANSITIONS: dict[JobStatus, list[JobStatus]] = {
     JobStatus.ACCEPTED: [
-        JobStatus.DOWNLOADING,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.DOWNLOADING
     ],
     JobStatus.DOWNLOADING: [
         JobStatus.DOWNLOADING_COMPLETE,
-        JobStatus.DOWNLOADING_FAILED,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.DOWNLOADING_FAILED
     ],
     JobStatus.DOWNLOADING_COMPLETE: [
-        JobStatus.PROCESSING,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.PROCESSING
     ],
     JobStatus.DOWNLOADING_FAILED: [
-        JobStatus.DOWNLOADING,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.DOWNLOADING
     ],
     JobStatus.PROCESSING: [
         JobStatus.PROCESSING_COMPLETE,
-        JobStatus.PROCESSING_FAILED,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.PROCESSING_FAILED
     ],
     JobStatus.PROCESSING_COMPLETE: [
-        JobStatus.FINALIZING,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.FINALIZING
     ],
     JobStatus.PROCESSING_FAILED: [
-        JobStatus.PROCESSING,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.PROCESSING
     ],
     JobStatus.FINALIZING: [
         JobStatus.FINISHED,
-        JobStatus.FINALIZING_FAILED,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.FINALIZING_FAILED
     ],
     JobStatus.FINALIZING_FAILED: [
-        JobStatus.FINALIZING,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED
+        JobStatus.FINALIZING
     ],
     JobStatus.FINISHED: [],
     JobStatus.FAILED: [],
@@ -84,6 +66,11 @@ def can_transition(from_status: JobStatus, to_status: JobStatus) -> bool:
     """
     Check if a job can transition from current to next_status.
     """
+
+    # We can always fail or cancel
+    if to_status == JobStatus.FAILED or to_status == JobStatus.CANCELLED:
+        return True
+
     return to_status in ALLOWED_TRANSITIONS.get(from_status, [])
 
 

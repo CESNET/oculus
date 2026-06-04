@@ -13,16 +13,16 @@ def _now_iso() -> str:
 def _build_event_payload(job: Job) -> dict:
     payload = {
         "job_id": job.id,
-        "status": job.status,
+        "current_status": job.current_status,
         "timestamp": job.last_accessed.isoformat(),
     }
 
-    if job.status == JobStatus.FINISHED:
-        payload["processed_files"] = job.processed_files
+    if job.current_status == JobStatus.FINISHED:
+        payload["processed_files"] = job.available_processed_files
         payload["available_zoom_levels"] = job.available_zoom_levels
 
-    if job.status in FAILED_STATUSES:
-        payload["fail_reason"] = job.fail_reason
+    if job.current_status in FAILED_STATUSES:
+        payload["fail_reasons"] = job.fail_reasons
 
     return payload
 
@@ -39,7 +39,7 @@ def job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
 
     try:
         job = bootstrap_container.job_repository.get(job_id)
-        last_status = job.status
+        last_status = job.current_status
 
         yield _format_sse(_build_event_payload(job))
 
@@ -52,7 +52,7 @@ def job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
             message = subscribe_client.get_message(timeout=1.0)
             if message and message["type"] == "message":
                 job = bootstrap_container.job_repository.get(job_id)
-                last_status = job.status
+                last_status = job.current_status
                 yield _format_sse(_build_event_payload(job))
 
                 if last_status in FAILED_STATUSES or last_status == JobStatus.FINISHED:
@@ -62,8 +62,8 @@ def job_event_generator(job_id: str, heartbeat_interval: float = 15.0):
             if (now - last_heartbeat) > heartbeat_interval:
                 job = bootstrap_container.job_repository.get(job_id)
 
-                if job.status != last_status:
-                    last_status = job.status
+                if job.current_status != last_status:
+                    last_status = job.current_status
                     yield _format_sse(_build_event_payload(job))
                 else:
                     yield _format_sse()

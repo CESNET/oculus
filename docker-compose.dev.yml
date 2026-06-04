@@ -1,37 +1,37 @@
 services:
 
   # ==================== FRONTEND / ENTRYPOINT ====================
-  nginx:
-    build: ./frontend
-    container_name: oculus_nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./frontend/nginx/certs:/etc/letsencrypt
-      - ./frontend/dist:/var/www/html
-      - data:/data:ro
-    env_file:
-      - ./env/frontend.env
-    depends_on:
-      - backend
-    restart: always
-    networks:
-      - public
-      - internal-app
-
-
-  certbot:
-    image: certbot/certbot
-    container_name: oculus_certbot
-    volumes:
-      - ./frontend/nginx/certs:/etc/letsencrypt
-      - ./frontend/dist:/var/www/html
-    entrypoint: >
-      sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/html --non-interactive; sleep 12h & wait $${!}; done"
-    restart: always
-    networks:
-      - public
+#  nginx:
+#    build: ./frontend
+#    container_name: oculus_nginx
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - ./frontend/nginx/certs:/etc/letsencrypt
+#      - ./frontend/dist:/var/www/html
+#      - data:/data:ro
+#    env_file:
+#      - ./env/frontend.env
+#    depends_on:
+#      - backend
+#    restart: always
+#    networks:
+#      - public
+#      - internal-app
+#
+#
+#  certbot:
+#    image: certbot/certbot
+#    container_name: oculus_certbot
+#    volumes:
+#      - ./frontend/nginx/certs:/etc/letsencrypt
+#      - ./frontend/dist:/var/www/html
+#    entrypoint: >
+#      sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/html --non-interactive; sleep 12h & wait $${!}; done"
+#    restart: always
+#    networks:
+#      - public
 
 
   # ==================== BACKEND ====================
@@ -50,6 +50,8 @@ services:
       - mongo
       #- gjtiff
     restart: always
+    ports:
+      - "8000:8000"
     networks:
       - internal-app
       - internal-db

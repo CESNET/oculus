@@ -39,7 +39,7 @@ export type JobStatus =
 
 interface JobEventData {
     job_id: string;
-    status: JobStatus;
+    current_status: JobStatus;
     processed_files?: string[];
     available_zoom_levels?: number[];
 }
@@ -112,9 +112,9 @@ const waitForJobCompletion = (
         eventSource.onmessage = (event) => {
             try {
                 const data: JobEventData = JSON.parse(event.data);
-                if (onMessage) onMessage(data.status);
+                if (onMessage) onMessage(data.current_status);
 
-                switch (data.status) {
+                switch (data.current_status) {
                     case "FINISHED":
                         cleanup();
                         resolve({
@@ -129,7 +129,7 @@ const waitForJobCompletion = (
                     case "FINALIZING_FAILED":
                     case "CANCELLED":
                         cleanup();
-                        reject(new Error(`Visualization job ended with status: ${data.status}`));
+                        reject(new Error(`Visualization job ended with status: ${data.current_status}`));
                         break;
                 }
             } catch (err) {

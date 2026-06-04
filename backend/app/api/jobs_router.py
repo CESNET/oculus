@@ -20,7 +20,7 @@ def create_job(request: CreateJobRequestModel):
     job_id = bootstrap_container.create_job().execute(
         dataset=request.dataset,
         metadata=request.metadata,
-        properties=request.properties
+        request_properties=request.properties
     )
     return {"job_id": job_id}
 
@@ -48,7 +48,7 @@ def cancel_job(request: CancelJobRequestModel):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    if job.status in ("FINISHED", "FAILED"):
+    if job.current_status in ("FINISHED", "FAILED"):
         raise HTTPException(status_code=400, detail="Cannot cancel a finished job")
 
     success = bootstrap_container.cancel_job().execute(job.id)

@@ -21,7 +21,7 @@ class FinalizeJobUseCase(UseCase):
 
     def _execute(self, job: Job) -> Job:
         job.mark_finalizing()
-        self._save_job(job)
+        job = self._save_job(job)
 
         self._logger.info(f"Finalizing job {job.id}")
         # TODO: tady bude něco jako vracení requestu zpět frontendu
@@ -29,6 +29,6 @@ class FinalizeJobUseCase(UseCase):
         self._logger.info(f"Job {job.id} finished")
 
         job.mark_finished()
-        self._save_job(job)
+        job = self._save_job(job)
 
         return job

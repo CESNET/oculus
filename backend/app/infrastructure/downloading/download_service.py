@@ -47,13 +47,12 @@ class DownloadService(ABC):
         available_files = self._filter_files(available_files)
 
         available_map = {
-            self._extract_filename(f): f
-            for f in available_files
+            self._extract_filename(file): file for file in available_files
         }
 
-        already_downloaded_names = {
+        already_downloaded_names = [
             self._extract_filename(p) for p in already_downloaded
-        }
+        ]
 
         return [
             original_path
@@ -83,8 +82,6 @@ class DownloadService(ABC):
 
         end = time.perf_counter()
 
-        self._logger.info(
-            f"Downloaded {len(downloaded_files)} files in {(end - start):.3f}s"
-        )
+        self._logger.info(f"Downloaded {len(downloaded_files)} files in {(end - start):.3f}s")
 
         return downloaded_files

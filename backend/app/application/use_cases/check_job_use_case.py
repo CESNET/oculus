@@ -24,17 +24,17 @@ class CheckJobUseCase(UseCase):
         )
 
     def _execute(self, job: Job) -> Job:
-        if job.status in FAILED_STATUSES:
+        if job.current_status in FAILED_STATUSES:
             raise CheckJobUseCaseFailedException(
                 job_id=job.id,
-                status=job.status,
-                fail_reason=job.fail_reason,
+                status=job.current_status,
+                fail_reason=job.last_fail_reason,
             )
 
-        if job.status == JobStatus.CANCELLED:
+        if job.current_status == JobStatus.CANCELLED:
             raise CheckJobUseCaseCancelledException(
                 job_id=job.id,
-                status=job.status,
+                status=job.current_status,
                 cancel_reason=job.cancel_reason,
             )
 

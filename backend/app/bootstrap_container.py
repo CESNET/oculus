@@ -14,13 +14,18 @@ from .domain.feature_state.feature_state_repository import FeatureStateRepositor
 from .domain.job.job_repository import JobRepository
 from .infrastructure.db.mongo_feature_state_repository import MongoFeatureStateRepository
 from .infrastructure.db.mongo_job_repository import MongoJobRepository
+from .infrastructure.db.mongo_provider import MongoProvider
 from .infrastructure.processors.gjtiff_processor import GJTIFFProcessor
 from .infrastructure.redis.redis import get_redis_client
 from .infrastructure.redis.redis_pubsub import RedisPubSub
 from .settings import settings
 
-default_job_repository = MongoJobRepository()
-default_feature_state_repository = MongoFeatureStateRepository()
+default_mongo_provider = MongoProvider(
+    mongo_uri=settings.MONGO_URI,
+    database_name=settings.MONGO_DATABASE,
+)
+default_job_repository = MongoJobRepository(default_mongo_provider.jobs())
+default_feature_state_repository = MongoFeatureStateRepository(default_mongo_provider.feature_states())
 default_orchestrator = CeleryOrchestrator()
 default_redis_client = get_redis_client()
 default_logger = logging.getLogger(settings.APP_NAME)
@@ -29,17 +34,24 @@ default_logger = logging.getLogger(settings.APP_NAME)
 class BootstrapContainer:
     def __init__(
             self,
-            job_repository: JobRepository = None,
-            feature_state_repository: FeatureStateRepository = None,
-            orchestrator: BaseOrchestrator = None,
-            redis_client: redis.Redis = None,
-            logger: logging.Logger = None
+            job_repository: JobRepository | None = None,
+            feature_state_repository: FeatureStateRepository | None = None,
+
+            orchestrator: BaseOrchestrator | None = None,
+
+            redis_client: redis.Redis | None = None,
+
+            logger: logging.Logger | None = None,
     ):
-        self._job_repository = job_repository or MongoJobRepository()
-        self._feature_state_repository = feature_state_repository or MongoFeatureStateRepository()
-        self._orchestrator = orchestrator or CeleryOrchestrator()
-        self._redis_pubsub: RedisPubSub = RedisPubSub(client=redis_client) or RedisPubSub(default_redis_client)
-        self._logger = logger or logging.getLogger(settings.APP_NAME)
+        self._job_repository = job_repository or default_job_repository
+
+        self._feature_state_repository = feature_state_repository or default_feature_state_repository
+
+        self._orchestrator = orchestrator or default_orchestrator
+
+        self._redis_pubsub = RedisPubSub(client=redis_client or default_redis_client)
+
+        self._logger = logger or default_logger
 
     @property
     def job_repository(self) -> JobRepository:
@@ -85,6 +97,7 @@ class BootstrapContainer:
     def process_job(self) -> ProcessJobUseCase:
         return ProcessJobUseCase(
             job_repository=self.job_repository,
+            feature_state_repository=self.feature_state_repository,
             redis_pubsub=self.redis_pubsub,
             processor_class=GJTIFFProcessor
         )

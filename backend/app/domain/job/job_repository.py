@@ -1,25 +1,15 @@
-from abc import abstractmethod
+from typing import Protocol, Optional
 
-from .job import Job
-from ..common.base_repository import BaseRepository
+from .job import Job, JobId
 
 
-class JobRepository(BaseRepository[Job]):
-    """
-    Repository abstraction for Job persistence.
-    """
+class JobRepository(Protocol):
 
-    def save(self, job: Job):
-        """
-        Save job entity.
-        Version-based concurrency control is handled in concrete implementation.
-        """
-        self._save(job)
+    def get(self, job_id: JobId) -> Job:
+        ...
 
-    @abstractmethod
-    def _save(self, job: Job):
-        """
-        Persist job to storage backend.
-        Must implement optimistic locking using job.version.
-        """
-        pass
+    def insert(self, job: Job) -> None:
+        ...
+
+    def update(self, job: Job) -> Job:
+        ...
