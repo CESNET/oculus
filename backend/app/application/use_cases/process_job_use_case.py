@@ -2,218 +2,113 @@ import logging
 from typing import Type, Optional
 
 from .use_case import UseCase
-
-from ...domain import    Job,    JobRepository,   FeatureState,    FeatureStateId,    FeatureStateRepository
-
-from ...infrastructure.processors import    Processor
-from ...infrastructure.redis.redis_pubsub import    RedisPubSub
+from ...domain import (
+    Job,
+    JobRepository,
+    FeatureStateRepository,
+    FeatureState,
+    FeatureStateLockRepository,
+    FeatureStateLockType,
+)
+from ...infrastructure.processors import Processor
+from ...infrastructure.redis import RedisPubSub
 
 
 class ProcessJobUseCase(UseCase):
 
     def __init__(
-        self,
-        job_repository: JobRepository,
-        feature_state_repository: FeatureStateRepository,
-        processor_class: Type[Processor],
-        redis_pubsub: RedisPubSub,
-        logger: Optional[logging.Logger] = None,
+            self,
+            job_repository: JobRepository,
+            feature_state_repository: FeatureStateRepository,
+            feature_state_lock_repository: FeatureStateLockRepository,
+            processor_class: Type[Processor],
+            redis_pubsub: RedisPubSub,
+            logger: Optional[logging.Logger] = None,
     ):
-
-        self._processor_class = processor_class
-
-        self._feature_state_repository = (
-            feature_state_repository
-        )
-
         super().__init__(
             job_repository=job_repository,
             redis_pubsub=redis_pubsub,
             logger=logger,
         )
 
-    def _execute(
-        self,
-        job: Job,
-    ) -> Job:
+        self._processor_class = processor_class
 
-        # -------------------------
-        # UPDATE JOB STATUS
-        # -------------------------
+        self._feature_state_repository: FeatureStateRepository = feature_state_repository
+        self._feature_state_lock_repository: FeatureStateLockRepository = feature_state_lock_repository
 
-        job.mark_processing()
+    def _execute(self, job: Job) -> Job:
 
+        job.mark_waiting_for_processing_lock()
         job = self._save_job(job)
-
-        feature_state_id = (
-            FeatureStateId.from_parts(
-                dataset=job.dataset.name,
-                feature_id=job.feature_id,
-            )
-        )
-
-        reserved_files: list[str] = []
 
         try:
+            with self._feature_state_lock_repository.lock(
+                    feature_state_id=job.feature_state_id,
+                    lock_type=FeatureStateLockType.PROCESSING
+            ):
+                job.mark_processing()
+                job = self._save_job(job)
 
-            # -------------------------
-            # LOAD FEATURE STATE
-            # -------------------------
+                feature_state = self._feature_state_repository.get(job.feature_state_id)
 
-            feature_state: FeatureState = (
-                self._feature_state_repository.get(
-                    feature_state_id
-                )
-            )
-
-            # -------------------------
-            # CREATE PROCESSOR
-            # -------------------------
-
-            processor = self._processor_class(
-                job=job,
-                feature_state=feature_state,
-                logger=self._logger,
-            )
-
-            # -------------------------
-            # DETERMINE CANDIDATES
-            # -------------------------
-
-            candidate_files = processor.get_candidate_files(
-                already_processed=feature_state.processed_files
-            )
-
-            # -------------------------
-            # RESERVE FILES
-            # -------------------------
-
-            reserved_files = (
-                self._feature_state_repository
-                .reserve_processing(
-                    feature_state_id=feature_state_id,
-                    files=candidate_files,
-                )
-            )
-
-            if not reserved_files:
-
-                self._logger.info(
-                    "No files reserved for processing"
+                processor: Processor = self._processor_class(
+                    job=job,
+                    feature_state=feature_state,
+                    logger=self._logger,
                 )
 
-                job.mark_processing_complete()
+                files_to_process: list[str] = processor.get_files_to_process()
 
-                return self._save_job(job)
+                if not files_to_process:
+                    self._logger.info(f"No files to process for job {job.id}")
 
-            self._logger.info(
-                f"Reserved processing files: "
-                f"{reserved_files}"
-            )
+                    job.mark_processing_complete()
 
-            # -------------------------
-            # LONG RUNNING PROCESSING
-            # -------------------------
+                else:
+                    processed_files = self._process_files(
+                        processor=processor,
+                        files_to_process=files_to_process,
+                    )
 
-            processed_files = processor.process(
-                files=reserved_files
-            )
+                    feature_state = self._update_feature_state(
+                        feature_state=feature_state,
+                        processed_files=processed_files,
+                    )
 
-            self._logger.info(
-                f"Successfully processed files: "
-                f"{processed_files}"
-            )
-
-            # -------------------------
-            # COMPLETE SUCCESSFUL FILES
-            # -------------------------
-
-            if processed_files:
-
-                self._feature_state_repository.complete_processing(
-                    feature_state_id=feature_state_id,
-                    files=processed_files,
-                )
-
-            # -------------------------
-            # RELEASE FAILED FILES
-            # -------------------------
-
-            failed_files = list(
-                set(reserved_files) - set(processed_files)
-            )
-
-            if failed_files:
-
-                self._feature_state_repository.release_processing(
-                    feature_state_id=feature_state_id,
-                    files=failed_files,
-                )
-
-                self._logger.warning(
-                    f"Released failed processing files: "
-                    f"{failed_files}"
-                )
-
-            # -------------------------
-            # VALIDATION
-            # -------------------------
-
-            updated_state = (
-                self._feature_state_repository.get(
-                    feature_state_id
-                )
-            )
-
-            if not updated_state.processed_files:
-
-                raise ValueError(
-                    "No processed files available"
-                )
-
-            self._logger.info(
-                f"Processed files: "
-                f"{updated_state.processed_files}"
-            )
-
-            # -------------------------
-            # SUCCESS
-            # -------------------------
-
-            job.mark_processing_complete()
-
-            self._logger.info(
-                f"Processing finished successfully "
-                f"for job {job.id}"
-            )
+                    job.mark_processing_complete()
 
         except Exception as e:
-
-            # -------------------------
-            # RELEASE ALL RESERVED FILES
-            # -------------------------
-
-            if reserved_files:
-
-                self._feature_state_repository.release_processing(
-                    feature_state_id=feature_state_id,
-                    files=reserved_files,
-                )
-
-            # -------------------------
-            # UPDATE FAILURE
-            # -------------------------
-
             job.mark_processing_failed(str(e))
-
-            self._logger.exception(
-                f"Processing failed for job {job.id}: {e}"
-            )
-
-        # -------------------------
-        # SAVE FINAL JOB
-        # -------------------------
+            self._logger.exception(f"Processing failed for job {job.id}: {e}")
 
         job = self._save_job(job)
-
         return job
+
+    def _process_files(
+            self,
+            processor: Processor,
+            files_to_process: list[str],
+    ) -> list[str]:
+
+        self._logger.info(f"Processing {len(files_to_process)} files.")
+
+        processed_files = processor.process(files_to_process=files_to_process)
+
+        self._logger.info(f"Processed {len(processed_files)} files. Will update feature state.")
+
+        return processed_files
+
+    def _update_feature_state(
+            self,
+            feature_state: FeatureState,
+            processed_files: list[str],
+    ) -> FeatureState:
+
+        self._logger.info(f"Updating feature state of {feature_state.id}.")
+
+        feature_state = self._feature_state_repository.mark_files_processed(
+            feature_state_id=feature_state.id,
+            processed_files=processed_files,
+        )
+
+        return feature_state

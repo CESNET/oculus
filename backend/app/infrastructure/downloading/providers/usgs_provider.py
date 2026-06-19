@@ -26,6 +26,6 @@ class USGSProvider(BaseProvider):
         # TODO lookup produktů na USGS
         raise NotImplementedError("USGS datasource lookup is not implemented!")
 
-    def download_product_files(self, files_to_download: list[str]) -> list[str]:
+    def _download_product_files(self, files_to_download: set[str]) -> list[str]:
         # TODO download prodkutů z USGS
         raise NotImplementedError("USGS datasource download is not implemented!")

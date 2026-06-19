@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from .sentinel_download_service import SentinelDownloadService
 from ...domain import Job, FeatureState
@@ -17,7 +18,7 @@ class Sentinel2DownloadService(SentinelDownloadService):
             logger=logger
         )
 
-    def _filter_files(self, available_files: list[str] = None) -> list[str]:
+    def _filter_files(self, available_files: Optional[list[str]] = None) -> list[str]:
         if available_files is None:
             return []
 

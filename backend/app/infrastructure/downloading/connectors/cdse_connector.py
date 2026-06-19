@@ -118,7 +118,7 @@ class CDSEConnector:
     # -----------------------
     # File Download
     # -----------------------
-    def download_selected_files(self, files_to_download: list[str]) -> list[str]:
+    def download_selected_files(self, files_to_download: set[str]) -> list[str]:
         self._workdir.mkdir(parents=True, exist_ok=True)
         bucket, _ = self._parse_s3_path(self.get_s3_path())
 

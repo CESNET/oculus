@@ -31,7 +31,9 @@ def _format_sse(data: dict = None) -> str:
     if data is None:
         return ":\n\n"
 
-    return f"data: {json.dumps(data)}\n\n"
+    print(data)
+
+    return f"data: {json.dumps(data, default=str)}\n\n"
 
 
 def job_event_generator(job_id: str, heartbeat_interval: float = 15.0):

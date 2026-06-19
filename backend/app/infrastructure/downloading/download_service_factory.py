@@ -1,3 +1,4 @@
+from .download_service import DownloadService
 from .landsat_download_service import LandsatDownloadService
 from .sentinel_1_download_service import Sentinel1DownloadService
 from .sentinel_2_download_service import Sentinel2DownloadService
@@ -33,7 +34,7 @@ class DownloadServiceFactory:
         else:
             raise TypeError(f"Invalid entry type: {type(entry)}")
 
-    def get_download_service(self, job: Job, feature_state: FeatureState, logger=None):
+    def get_download_service(self, job: Job, feature_state: FeatureState, logger=None) -> DownloadService:
         dataset_entry = self._DOWNLOAD_SERVICE_MAP.get(job.dataset)
 
         if dataset_entry is None:

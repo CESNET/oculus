@@ -1,5 +1,5 @@
 from ..orchestrators import BaseOrchestrator
-from ...domain import FeatureState, Job, JobDataset, JobRepository, FeatureStateRepository
+from ...domain import Job, JobId, JobDataset, JobRepository, FeatureStateRepository
 from ...settings import settings
 
 
@@ -16,18 +16,16 @@ class CreateJobUseCase:
         self.orchestrator = orchestrator
         self.data_directory_root = data_directory_root
 
-    def execute(self, dataset: str, metadata: dict, request_properties: dict) -> str:
+    def execute(self, dataset: str, metadata: dict, request_properties: dict) -> JobId:
         job_dataset = JobDataset.from_str(dataset)
 
         if job_dataset.family.value not in settings.ENABLED_DATASETS:
             raise ValueError("Dataset not enabled")
 
-        feature_id = metadata[job_dataset.feature_id_key_name]
-
         # 1. FeatureState (atomic)
         feature_state = self.feature_state_repository.get_or_create(
             dataset=job_dataset.dataset_name,
-            feature_id=feature_id,
+            feature_id=metadata[job_dataset.feature_id_key_name],
             root_directory=self.data_directory_root,
         )
 
@@ -36,11 +34,12 @@ class CreateJobUseCase:
             dataset=job_dataset,
             metadata=metadata,
             request_properties=request_properties,
+            feature_state_id=feature_state.id,
         )
 
-        self.job_repository.insert(job)
+        self.job_repository.save(job)
 
         # 3. pipeline
-        self.orchestrator.run_pipeline(str(job.id))
+        self.orchestrator.run_pipeline(job.id)
 
-        return str(job.id)
+        return job.id

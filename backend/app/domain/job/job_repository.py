@@ -1,15 +1,24 @@
-from typing import Protocol, Optional
+from typing import Protocol
 
 from .job import Job, JobId
 
 
 class JobRepository(Protocol):
 
-    def get(self, job_id: JobId) -> Job:
+    def get(
+            self,
+            job_id: JobId
+    ) -> Job:
         ...
 
-    def insert(self, job: Job) -> None:
+    def save(
+            self,
+            job: Job
+    ) -> Job:
         ...
 
-    def update(self, job: Job) -> Job:
+    def delete (
+            self,
+            job_id: JobId
+    ) -> None:
         ...

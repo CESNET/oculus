@@ -11,8 +11,12 @@ __all__ = [
     "JobStatus", "FAILED_STATUSES",
     "FeatureState",
     "FeatureStateId",
+    "FileState",
     "FeatureStateRepository",
+    "FeatureStateLockType",
+    "FeatureStateLockRepository",
     "ConcurrencyError",
     "JobNotFound",
-    "FeatureStateNotFound"
+    "FeatureStateNotFound",
+    "FeatureStateLockError"
 ]

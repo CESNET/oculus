@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from .use_case import UseCase
-from ...domain import Job, JobRepository
+from ...domain import Job, JobId, JobRepository
 from ...infrastructure.redis.redis_pubsub import RedisPubSub
 
 
@@ -25,7 +25,7 @@ class CleanupJobUseCase(UseCase):
             logger=logger
         )
 
-    def execute(self, job_id: Optional[str]) -> int:
+    def execute(self, job_id: Optional[JobId]) -> int:
         threshold = datetime.now(tz=timezone.utc) - timedelta(minutes=1)
         expired_jobs: list[Job] = self._job_repository.find_expired(threshold)
         deleted_count = 0

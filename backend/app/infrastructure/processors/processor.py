@@ -19,25 +19,42 @@ class Processor(ABC):
         self._job = job
         self._feature_state = feature_state
 
-        self._logger: logging.Logger = (
-                logger or logging.getLogger(settings.APP_NAME)
-        )
+        self._logger = logger or logging.getLogger(settings.APP_NAME)
 
         self._path_to_processed = os.path.join(
             str(self._feature_state.feature_root_directory),
             "processed"
         )
 
+    def get_files_to_process(self) -> list[str]:
+        files_to_process: list[str] = []
+
+        for filename in self._job.requested_files:
+
+            file_state = self._feature_state.get_file_state(filename)
+
+            if file_state is None:
+                raise ValueError(f"File {filename} is expected but it does not exist at all.")
+
+            if not file_state.is_downloaded:
+                raise ValueError(f"File {filename} is expected to be downloaded, but it is not.")
+
+            if file_state.is_processed:
+                continue
+
+            files_to_process.append(str(file_state.download_path))
+
+        return files_to_process
+
     def process(
             self,
-            already_processed: Optional[list[str]] = None
+            files_to_process: list[str]
     ) -> list[str]:
 
         self._logger.info(f"Processing job {self._job.id}")
 
-        self._already_processed =                already_processed or []
+        self._input_files = files_to_process
 
-        self._ensure_input_files()
         self._ensure_output_dir()
 
         start = time.perf_counter()
@@ -53,19 +70,6 @@ class Processor(ABC):
     @abstractmethod
     def _process(self) -> list[str]:
         ...
-
-    # -------------------------------
-    # Helper methods
-    # -------------------------------
-
-    def _ensure_input_files(self):
-
-        input_files = self._feature_state.downloaded_files
-
-        if not input_files:
-            raise ValueError("No input files specified!")
-
-        self._input_files = input_files
 
     def _ensure_output_dir(self):
         os.makedirs(
@@ -108,16 +112,11 @@ class Processor(ABC):
         """
 
         if zoom_levels is None:
-
             zoom_levels = default_zoom_levels
 
         else:
-
             try:
-                zoom_levels = [
-                    int(z)
-                    for z in zoom_levels
-                ]
+                zoom_levels = [int(zoom_level) for zoom_level in zoom_levels]
 
             except (ValueError, TypeError):
 
@@ -131,8 +130,6 @@ class Processor(ABC):
         zoom_min = min(zoom_levels)
         zoom_max = max(zoom_levels)
 
-        zoom_levels = list(
-            range(zoom_min, zoom_max + 1)
-        )
+        zoom_levels = list(range(zoom_min, zoom_max + 1))
 
         return zoom_levels

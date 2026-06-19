@@ -1,8 +1,11 @@
+from ...domain import JobId
+
+
 class RedisPubSub:
     def __init__(self, client):
         self._client = client
 
-    def publish(self, job_id: str, message: str):
+    def publish(self, job_id: JobId, message: str):
         self._client.publish(f"job:{job_id}", message)
 
     def subscribe(self, job_id: str):

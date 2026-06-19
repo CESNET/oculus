@@ -28,16 +28,25 @@ class DownloadService(ABC):
     def _find_provider(self) -> BaseProvider:
         for provider in self._providers:
             if provider.has_product():
-                self._logger.info(
-                    f"Product {self._job.feature_id} found in {provider.__class__.__name__}"
-                )
+                self._logger.info(f"Product {self._job.feature_id} found in {provider.__class__.__name__}")
                 return provider
 
         raise ValueError(f"Product {self._job.feature_id} not found in any provider")
 
-    @staticmethod
-    def _extract_filename(path: str) -> str:
-        return Path(path).name
+    def get_requested_files(self) -> list[str]:
+        available_files: list[str] = self._provider.list_product_files()
+        requested_files: list[str] = self._filter_files(available_files=available_files)
+
+        return requested_files
+
+    def get_files_to_download(self, requested_files: list[str]) -> list[str]:
+        files_to_download = [
+            requested_file
+            for requested_file in requested_files
+            if not self._feature_state.is_file_downloaded(Path(requested_file).stem)
+        ]
+
+        return files_to_download
 
     def filter_files(
             self,
@@ -47,11 +56,11 @@ class DownloadService(ABC):
         available_files = self._filter_files(available_files)
 
         available_map = {
-            self._extract_filename(file): file for file in available_files
+            Path(file).name: file for file in available_files
         }
 
         already_downloaded_names = [
-            self._extract_filename(p) for p in already_downloaded
+            Path(file).name for file in already_downloaded
         ]
 
         return [
@@ -64,15 +73,8 @@ class DownloadService(ABC):
     def _filter_files(self, available_files: list[str]) -> list[str]:
         ...
 
-    def download(self, already_downloaded: set[str]) -> list[str]:
+    def download(self, files_to_download:list[str]) -> list[str]:
         self._logger.info(f"Downloading job {self._job.id}")
-
-        available_files: list[str] = self._provider.list_product_files()
-
-        files_to_download: list[str] = self.filter_files(
-            available_files=available_files,
-            already_downloaded=already_downloaded,
-        )
 
         start = time.perf_counter()
 

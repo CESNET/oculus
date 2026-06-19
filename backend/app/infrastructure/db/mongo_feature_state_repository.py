@@ -1,9 +1,9 @@
-from datetime import datetime, timezone, timedelta
+from pathlib import Path
 
 from pymongo import ReturnDocument
 from pymongo.collection import Collection
 
-from ...domain import FeatureState, FeatureStateId, FeatureStateRepository, FeatureStateNotFound
+from ...domain import FeatureState, FeatureStateId, FeatureStateRepository, FeatureStateNotFound, FileState
 
 
 class MongoFeatureStateRepository(FeatureStateRepository):
@@ -12,50 +12,104 @@ class MongoFeatureStateRepository(FeatureStateRepository):
         self.collection = collection
 
     # -------------------------
-    # MAPPING
+    # mapping
     # -------------------------
 
-    def _to_doc(self, state: FeatureState) -> dict:
-        return {
-            "_id": str(state.id),
-            "dataset": state.dataset,
-            "feature_id": state.feature_id,
-            "feature_root_directory": str(state.feature_root_directory),
+    def _to_doc(
+            self,
+            state: FeatureState,
+    ) -> dict:
+        doc = state.to_dict()
+        doc["_id"] = str(state.id)
+        return doc
 
-            "downloaded_files": state.downloaded_files,
-            "processed_files": state.processed_files,
+    def _from_doc(
+            self,
+            doc: dict,
+    ) -> FeatureState:
+        return FeatureState.from_dict(doc)
 
-            "downloading_locks": state.downloading_locks,
-            "processing_locks": state.processing_locks,
-        }
+    # -------------------------
+    # read
+    # -------------------------
 
-    def _from_doc(self, doc: dict) -> FeatureState:
-        return FeatureState(
-            dataset=doc["dataset"],
-            feature_id=doc["feature_id"],
-            feature_root_directory=doc["feature_root_directory"],
-
-            downloaded_files=doc.get("downloaded_files", []),
-            processed_files=doc.get("processed_files", []),
-
-            downloading_locks=doc.get("downloading_locks", {}),
-            processing_locks=doc.get("processing_locks", {}),
+    def get(
+            self,
+            feature_state_id: FeatureStateId,
+    ) -> FeatureState:
+        doc = self.collection.find_one(
+            {
+                "_id": str(feature_state_id)
+            }
         )
 
-    # -------------------------
-    # READ
-    # -------------------------
-
-    def get(self, feature_state_id: FeatureStateId) -> FeatureState:
-        doc = self.collection.find_one({"_id": str(feature_state_id)})
-
-        if not doc:
+        if doc is None:
             raise FeatureStateNotFound(str(feature_state_id))
 
         return self._from_doc(doc)
 
-    def insert(self, feature_state: FeatureState) -> None:
-        self.collection.insert_one(self._to_doc(feature_state))
+    # -------------------------
+    # write
+    # -------------------------
+
+    def save(self, feature_state: FeatureState) -> FeatureState:
+        # replace_one with upsert=True; if the document doesn't exist, it will be created, otherwise it will be updated
+        result = self.collection.replace_one(
+            {"_id": str(feature_state.id)},
+            self._to_doc(feature_state),
+            upsert=True,
+        )
+
+        return feature_state
+
+    def mark_files_downloaded(
+            self,
+            feature_state_id: FeatureStateId,
+            downloaded_files: list[str],
+    ) -> FeatureState:
+
+        feature_state = self.get(feature_state_id)
+
+        for file_path in downloaded_files:
+            filename = Path(file_path).stem
+
+            file_state = feature_state.get_file_state(filename)
+
+            if file_state is None:
+                feature_state.files[filename] = FileState(
+                    filename=filename,
+                    download_path=Path(file_path),
+                )
+            else:
+                file_state.download_path = Path(file_path)
+
+        return self.save(feature_state)
+
+    def mark_files_processed(
+            self,
+            feature_state_id: FeatureStateId,
+            processed_files: list[str],
+    ) -> FeatureState:
+        feature_state = self.get(feature_state_id)
+
+        for file_path in processed_files:
+            filename = Path(file_path).stem
+
+            file_state = feature_state.get_file_state(filename)
+            print(file_state)
+
+            if file_state is None:
+                raise ValueError(f"Cannot mark {filename} as processed because it does not exist")
+
+            file_state.processed_path = Path(file_path)
+
+            print(file_state)
+
+        return self.save(feature_state)
+
+    # -------------------------
+    # create
+    # -------------------------
 
     def get_or_create(
             self,
@@ -63,22 +117,22 @@ class MongoFeatureStateRepository(FeatureStateRepository):
             feature_id: str,
             root_directory: str,
     ) -> FeatureState:
-        state_id = FeatureStateId.from_parts(dataset, feature_id)
+        state_id = FeatureStateId(
+            dataset=dataset,
+            feature_id=feature_id,
+        )
 
         doc = self.collection.find_one_and_update(
-            filter={"_id": str(state_id)},
+            filter={
+                "_id": str(state_id),
+            },
             update={
                 "$setOnInsert": {
                     "_id": str(state_id),
                     "dataset": dataset,
                     "feature_id": feature_id,
-                    "feature_root_directory": str(root_directory),
-
-                    "downloaded_files": [],
-                    "processed_files": [],
-
-                    "downloading_locks": {},
-                    "processing_locks": {},
+                    "feature_root_directory": str(Path(root_directory) / dataset / feature_id),
+                    "files": {},
                 }
             },
             upsert=True,
@@ -86,157 +140,3 @@ class MongoFeatureStateRepository(FeatureStateRepository):
         )
 
         return self._from_doc(doc)
-
-    # -------------------------
-    # DOWNLOAD LOCKING
-    # -------------------------
-
-    def reserve_download(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-            timeout_seconds: int = 3600,
-    ) -> bool:
-        now = datetime.now(timezone.utc)
-
-        result = self.collection.find_one_and_update(
-            filter={
-                "_id": str(feature_state_id),
-
-                "downloaded_files": {"$ne": file},
-
-                "$or": [
-                    {f"downloading_locks.{file}": {"$exists": False}},
-                    {
-                        f"downloading_locks.{file}.expires_at": {
-                            "$lt": now
-                        }
-                    },
-                ],
-            },
-            update={
-                "$set": {
-                    f"downloading_locks.{file}": {
-                        "job_id": job_id,
-                        "reserved_at": now,
-                        "expires_at": now + timedelta(seconds=timeout_seconds),
-                    }
-                }
-            },
-            return_document=ReturnDocument.AFTER,
-        )
-
-        return result is not None
-
-    def complete_download(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-    ) -> bool:
-        result = self.collection.update_one(
-            {
-                "_id": str(feature_state_id),
-                f"downloading_locks.{file}.job_id": job_id,
-            },
-            {
-                "$unset": {f"downloading_locks.{file}": ""},
-                "$addToSet": {"downloaded_files": file},
-            },
-        )
-
-        return result.modified_count > 0
-
-    def release_download(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-    ) -> None:
-        self.collection.update_one(
-            {
-                "_id": str(feature_state_id),
-                f"downloading_locks.{file}.job_id": job_id,
-            },
-            {
-                "$unset": {f"downloading_locks.{file}": ""},
-            },
-        )
-
-    # -------------------------
-    # PROCESSING LOCKING
-    # -------------------------
-
-    def reserve_processing(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-            timeout_seconds: int = 3600,
-    ) -> bool:
-        now = datetime.now(timezone.utc)
-
-        result = self.collection.find_one_and_update(
-            filter={
-                "_id": str(feature_state_id),
-
-                "processed_files": {"$ne": file},
-
-                "$or": [
-                    {f"processing_locks.{file}": {"$exists": False}},
-                    {
-                        f"processing_locks.{file}.expires_at": {
-                            "$lt": now
-                        }
-                    },
-                ],
-            },
-            update={
-                "$set": {
-                    f"processing_locks.{file}": {
-                        "job_id": job_id,
-                        "reserved_at": now,
-                        "expires_at": now + timedelta(seconds=timeout_seconds),
-                    }
-                }
-            },
-            return_document=ReturnDocument.AFTER,
-        )
-
-        return result is not None
-
-    def complete_processing(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-    ) -> bool:
-        result = self.collection.update_one(
-            {
-                "_id": str(feature_state_id),
-                f"processing_locks.{file}.job_id": job_id,
-            },
-            {
-                "$unset": {f"processing_locks.{file}": ""},
-                "$addToSet": {"processed_files": file},
-            },
-        )
-
-        return result.modified_count > 0
-
-    def release_processing(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-    ) -> None:
-        self.collection.update_one(
-            {
-                "_id": str(feature_state_id),
-                f"processing_locks.{file}.job_id": job_id,
-            },
-            {
-                "$unset": {f"processing_locks.{file}": ""},
-            },
-        )

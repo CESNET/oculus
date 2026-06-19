@@ -46,7 +46,7 @@ class GSSProvider(BaseProvider):
 
         return available_files
 
-    def download_product_files(self, files_to_download: list[str]) -> list[str]:
+    def _download_product_files(self, files_to_download: set[str]) -> list[str]:
         self._logger.info(f"Starting GSS download for product {self._feature_id}")
 
         downloaded_files: list[str] = self._connector.download_selected_files(files_to_download=files_to_download)

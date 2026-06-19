@@ -10,6 +10,7 @@ from .application.use_cases.create_job_use_case import CreateJobUseCase
 from .application.use_cases.download_job_use_case import DownloadJobUseCase
 from .application.use_cases.finalize_job_use_case import FinalizeJobUseCase
 from .application.use_cases.process_job_use_case import ProcessJobUseCase
+from .domain.feature_state.feature_state_lock_repository import FeatureStateLockRepository
 from .domain.feature_state.feature_state_repository import FeatureStateRepository
 from .domain.job.job_repository import JobRepository
 from .infrastructure.db.mongo_feature_state_repository import MongoFeatureStateRepository
@@ -17,6 +18,7 @@ from .infrastructure.db.mongo_job_repository import MongoJobRepository
 from .infrastructure.db.mongo_provider import MongoProvider
 from .infrastructure.processors.gjtiff_processor import GJTIFFProcessor
 from .infrastructure.redis.redis import get_redis_client
+from .infrastructure.redis.redis_feature_state_lock_repository import RedisFeatureStateLockRepository
 from .infrastructure.redis.redis_pubsub import RedisPubSub
 from .settings import settings
 
@@ -28,6 +30,7 @@ default_job_repository = MongoJobRepository(default_mongo_provider.jobs())
 default_feature_state_repository = MongoFeatureStateRepository(default_mongo_provider.feature_states())
 default_orchestrator = CeleryOrchestrator()
 default_redis_client = get_redis_client()
+default_feature_state_lock_repository = RedisFeatureStateLockRepository(redis=default_redis_client)
 default_logger = logging.getLogger(settings.APP_NAME)
 
 
@@ -36,6 +39,7 @@ class BootstrapContainer:
             self,
             job_repository: JobRepository | None = None,
             feature_state_repository: FeatureStateRepository | None = None,
+            feature_state_lock_repository: FeatureStateLockRepository | None = None,
 
             orchestrator: BaseOrchestrator | None = None,
 
@@ -46,6 +50,8 @@ class BootstrapContainer:
         self._job_repository = job_repository or default_job_repository
 
         self._feature_state_repository = feature_state_repository or default_feature_state_repository
+
+        self._feature_state_lock_repository = feature_state_lock_repository or default_feature_state_lock_repository
 
         self._orchestrator = orchestrator or default_orchestrator
 
@@ -91,6 +97,7 @@ class BootstrapContainer:
         return DownloadJobUseCase(
             job_repository=self.job_repository,
             feature_state_repository=self._feature_state_repository,
+            feature_state_lock_repository=self._feature_state_lock_repository,
             redis_pubsub=self.redis_pubsub
         )
 
@@ -98,6 +105,7 @@ class BootstrapContainer:
         return ProcessJobUseCase(
             job_repository=self.job_repository,
             feature_state_repository=self.feature_state_repository,
+            feature_state_lock_repository=self._feature_state_lock_repository,
             redis_pubsub=self.redis_pubsub,
             processor_class=GJTIFFProcessor
         )

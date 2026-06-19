@@ -100,7 +100,7 @@ class GSSConnector:
         self._logger.debug(f"Fetched STAC metadata including {len(response.json()['assets'])} assets.")
         return [asset["href"] for asset in response.json()["assets"].values()]
 
-    def download_selected_files(self, files_to_download: list[str]) -> list[str]:
+    def download_selected_files(self, files_to_download: set[str]) -> list[str]:
         self._workdir.mkdir(parents=True, exist_ok=True)
 
         downloaded: list[str] = []

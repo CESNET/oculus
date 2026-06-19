@@ -29,8 +29,11 @@ class BaseProvider(ABC):
     def list_product_files(self) -> list[str]:
         ...
 
-    @abstractmethod
     def download_product_files(self, files_to_download: list[str]) -> list[str]:
+        return self._download_product_files(files_to_download=set(files_to_download))
+
+    @abstractmethod
+    def _download_product_files(self, files_to_download: set[str]) -> list[str]:
         ...
 
     def download_entire_product(self) -> list[str]:

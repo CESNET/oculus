@@ -2,8 +2,16 @@ import logging
 from typing import Optional
 
 from .use_case import UseCase
-from ...domain import Job, JobRepository, FeatureStateRepository, FeatureStateId
-from ...infrastructure.downloading import download_service_factory
+from ...domain import (
+    Job,
+    JobRepository,
+    FeatureStateRepository,
+    FeatureState,
+    FeatureStateLockRepository,
+    FeatureStateLockType
+)
+from ...infrastructure.downloading import DownloadService, download_service_factory
+from ...infrastructure.redis import RedisPubSub
 
 
 class DownloadJobUseCase(UseCase):
@@ -12,7 +20,8 @@ class DownloadJobUseCase(UseCase):
             self,
             job_repository: JobRepository,
             feature_state_repository: FeatureStateRepository,
-            redis_pubsub,
+            feature_state_lock_repository: FeatureStateLockRepository,
+            redis_pubsub: RedisPubSub,
             logger: Optional[logging.Logger] = None,
     ):
         super().__init__(
@@ -20,117 +29,82 @@ class DownloadJobUseCase(UseCase):
             redis_pubsub=redis_pubsub,
             logger=logger,
         )
-        self._feature_state_repository = feature_state_repository
+        self._feature_state_repository: FeatureStateRepository = feature_state_repository
+        self._feature_state_lock_repository: FeatureStateLockRepository = feature_state_lock_repository
 
     def _execute(self, job: Job) -> Job:
-
-        job.mark_downloading()
+        """
+        Stáhne všechny soubory definované ve feature_state.files, které ještě nejsou stažené.
+        Klíče v files jsou názvy souborů s příponou (např. "B01.tif").
+        """
+        job.mark_waiting_for_download_lock()
         job = self._save_job(job)
 
-        feature_state_id = FeatureStateId.from_parts(
-            dataset=job.dataset.name,
-            feature_id=job.feature_id,
-        )
-
-        reserved_files: list[str] = []
-        downloaded_files: list[str] = []
-
         try:
-            # -------------------------
-            # LOAD GLOBAL STATE
-            # -------------------------
-            feature_state = self._feature_state_repository.get(feature_state_id)
+            with self._feature_state_lock_repository.lock(
+                    feature_state_id=job.feature_state_id,
+                    lock_type=FeatureStateLockType.DOWNLOADING
+            ):
+                job.mark_downloading()
+                job = self._save_job(job)
 
-            download_service = download_service_factory.get_download_service(
-                job=job,
-                feature_state=feature_state,
-            )
-
-            # -------------------------
-            # JOB INTENT (co chce job)
-            # -------------------------
-            job_wants = set(job.required_files)
-
-            # -------------------------
-            # GLOBAL REALITY (co existuje)
-            # -------------------------
-            available = set(download_service.discover_files())
-
-            # -------------------------
-            # INTERSECTION (co má smysl řešit)
-            # -------------------------
-            candidates = job_wants & available
-
-            self._logger.info(
-                f"Job wants {len(job_wants)} files, "
-                f"available {len(available)}, "
-                f"processing {len(candidates)}"
-            )
-
-            # -------------------------
-            # RESERVE GLOBALLY (anti-concurrency)
-            # -------------------------
-            for file in candidates:
-                ok = self._feature_state_repository.reserve_download(
-                    feature_state_id=feature_state_id,
-                    file=file,
-                    job_id=str(job.id),
-                )
-                if ok:
-                    reserved_files.append(file)
-
-            # -------------------------
-            # DOWNLOAD ONLY RESERVED
-            # -------------------------
-            downloaded_files = download_service.download(
-                files=reserved_files
-            )
-
-            # -------------------------
-            # COMMIT GLOBAL STATE
-            # -------------------------
-            for file in downloaded_files:
-                ok = self._feature_state_repository.complete_download(
-                    feature_state_id=feature_state_id,
-                    file=file,
-                    job_id=str(job.id),
-                )
-                if not ok:
-                    raise RuntimeError(f"Failed commit for {file}")
-
-            # -------------------------
-            # RELEASE FAILED
-            # -------------------------
-            failed = set(reserved_files) - set(downloaded_files)
-
-            for file in failed:
-                self._feature_state_repository.release_download(
-                    feature_state_id=feature_state_id,
-                    file=file,
-                    job_id=str(job.id),
+                feature_state: FeatureState = self._feature_state_repository.get(job.feature_state_id)
+                download_service: DownloadService = download_service_factory.get_download_service(
+                    job=job,
+                    feature_state=feature_state,
                 )
 
-            # -------------------------
-            # JOB VIEW (TOHLE je klíč)
-            # -------------------------
-            job.available_downloaded_files = list(
-                job_wants & set(feature_state.downloaded_files)
-            )
+                requested_files = download_service.get_requested_files()
+                job.set_requested_files(requested_files)
 
-            job.mark_downloading_complete()
+                files_to_download = download_service.get_files_to_download(requested_files=requested_files)
 
-        except Exception as e:
+                if not files_to_download:
+                    self._logger.info(f"No files to download for job {job.id}")
+                    job.mark_downloading_complete()
 
-            for file in reserved_files:
-                if file not in downloaded_files:
-                    self._feature_state_repository.release_download(
-                        feature_state_id=feature_state_id,
-                        file=file,
-                        job_id=str(job.id),
+                else:
+                    downloaded_files = self._download_files(
+                        download_service=download_service,
+                        files_to_download=files_to_download,
                     )
 
+                    feature_state = self._update_feature_state(
+                        feature_state=feature_state,
+                        downloaded_files=downloaded_files,
+                    )
+
+                    job.mark_downloading_complete()
+
+        except Exception as e:
             job.mark_downloading_failed(str(e))
             self._logger.exception(f"Download failed for job {job.id}: {e}")
 
         job = self._save_job(job)
         return job
+
+    def _download_files(
+            self,
+            download_service: DownloadService,
+            files_to_download: list[str],
+    ) -> list[str]:
+        self._logger.info(f"Downloading {len(files_to_download)} files.")
+
+        downloaded_files_paths = download_service.download(files_to_download)
+
+        self._logger.info(f"Downloaded {len(downloaded_files_paths)} files. Will update feature state.")
+
+        return downloaded_files_paths
+
+    def _update_feature_state(
+            self,
+            feature_state: FeatureState,
+            downloaded_files: list[str],
+    ) -> FeatureState:
+        self._logger.info(f"Updating feature state of {feature_state.id}.")
+
+        feature_state = self._feature_state_repository.mark_files_downloaded(
+            feature_state_id=feature_state.id,
+            downloaded_files=downloaded_files,
+        )
+        return feature_state

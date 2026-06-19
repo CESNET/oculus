@@ -1,116 +1,167 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
-class FeatureStateId(str):
-    """
-    Composite ID:
-        dataset:feature_id
-    """
+@dataclass(slots=True)
+class FileState:
+    filename: str
+    download_path: Path | None = None
+    processed_path: list[Path] | None = None
+
+    @property
+    def is_downloaded(self) -> bool:
+        return self.download_path is not None
+
+    @property
+    def is_processed(self) -> bool:
+        return self.processed_path is not None
+
+    def to_dict(self) -> dict:
+        return {
+            "filename": self.filename,
+            "download_path": str(self.download_path) if self.download_path else None,
+            "processed_path": str(self.processed_path) if self.processed_path else None,
+        }
 
     @classmethod
-    def from_parts(
+    def from_dict(
             cls,
-            dataset: str,
-            feature_id: str,
+            data: dict,
+    ) -> "FileState":
+        return cls(
+            filename=data["filename"],
+            download_path=Path(data["download_path"]) if data.get("download_path") else None,
+            processed_path=Path(data["processed_path"]) if data.get("processed_path") else None
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class FeatureStateId:
+    dataset: str
+    feature_id: str
+
+    def __str__(self) -> str:
+        return f"{self.dataset}:{self.feature_id}"
+
+    @classmethod
+    def parse(
+            cls,
+            value: str,
     ) -> "FeatureStateId":
-        return cls(f"{dataset}:{feature_id}")
-
-    @property
-    def dataset(self) -> str:
-        return self.split(":", 1)[0]
-
-    @property
-    def feature_id(self) -> str:
-        return self.split(":", 1)[1]
-
-
-class FeatureState:
-
-    def __init__(
-            self,
-            dataset: str,
-            feature_id: str,
-            feature_root_directory: Path | str,
-
-            downloaded_files: Optional[list[str]] = None,
-            processed_files: Optional[list[str]] = None,
-
-            downloading_locks: Optional[dict] = None,
-            processing_locks: Optional[dict] = None,
-    ):
-        self._dataset = dataset
-        self._feature_id = feature_id
-
-        self._id = FeatureStateId.from_parts(
+        dataset, feature_id = value.split(":", 1, )
+        return cls(
             dataset=dataset,
             feature_id=feature_id,
         )
 
-        self._feature_root_directory = Path(
-            feature_root_directory
-        )
 
-        self._downloaded_files = downloaded_files or []
-        self._processed_files = processed_files or []
-
-        #
-        # {
-        #   "file.tif": {
-        #       "job_id": "...",
-        #       "reserved_at": datetime,
-        #       "reserved_at_ts": float,
-        #   }
-        # }
-        #
-        self._downloading_locks = (
-                downloading_locks or {}
-        )
-
-        self._processing_locks = (
-                processing_locks or {}
-        )
+@dataclass(frozen=True, slots=True)
+class FeatureState:
+    id: FeatureStateId
+    feature_root_directory: Path
+    files: dict[str, FileState] = field(default_factory=dict)
 
     # -------------------------
-    # properties
+    # convenience
     # -------------------------
-
-    @property
-    def id(self) -> FeatureStateId:
-        return self._id
 
     @property
     def dataset(self) -> str:
-        return self._dataset
+        return self.id.dataset
 
     @property
     def feature_id(self) -> str:
-        return self._feature_id
+        return self.id.feature_id
 
-    @property
-    def feature_root_directory(self) -> Path:
-        return self._feature_root_directory
+    # -------------------------
+    # file operations
+    # -------------------------
+
+    def _get_or_create_file_state(self, file: str) -> FileState:
+        state = self.files.get(file)
+        if state is None:
+            state = FileState(filename=file)
+            self.files[file] = state
+        return state
+
+    def get_file_state(
+            self,
+            file: str,
+    ) -> FileState | None:
+        return self.files.get(file)
+
+    def set_file_processed_path(
+            self,
+            file: str,
+            path: Path,
+    ) -> None:
+        self._get_or_create_file_state(file).processed_path = path
+
+    def is_file_downloaded(
+            self,
+            file: str,
+    ) -> bool:
+        state = self.files.get(file)
+        return state is not None and state.is_downloaded
+
+    def is_file_processed(
+            self,
+            filename: str,
+    ) -> bool:
+        state = self.files.get(filename)
+        return state is not None and state.is_processed
 
     @property
     def downloaded_files(self) -> list[str]:
-        return self._downloaded_files
+        return [
+            filename
+            for filename, state in self.files.items()
+            if state.is_downloaded
+        ]
 
     @property
     def processed_files(self) -> list[str]:
-        return self._processed_files
-
-    @property
-    def downloading_locks(self) -> dict:
-        return self._downloading_locks
-
-    @property
-    def processing_locks(self) -> dict:
-        return self._processing_locks
+        return [
+            filename
+            for filename, state in self.files.items()
+            if state.is_processed
+        ]
 
     # -------------------------
-    # creation
+    # serialization
+    # -------------------------
+
+    def to_dict(self) -> dict:
+        return {
+            "dataset": self.dataset,
+            "feature_id": self.feature_id,
+            "feature_root_directory": str(self.feature_root_directory),
+            "files": [
+                state.to_dict()
+                for state in self.files.values()
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "FeatureState":
+        files_list = data.get("files", [])
+
+        return cls(
+            id=FeatureStateId(
+                dataset=data["dataset"],
+                feature_id=data["feature_id"],
+            ),
+            feature_root_directory=Path(data["feature_root_directory"]),
+            files={
+                item["filename"]: FileState.from_dict(item)
+                for item in files_list
+            },
+        )
+
+    # -------------------------
+    # factory
     # -------------------------
 
     @classmethod
@@ -118,12 +169,12 @@ class FeatureState:
             cls,
             dataset: str,
             feature_id: str,
-            feature_root_directory: str,
+            root_directory: str | Path,
     ) -> "FeatureState":
-        resolved_path = Path(feature_root_directory) / dataset / feature_id
-
         return cls(
-            dataset=dataset,
-            feature_id=feature_id,
-            feature_root_directory=resolved_path,
+            id=FeatureStateId(
+                dataset=dataset,
+                feature_id=feature_id,
+            ),
+            feature_root_directory=Path(root_directory) / dataset / feature_id,
         )

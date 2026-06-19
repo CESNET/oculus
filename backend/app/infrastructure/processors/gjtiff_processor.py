@@ -49,7 +49,7 @@ class GJTIFFProcessor(Processor):
         """
         gjtiff_container = self._get_container()
 
-        outfiles_without_ext =  self._run_command(
+        outfiles =  self._run_command(
             gjtiff_container,
             command
         )
@@ -58,9 +58,9 @@ class GJTIFFProcessor(Processor):
         # DEBUG only vvv, for production uncomment above for executing gjtiff ^^^
         import time
         time.sleep(3)
-        outfiles_without_ext = ["/data/oculus/2206d810-dacf-4017-8d74-56bbd9d070f1/data/processed/T39RWJ_20260503T070731_TCI_10m.jpg"]
+        outfiles = ["/data/oculus/2206d810-dacf-4017-8d74-56bbd9d070f1/data/processed/T39RWJ_20260503T070731_TCI_10m.jpg"]
 
-        return outfiles_without_ext
+        return outfiles
 
     def _get_container(
             self
@@ -131,8 +131,5 @@ class GJTIFFProcessor(Processor):
         # TODO tady jinak pracovat s outfiles. A nevím, jestli to teda vlastně nakonec potřebujeme..? Jestli není jednodušší předpokládat, že prostě v processed jsou soubory jen podle return code gjtiffu?
 
         outfiles = [item["outfile"] for item in gjtiff_output if "outfile" in item]
-        outfiles_without_ext = [
-            str(Path(item["outfile"]).with_suffix('')) for item in gjtiff_output if "outfile" in item
-        ]
 
-        return outfiles_without_ext
+        return outfiles

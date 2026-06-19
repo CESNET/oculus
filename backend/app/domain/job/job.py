@@ -1,177 +1,124 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Any, Optional
+from pathlib import Path
 
 from .job_dataset import JobDataset
 from .job_status import JobStatus, can_transition
+from ..feature_state import FeatureStateId
 
 
-class JobId(str):
+@dataclass(frozen=True, slots=True)
+class JobId:
+    value: str
+
+    def __str__(self) -> str:
+        return self.value
+
+    def to_json(self) -> str:
+        return str(self)
 
     @classmethod
     def generate(cls) -> "JobId":
         return cls(str(uuid.uuid4()))
 
     @classmethod
-    def from_str(cls, value: str) -> "JobId":
-        try:
-            uuid.UUID(value)
-            return cls(value)
-        except ValueError:
-            raise ValueError(f"Invalid JobId: {value}")
+    def parse(cls, value: str) -> "JobId":
+        uuid.UUID(value)
+        return cls(value)
 
 
+@dataclass(slots=True)
 class Job:
+    id: JobId
 
-    def __init__(
-            self,
-            id: JobId,
-            feature_id: str,
-            dataset: JobDataset,
-            metadata: Dict[str, Any],
-            request_properties: Dict[str, Any],
-            traversed_statuses: List[JobStatus],
-            created_at: datetime,
-            last_accessed: datetime,
-            version: int = 0,
-            available_downloaded_files: Optional[List[str]] = None,
-            available_processed_files: Optional[List[str]] = None,
-            fail_reasons: Optional[List[str]] = None,
-            cancel_reason: Optional[str] = None,
-    ):
-        self._id = id
-        self._feature_id = feature_id
-        self._dataset = dataset
+    feature_state_id: FeatureStateId
+    dataset: JobDataset
 
-        self._metadata = metadata
-        self._request_properties = request_properties
+    metadata: dict[str, Any]
+    request_properties: dict[str, Any]
 
-        self._traversed_statuses: List[JobStatus] = [] if traversed_statuses is None else list(traversed_statuses)
+    traversed_statuses: list[JobStatus]
 
-        self._available_downloaded_files = (
-            [] if available_downloaded_files is None
-            else list(available_downloaded_files)
-        )
-        self._available_processed_files = (
-            [] if available_processed_files is None
-            else list(available_processed_files)
-        )
+    created_at: datetime
+    last_accessed: datetime
 
-        self._created_at = created_at
-        self._last_accessed = last_accessed
+    fail_reasons: list[str] = field(default_factory=list)
 
-        self._version = version
+    cancel_reason: str | None = None
 
-        self._fail_reasons = [] if fail_reasons is None else list(fail_reasons)
+    requested_files: list[str] = field(default_factory=list)
 
-        self._cancel_reason = cancel_reason
+    # -------------------------
+    # convenience
+    # -------------------------
+
+    @property
+    def feature_id(self) -> str:
+        return self.feature_state_id.feature_id
+
+    # -------------------------
+    # creation
+    # -------------------------
 
     @classmethod
     def create(
             cls,
             dataset: JobDataset,
-            metadata: Dict[str, Any],
-            request_properties: Dict[str, Any],
+            metadata: dict[str, Any],
+            request_properties: dict[str, Any],
+            feature_state_id: Optional[FeatureStateId] = None,
     ) -> "Job":
 
         now = datetime.now(timezone.utc)
 
-        feature_id = metadata[dataset.feature_id_key_name]
+        if feature_state_id is None:
+            feature_state_id = FeatureStateId(
+                dataset=dataset.name,
+                feature_id=metadata[dataset.feature_id_key_name],
+            )
 
         return cls(
             id=JobId.generate(),
-            feature_id=feature_id,
+            feature_state_id=feature_state_id,
             dataset=dataset,
             metadata=metadata,
             request_properties=request_properties,
             traversed_statuses=[JobStatus.ACCEPTED],
             created_at=now,
             last_accessed=now,
-            version=0
         )
 
     # -------------------------
-    # getters
+    # status
     # -------------------------
 
     @property
-    def id(self) -> JobId:
-        return self._id
-
-    @property
-    def feature_id(self) -> str:
-        return self._feature_id
-
-    @property
-    def dataset(self) -> Any:
-        return self._dataset
-
-    @property
-    def metadata(self) -> Dict[str, Any]:
-        return self._metadata
-
-    @property
-    def request_properties(self) -> Dict[str, Any]:
-        return self._request_properties
-
-    @property
-    def traversed_statuses(self):
-        return self._traversed_statuses
-
-    @property
     def current_status(self) -> JobStatus:
-        if not self._traversed_statuses:
-            self.mark_failed("Job status is undefined!")
+        if not self.traversed_statuses:
+            raise RuntimeError(f"Job {self.id} has no status")
 
-        return self._traversed_statuses[-1]
-
-    @property
-    def created_at(self) -> datetime:
-        return self._created_at
+        return self.traversed_statuses[-1]
 
     @property
-    def last_accessed(self) -> datetime:
-        return self._last_accessed
-
-    @property
-    def version(self) -> int:
-        return self._version
-
-    @property
-    def fail_reasons(self) -> Optional[List[str]]:
-        return self._fail_reasons
-
-    @property
-    def last_fail_reason(self) -> Optional[str]:
-        if not self._fail_reasons:
-            return None
-
-        return self._fail_reasons[-1]
-
-    @property
-    def cancel_reason(self) -> Optional[str]:
-        return self._cancel_reason
-
-    @property
-    def available_downloaded_files(self) -> List[str]:
-        return self._available_downloaded_files
-
-    @available_downloaded_files.setter
-    def available_downloaded_files(self, value):
-        self._available_downloaded_files = value
-
-    @property
-    def available_processed_files(self) -> List[str]:
-        return self._available_processed_files
+    def last_fail_reason(self) -> str | None:
+        return self.fail_reasons[-1] if self.fail_reasons else None
 
     # -------------------------
     # behavior
     # -------------------------
 
+    def set_requested_files(self, requested_files: list[str]) -> None:
+        self.requested_files = [Path(requested_file).stem for requested_file in requested_files]
+
+    def get_requested_files(self) -> list[str]:
+        return self.requested_files
+
     def _touch(self) -> None:
-        self._last_accessed = datetime.now(timezone.utc)
+        self.last_accessed = datetime.now(timezone.utc)
 
     def transition(self, to_status: JobStatus) -> None:
         self._touch()
@@ -180,46 +127,87 @@ class Job:
             return
 
         if not can_transition(self.current_status, to_status):
-            self.mark_failed(f"Invalid transition {self._traversed_statuses} -> {to_status}")
+            raise ValueError(f"Invalid transition {self.current_status} -> {to_status}")
 
-            raise ValueError(self.last_fail_reason)
+        self.traversed_statuses.append(to_status)
 
-        self._traversed_statuses.append(to_status)
+    def mark_waiting_for_download_lock(self) -> None:
+        self.transition(JobStatus.WAITING_FOR_DOWNLOAD_LOCK)
 
-    def mark_downloading(self):
+    def mark_downloading(self) -> None:
         self.transition(JobStatus.DOWNLOADING)
 
-    def mark_downloading_complete(self):
+    def mark_downloading_complete(self) -> None:
         self.transition(JobStatus.DOWNLOADING_COMPLETE)
 
-    def mark_downloading_failed(self, reason: str):
-        self._fail_reasons.append(reason)
+    def mark_downloading_failed(self, reason: str) -> None:
+        self.fail_reasons.append(reason)
+
         self.transition(JobStatus.DOWNLOADING_FAILED)
 
-    def mark_processing(self):
+    def mark_waiting_for_processing_lock(self) -> None:
+        self.transition(JobStatus.WAITING_FOR_PROCESSING_LOCK)
+
+    def mark_processing(self) -> None:
         self.transition(JobStatus.PROCESSING)
 
-    def mark_processing_complete(self):
+    def mark_processing_complete(self) -> None:
         self.transition(JobStatus.PROCESSING_COMPLETE)
 
-    def mark_processing_failed(self, reason: str):
-        self._fail_reasons.append(reason)
+    def mark_processing_failed(self, reason: str) -> None:
+        self.fail_reasons.append(reason)
+
         self.transition(JobStatus.PROCESSING_FAILED)
 
-    def mark_finalizing(self):
+    def mark_finalizing(self) -> None:
         self.transition(JobStatus.FINALIZING)
 
-    def mark_finalizing_failed(self, reason: str):
-        self._fail_reasons.append(reason)
+    def mark_finalizing_failed(self, reason: str) -> None:
+        self.fail_reasons.append(reason)
+
         self.transition(JobStatus.FINALIZING_FAILED)
 
-    def mark_finished(self):
+    def mark_finished(self) -> None:
         self.transition(JobStatus.FINISHED)
 
-    def mark_failed(self, reason: str):
-        self._fail_reasons.append(reason)
+    def mark_failed(self, reason: str) -> None:
+        self.fail_reasons.append(reason)
+
         self.transition(JobStatus.FAILED)
 
-    def mark_cancelled(self, reason: str):
-        self._cancel_reason.append(reason)
+    def mark_cancelled(self, reason: str) -> None:
+        self.cancel_reason = reason
+
         self.transition(JobStatus.CANCELLED)
+
+    # -------------------------
+    # serialization
+    # -------------------------
+
+    def to_dict(self) -> dict:
+        return {
+            "feature_state_id": str(self.feature_state_id),
+            "dataset": self.dataset.name,
+            "metadata": self.metadata,
+            "request_properties": self.request_properties,
+            "traversed_statuses": [status.name for status in self.traversed_statuses],
+            "created_at": self.created_at,
+            "last_accessed": self.last_accessed,
+            "fail_reasons": self.fail_reasons,
+            "cancel_reason": self.cancel_reason,
+        }
+
+    @classmethod
+    def from_dict(cls, job_id: JobId, data: dict) -> "Job":
+        return cls(
+            id=job_id,
+            feature_state_id=FeatureStateId.parse(data["feature_state_id"]),
+            dataset=JobDataset.from_str(data["dataset"]),
+            metadata=data["metadata"],
+            request_properties=data["request_properties"],
+            traversed_statuses=[JobStatus(status) for status in data.get("traversed_statuses", [])],
+            created_at=data["created_at"],
+            last_accessed=data["last_accessed"],
+            fail_reasons=data.get("fail_reasons", []),
+            cancel_reason=data.get("cancel_reason"),
+        )

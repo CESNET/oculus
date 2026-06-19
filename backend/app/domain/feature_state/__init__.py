@@ -1,8 +1,12 @@
-from .feature_state import FeatureState, FeatureStateId
+from .feature_state import FeatureState, FeatureStateId, FileState
 from .feature_state_repository import FeatureStateRepository
+from .feature_state_lock_repository import FeatureStateLockType, FeatureStateLockRepository
 
 __all__ = [
     "FeatureState",
     "FeatureStateId",
-    "FeatureStateRepository"
+    "FileState",
+    "FeatureStateRepository",
+    "FeatureStateLockType",
+    "FeatureStateLockRepository"
 ]

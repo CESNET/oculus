@@ -1,18 +1,35 @@
 from typing import Protocol
 
 from .feature_state import FeatureState, FeatureStateId
+from ..job import Job
 
 
 class FeatureStateRepository(Protocol):
 
-    # -------------------------
-    # READ MODEL
-    # -------------------------
-
-    def get(self, feature_state_id: FeatureStateId) -> FeatureState:
+    def get(
+            self,
+            feature_state_id: FeatureStateId,
+    ) -> FeatureState:
         ...
 
-    def insert(self, feature_state: FeatureState) -> None:
+    def save(
+            self,
+            feature_state: FeatureState,
+    ) -> FeatureState:
+        ...
+
+    def mark_files_downloaded(
+            self,
+            feature_state_id: FeatureStateId,
+            downloaded_files: list[str]
+    ) -> FeatureState:
+        ...
+
+    def mark_files_processed(
+            self,
+            feature_state_id: FeatureStateId,
+            processed_files: list[str]
+    ) -> FeatureState:
         ...
 
     def get_or_create(
@@ -21,62 +38,4 @@ class FeatureStateRepository(Protocol):
             feature_id: str,
             root_directory: str,
     ) -> FeatureState:
-        ...
-
-    # -------------------------
-    # DOWNLOAD CONCURRENCY
-    # -------------------------
-
-    def reserve_download(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-            timeout_seconds: int = 3600,
-    ) -> bool:
-        ...
-
-    def complete_download(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-    ) -> bool:
-        ...
-
-    def release_download(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-    ) -> None:
-        ...
-
-    # -------------------------
-    # PROCESSING CONCURRENCY
-    # -------------------------
-
-    def reserve_processing(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-            timeout_seconds: int = 3600,
-    ) -> bool:
-        ...
-
-    def complete_processing(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-    ) -> bool:
-        ...
-
-    def release_processing(
-            self,
-            feature_state_id: FeatureStateId,
-            file: str,
-            job_id: str,
-    ) -> None:
         ...

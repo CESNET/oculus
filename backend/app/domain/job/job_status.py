@@ -1,11 +1,13 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     ACCEPTED = "ACCEPTED"
+    WAITING_FOR_DOWNLOAD_LOCK = "WAITING_FOR_DOWNLOAD_LOCK"
     DOWNLOADING = "DOWNLOADING"
     DOWNLOADING_COMPLETE = "DOWNLOADING_COMPLETE"
     DOWNLOADING_FAILED = "DOWNLOADING_FAILED"
+    WAITING_FOR_PROCESSING_LOCK = "WAITING_FOR_PROCESSING_LOCK"
     PROCESSING = "PROCESSING"
     PROCESSING_COMPLETE = "PROCESSING_COMPLETE"
     PROCESSING_FAILED = "PROCESSING_FAILED"
@@ -27,17 +29,25 @@ FAILED_STATUSES = [
 
 ALLOWED_TRANSITIONS: dict[JobStatus, list[JobStatus]] = {
     JobStatus.ACCEPTED: [
-        JobStatus.DOWNLOADING
+        JobStatus.WAITING_FOR_DOWNLOAD_LOCK,
+    ],
+    JobStatus.WAITING_FOR_DOWNLOAD_LOCK: [
+        JobStatus.DOWNLOADING,
+        JobStatus.DOWNLOADING_FAILED
     ],
     JobStatus.DOWNLOADING: [
         JobStatus.DOWNLOADING_COMPLETE,
         JobStatus.DOWNLOADING_FAILED
     ],
     JobStatus.DOWNLOADING_COMPLETE: [
-        JobStatus.PROCESSING
+        JobStatus.WAITING_FOR_PROCESSING_LOCK,
     ],
     JobStatus.DOWNLOADING_FAILED: [
         JobStatus.DOWNLOADING
+    ],
+    JobStatus.WAITING_FOR_PROCESSING_LOCK: [
+        JobStatus.PROCESSING,
+        JobStatus.PROCESSING_FAILED
     ],
     JobStatus.PROCESSING: [
         JobStatus.PROCESSING_COMPLETE,
