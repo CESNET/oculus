@@ -89,8 +89,9 @@ class FileState:
     ) -> None:
         self.get_group(group).set_path(format_name=format_name, path=path)
 
-    def set_wm_tiles_zoom_levels(self, zoom_levels: set[int]) -> None:
-        self.wm_tiles_zoom_levels = zoom_levels
+    def set_wm_tiles_zoom_levels(self, zoom_levels: list[int]) -> None:
+        print(f"Setting zoom levels for WebMercator tiles: {zoom_levels}")
+        self.wm_tiles_zoom_levels = set(zoom_levels)
 
     def set_processed(
             self,
@@ -99,15 +100,12 @@ class FileState:
             path: Path,
             zoom_levels: list[int] | None = None,
     ) -> None:
-        setting_wm_tiles = (group == TileGroup.WM_TILES)
-        zoom_levels_initialized = bool(self.wm_tiles_zoom_levels)
-
-        if setting_wm_tiles:
-            if not zoom_levels_initialized:
+        if group == TileGroup.WM_TILES:
+            if not self.wm_tiles_zoom_levels:
                 if zoom_levels is None:
                     raise ValueError("Zoom levels must be provided when setting WebMercator tiles for the first time.")
 
-                self.wm_tiles_zoom_levels.update(zoom_levels)
+                self.set_wm_tiles_zoom_levels(zoom_levels)
 
             elif zoom_levels is not None:
                 self._logger.warning(

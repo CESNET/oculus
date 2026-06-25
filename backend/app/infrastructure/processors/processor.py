@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from ...domain import Job, FeatureState, ProcessorOutput
+from ...domain import Job, FeatureState, ProcessorOutput, FileState
 from ...settings import settings
 
 
@@ -120,6 +120,9 @@ class Processor(ABC):
             zoom_levels,
             default_zoom_levels: list[int]
     ) -> list[int]:
+
+        self._logger.warning(f"Overriding zoom levels. Will use default {default_zoom_levels}!")
+        return default_zoom_levels
 
         # TODO tady bude asi spíš něco ve smyslu _compute_zoom_levels
         # Budou se počítat podle rozlišení snímku a oblasti, kterou pokrývá
