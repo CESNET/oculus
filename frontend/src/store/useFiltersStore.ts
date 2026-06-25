@@ -26,7 +26,6 @@ export interface Sentinel1FilterState {
 export interface Sentinel2FilterState {
     cloudCover: number | null;
     levels: string[];
-    bands: string[];
 }
 
 export interface FiltersState {
@@ -55,7 +54,7 @@ export interface FiltersState {
     // sentinel2
     setSentinel2: (partial: Partial<Sentinel2FilterState>) => void;
     toggleSentinel2: (
-        key: "levels" | "bands",
+        key: "levels",
         value: string
     ) => void;
 }
@@ -86,7 +85,7 @@ const getDefaultRange = () => {
 // Store
 // -----------------------------
 export const useFiltersStore = create<FiltersState>((set) => ({
-    dataset: Dataset.Sentinel1,
+    dataset: Dataset.Sentinel2,
     setDataset: (dataset) => set({ dataset }),
 
     bbox: { north: 51.08, south: 48.48, east: 19.0, west: 12.07 },
@@ -102,7 +101,6 @@ export const useFiltersStore = create<FiltersState>((set) => ({
     sentinel2: {
         cloudCover: 100,
         levels: [],
-        bands: [],
     },
 
     setFilters: (newState) => set((state) => ({

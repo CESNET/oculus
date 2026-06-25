@@ -12,9 +12,22 @@ export interface TileLayer {
     format: string; // webp, jpg, ...
 }
 
+export interface Sentinel1VisualizationState {
+    // zatím nic
+}
+
+export interface Sentinel2VisualizationState {
+    bands: string[];
+}
+
+
 interface VisualizationState {
     jobId: string | null;
     featureId: string | null;
+
+    sentinel1: Sentinel1VisualizationState;
+    sentinel2: Sentinel2VisualizationState;
+
     outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>;
     processedFiles: ProductFile[];
     tileLayers: TileLayer[];
@@ -22,8 +35,15 @@ interface VisualizationState {
     selectedTileLayerIndex: number | null;
     opacity: number; // globální pro vybraný tileLayer (0..1)
 
+
     setJobId: (id: string | null) => void;
     setFeatureId: (id: string | null) => void;
+
+    setSentinel2: (
+        partial: Partial<Sentinel2VisualizationState>
+    ) => void;
+    toggleSentinel2Band: (band: string) => void;
+
     setOutputs: (outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>) => void;
     setProcessedFiles: (files: ProductFile[]) => void;
     setTileLayers: (tiles: TileLayer[]) => void;
@@ -35,6 +55,13 @@ interface VisualizationState {
 export const useVisualizationStore = create<VisualizationState>((set) => ({
     jobId: null,
     featureId: null,
+
+    sentinel1: {},
+
+    sentinel2: {
+        bands: ["TCI"],
+    },
+
     outputs: {
         jpg: {full_product: true, wm_tiles: false},
         png: {full_product: false, wm_tiles: false},
@@ -48,6 +75,25 @@ export const useVisualizationStore = create<VisualizationState>((set) => ({
 
     setJobId: (id) => set({jobId: id}),
     setFeatureId: (id) => set({featureId: id}),
+
+    setSentinel2: (partial) =>
+        set((state) => ({
+            sentinel2: {
+                ...state.sentinel2,
+                ...partial,
+            },
+        })),
+
+    toggleSentinel2Band: (band) =>
+        set((state) => ({
+            sentinel2: {
+                ...state.sentinel2,
+                bands: state.sentinel2.bands.includes(band)
+                    ? state.sentinel2.bands.filter((b) => b !== band)
+                    : [...state.sentinel2.bands, band],
+            },
+        })),
+
     setOutputs: (outputs) => set({outputs}),
     setProcessedFiles: (files) => set({processedFiles: files}),
     setTileLayers: (tiles) => set({tileLayers: tiles}),

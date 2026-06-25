@@ -2,8 +2,8 @@ import {Dataset} from "../types/datasets";
 import {type FiltersState} from "../store/useFiltersStore";
 import {type Sentinel1FilterState, type Sentinel2FilterState} from "../store/useFiltersStore";
 
-// 1️⃣ Defaultní hodnoty pro všechny dataset typy
-export const getAllOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel2FilterState => {
+// Defaultní hodnoty pro všechny dataset typy
+export const getAllFilterOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel2FilterState => {
     switch (dataset) {
         case Dataset.Sentinel1:
             return {
@@ -17,14 +17,12 @@ export const getAllOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel
         case Dataset.Sentinel2:
             return {
                 levels: ["0", "1A", "1B", "1C", "2A"],
-                bands: ["1", "2", "3", "4", "5", "6", "7", "8", "8A", "9", "10", "11", "12", "TCI"],
                 cloudCover: 100,
             } as Sentinel2FilterState;
 
         case Dataset.Landsat:
             return {
                 levels: ["L1", "L2"],
-                bands: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
                 cloudCover: 100,
             } as Sentinel2FilterState; // Landsat zatím používá stejný tvar jako Sentinel2Filters
 
@@ -33,9 +31,9 @@ export const getAllOptions = (dataset: Dataset): Sentinel1FilterState | Sentinel
     }
 };
 
-// 2️⃣ Efektivní filtry pro fetch
+// Efektivní filtry pro fetch
 export const getEffectiveFilters = (filters: FiltersState, dataset: Dataset): FiltersState => {
-    const allOptions = getAllOptions(dataset);
+    const allOptions = getAllFilterOptions(dataset);
 
     const effectiveArray = (selected: string[], defaults: string[]) =>
         selected.length ? selected : defaults;
@@ -62,9 +60,6 @@ export const getEffectiveFilters = (filters: FiltersState, dataset: Dataset): Fi
             levels: dataset === Dataset.Sentinel2
                 ? effectiveArray(filters.sentinel2.levels, (allOptions as Sentinel2FilterState).levels)
                 : filters.sentinel2.levels,
-            bands: dataset === Dataset.Sentinel2
-                ? effectiveArray(filters.sentinel2.bands, (allOptions as Sentinel2FilterState).bands)
-                : filters.sentinel2.bands,
             cloudCover: dataset === Dataset.Sentinel2
                 ? filters.sentinel2.cloudCover ?? (allOptions as Sentinel2FilterState).cloudCover
                 : filters.sentinel2.cloudCover,
@@ -72,7 +67,7 @@ export const getEffectiveFilters = (filters: FiltersState, dataset: Dataset): Fi
     };
 };
 
-// 3️⃣ Helper pro převod GUI hodnot na API hodnoty
+// Helper pro převod GUI hodnot na API hodnoty
 export const levelToApi = (dataset: Dataset, level: string): string => {
     switch (dataset) {
         case Dataset.Sentinel1:
@@ -86,18 +81,6 @@ export const levelToApi = (dataset: Dataset, level: string): string => {
     }
 };
 
-export const bandToApi = (dataset: Dataset, band: string): string => {
-    if (dataset === Dataset.Sentinel2) {
-        return band === "TCI" ? "TCI" : `B${band.padStart(2, "0")}`;
-    } else if (dataset === Dataset.Landsat) {
-        return `B${band.padStart(2, "0")}`;
-    }
-    return band; // Sentinel1 bands zatím nejsou relevantní
-};
-
-// 4️⃣ Helpery pro celé pole
+// Helpery pro celé pole
 export const levelsToApi = (dataset: Dataset, levels: string[]): string[] =>
     levels.map(l => levelToApi(dataset, l));
-
-export const bandsToApi = (dataset: Dataset, bands: string[]): string[] =>
-    bands.map(b => bandToApi(dataset, b));
