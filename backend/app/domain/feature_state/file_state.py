@@ -90,7 +90,6 @@ class FileState:
         self.get_group(group).set_path(format_name=format_name, path=path)
 
     def set_wm_tiles_zoom_levels(self, zoom_levels: list[int]) -> None:
-        print(f"Setting zoom levels for WebMercator tiles: {zoom_levels}")
         self.wm_tiles_zoom_levels = set(zoom_levels)
 
     def set_processed(

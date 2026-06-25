@@ -56,7 +56,7 @@ class Processor(ABC):
                 raise ValueError(f"File {filename} is expected to be downloaded, but it is not.")
 
             if file_state.satisfies_outputs(demanded_formats):
-                print(f"File {filename} is already processed, skipping.")
+                self._logger.info(f"File {filename} is already processed, skipping.")
                 continue
 
             if file_state.download_path is None:

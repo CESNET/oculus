@@ -102,7 +102,6 @@ class ProcessJobUseCase(UseCase):
         self._logger.info(f"Updating feature state of {feature_state.id}.")
 
         for output in processor_outputs:
-            print(output)
             feature_state.set_file_processed_path(
                 file=output.source_file,
                 group=output.group,

@@ -34,8 +34,6 @@ def _format_sse(data: dict = None) -> str:
     if data is None:
         return ":\n\n"
 
-    print(data)
-
     return f"data: {json.dumps(data, default=str)}\n\n"
 
 

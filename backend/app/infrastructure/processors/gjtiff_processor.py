@@ -38,11 +38,11 @@ class GJTIFFProcessor(Processor):
         )
 
         gjtiff_container = self._get_container()
-        self._run_command(gjtiff_container, command) # TODO uncomment for production, delete below for testing
+        self._run_command(gjtiff_container, command)  # TODO uncomment for production, delete below for testing
 
-        #print(f"Now runing gjtiff: {command}")
-        #import time
-        #time.sleep(5)
+        # print(f"Now runing gjtiff: {command}")
+        # import time
+        # time.sleep(5)
 
         return self._discover_outputs(wm_zoom_levels=zoom_levels)
 
@@ -111,10 +111,6 @@ class GJTIFFProcessor(Processor):
                         )
                     )
 
-        print(f"Outputs: {outputs}")
-
-
-
         return outputs
 
     @staticmethod
@@ -182,7 +178,8 @@ class GJTIFFProcessor(Processor):
 
                     if mode == TileGroup.WM_TILES.value:
                         if format_name != OutputFormat.WEBP.value:
-                            self._logger.warning(f"WebMercator tiles are only supported for WEBP format. Ignoring {format_name} format.")
+                            self._logger.warning(
+                                f"WebMercator tiles are only supported for WEBP format. Ignoring {format_name} format.")
                         continue
 
                     entered_format_flags.append(FORMAT_FLAGS[format_name][mode])
