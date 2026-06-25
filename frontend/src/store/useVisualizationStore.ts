@@ -15,7 +15,7 @@ export interface TileLayer {
 interface VisualizationState {
     jobId: string | null;
     featureId: string | null;
-    outputs: Record<string, { product: boolean; tiles: boolean }>;
+    outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>;
     processedFiles: ProductFile[];
     tileLayers: TileLayer[];
     availableZoomLevels: number[];
@@ -24,7 +24,7 @@ interface VisualizationState {
 
     setJobId: (id: string | null) => void;
     setFeatureId: (id: string | null) => void;
-    setOutputs: (outputs: Record<string, { product: boolean; tiles: boolean }>) => void;
+    setOutputs: (outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>) => void;
     setProcessedFiles: (files: ProductFile[]) => void;
     setTileLayers: (tiles: TileLayer[]) => void;
     setAvailableZoomLevels: (availableZoomLevels: number[]) => void;
@@ -36,9 +36,9 @@ export const useVisualizationStore = create<VisualizationState>((set) => ({
     jobId: null,
     featureId: null,
     outputs: {
-        jpg: {product: true, tiles: false},
-        png: {product: false, tiles: false},
-        webp: {product: false, tiles: true}
+        jpg: {full_product: true, wm_tiles: false},
+        png: {full_product: false, wm_tiles: false},
+        webp: {full_product: false, wm_tiles: true}
     },
     processedFiles: [],
     tileLayers: [],

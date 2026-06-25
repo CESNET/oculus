@@ -55,7 +55,7 @@ class DownloadJobUseCase(UseCase):
                 )
 
                 requested_files = download_service.get_requested_files()
-                job.set_requested_files(requested_files)
+                job.set_requested_files(requested_files=requested_files)
 
                 files_to_download = download_service.get_files_to_download(requested_files=requested_files)
 
@@ -73,6 +73,8 @@ class DownloadJobUseCase(UseCase):
                         feature_state=feature_state,
                         downloaded_files=downloaded_files,
                     )
+
+                    job.set_requested_files(requested_files=downloaded_files)
 
                     job.mark_downloading_complete()
 

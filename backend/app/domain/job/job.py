@@ -195,6 +195,7 @@ class Job:
             "last_accessed": self.last_accessed,
             "fail_reasons": self.fail_reasons,
             "cancel_reason": self.cancel_reason,
+            "requested_files": self.requested_files,
         }
 
     @classmethod
@@ -210,4 +211,5 @@ class Job:
             last_accessed=data["last_accessed"],
             fail_reasons=data.get("fail_reasons", []),
             cancel_reason=data.get("cancel_reason"),
+            requested_files=data.get("requested_files", []),
         )

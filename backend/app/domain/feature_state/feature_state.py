@@ -3,38 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
-@dataclass(slots=True)
-class FileState:
-    filename: str
-    download_path: Path | None = None
-    processed_path: list[Path] | None = None
-
-    @property
-    def is_downloaded(self) -> bool:
-        return self.download_path is not None
-
-    @property
-    def is_processed(self) -> bool:
-        return self.processed_path is not None
-
-    def to_dict(self) -> dict:
-        return {
-            "filename": self.filename,
-            "download_path": str(self.download_path) if self.download_path else None,
-            "processed_path": str(self.processed_path) if self.processed_path else None,
-        }
-
-    @classmethod
-    def from_dict(
-            cls,
-            data: dict,
-    ) -> "FileState":
-        return cls(
-            filename=data["filename"],
-            download_path=Path(data["download_path"]) if data.get("download_path") else None,
-            processed_path=Path(data["processed_path"]) if data.get("processed_path") else None
-        )
+from .file_state import FileState, OutputFormat, TileGroup
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,14 +19,15 @@ class FeatureStateId:
             cls,
             value: str,
     ) -> "FeatureStateId":
-        dataset, feature_id = value.split(":", 1, )
+        dataset, feature_id = value.split(":", 1)
+
         return cls(
             dataset=dataset,
             feature_id=feature_id,
         )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class FeatureState:
     id: FeatureStateId
     feature_root_directory: Path
@@ -81,9 +51,11 @@ class FeatureState:
 
     def _get_or_create_file_state(self, file: str) -> FileState:
         state = self.files.get(file)
+
         if state is None:
             state = FileState(filename=file)
             self.files[file] = state
+
         return state
 
     def get_file_state(
@@ -95,23 +67,57 @@ class FeatureState:
     def set_file_processed_path(
             self,
             file: str,
+            group: TileGroup,
+            format_name: OutputFormat,
             path: Path,
+            zoom_levels: list[int] | None = None,
     ) -> None:
-        self._get_or_create_file_state(file).processed_path = path
+        self._get_or_create_file_state(file).set_processed(
+            group=group,
+            format_name=format_name,
+            path=path,
+            zoom_levels=zoom_levels,
+        )
+
+    def get_file_processed_path(
+            self,
+            file: str,
+            group: TileGroup,
+            format_name: OutputFormat,
+    ) -> Path | None:
+        state = self.files.get(file)
+
+        if state is None:
+            return None
+
+        return state.get_processed_path(
+            group=group,
+            format_name=format_name,
+        )
 
     def is_file_downloaded(
             self,
             file: str,
     ) -> bool:
         state = self.files.get(file)
-        return state is not None and state.is_downloaded
+
+        return (state is not None) and state.is_downloaded
 
     def is_file_processed(
             self,
-            filename: str,
+            file: str,
+            group: TileGroup,
+            format_name: OutputFormat,
     ) -> bool:
-        state = self.files.get(filename)
-        return state is not None and state.is_processed
+        state = self.files.get(file)
+
+        if state is None:
+            return False
+
+        return state.is_processed(
+            group=group,
+            format_name=format_name,
+        )
 
     @property
     def downloaded_files(self) -> list[str]:
@@ -121,12 +127,18 @@ class FeatureState:
             if state.is_downloaded
         ]
 
-    @property
-    def processed_files(self) -> list[str]:
+    def get_processed_files(
+            self,
+            group: TileGroup,
+            format_name: OutputFormat,
+    ) -> list[str]:
         return [
             filename
             for filename, state in self.files.items()
-            if state.is_processed
+            if state.is_processed(
+                group=group,
+                format_name=format_name,
+            )
         ]
 
     # -------------------------
@@ -176,5 +188,5 @@ class FeatureState:
                 dataset=dataset,
                 feature_id=feature_id,
             ),
-            feature_root_directory=Path(root_directory) / dataset / feature_id,
+            feature_root_directory=Path(root_directory) / dataset / feature_id
         )

@@ -3,7 +3,15 @@ from pathlib import Path
 from pymongo import ReturnDocument
 from pymongo.collection import Collection
 
-from ...domain import FeatureState, FeatureStateId, FeatureStateRepository, FeatureStateNotFound, FileState
+from ...domain import (
+    FeatureState,
+    FeatureStateId,
+    FeatureStateRepository,
+    FeatureStateNotFound,
+    FileState,
+    TileGroup,
+    OutputFormat
+)
 
 
 class MongoFeatureStateRepository(FeatureStateRepository):
@@ -37,9 +45,10 @@ class MongoFeatureStateRepository(FeatureStateRepository):
             self,
             feature_state_id: FeatureStateId,
     ) -> FeatureState:
+
         doc = self.collection.find_one(
             {
-                "_id": str(feature_state_id)
+                "_id": str(feature_state_id),
             }
         )
 
@@ -52,12 +61,19 @@ class MongoFeatureStateRepository(FeatureStateRepository):
     # write
     # -------------------------
 
-    def save(self, feature_state: FeatureState) -> FeatureState:
-        # replace_one with upsert=True; if the document doesn't exist, it will be created, otherwise it will be updated
-        result = self.collection.replace_one(
-            {"_id": str(feature_state.id)},
-            self._to_doc(feature_state),
-            upsert=True,
+    def save(
+            self,
+            feature_state: FeatureState,
+    ) -> FeatureState:
+
+        self.collection.replace_one(
+            {
+                "_id": str(feature_state.id)
+            },
+            self._to_doc(
+                feature_state
+            ),
+            upsert=True
         )
 
         return feature_state
@@ -71,39 +87,47 @@ class MongoFeatureStateRepository(FeatureStateRepository):
         feature_state = self.get(feature_state_id)
 
         for file_path in downloaded_files:
-            filename = Path(file_path).stem
+
+            file_path = Path(file_path)
+
+            filename = file_path.stem
 
             file_state = feature_state.get_file_state(filename)
 
             if file_state is None:
+
                 feature_state.files[filename] = FileState(
                     filename=filename,
-                    download_path=Path(file_path),
+                    download_path=file_path,
                 )
+
             else:
-                file_state.download_path = Path(file_path)
+                file_state.download_path = file_path
 
         return self.save(feature_state)
 
     def mark_files_processed(
             self,
             feature_state_id: FeatureStateId,
-            processed_files: list[str],
+            processed_files: dict[str, str | Path],
+            group: TileGroup,
+            format_name: OutputFormat,
     ) -> FeatureState:
+
         feature_state = self.get(feature_state_id)
 
-        for file_path in processed_files:
-            filename = Path(file_path).stem
+        for filename, path in processed_files.items():
 
             file_state = feature_state.get_file_state(filename)
-            print(file_state)
 
             if file_state is None:
                 raise ValueError(f"Cannot mark {filename} as processed because it does not exist")
 
-            file_state.processed_path = Path(file_path)
-
-            print(file_state)
+            file_state.set_processed_path(
+                group=group,
+                format_name=format_name,
+                path=Path(path),
+            )
 
         return self.save(feature_state)
 
@@ -117,6 +141,7 @@ class MongoFeatureStateRepository(FeatureStateRepository):
             feature_id: str,
             root_directory: str,
     ) -> FeatureState:
+
         state_id = FeatureStateId(
             dataset=dataset,
             feature_id=feature_id,
@@ -132,7 +157,7 @@ class MongoFeatureStateRepository(FeatureStateRepository):
                     "dataset": dataset,
                     "feature_id": feature_id,
                     "feature_root_directory": str(Path(root_directory) / dataset / feature_id),
-                    "files": {},
+                    "files": [],
                 }
             },
             upsert=True,

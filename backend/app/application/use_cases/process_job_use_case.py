@@ -1,6 +1,7 @@
 import logging
 from typing import Type, Optional
 
+from ...infrastructure import ProcessingBatch
 from .use_case import UseCase
 from ...domain import (
     Job,
@@ -9,6 +10,7 @@ from ...domain import (
     FeatureState,
     FeatureStateLockRepository,
     FeatureStateLockType,
+    ProcessorOutput,
 )
 from ...infrastructure.processors import Processor
 from ...infrastructure.redis import RedisPubSub
@@ -57,22 +59,19 @@ class ProcessJobUseCase(UseCase):
                     logger=self._logger,
                 )
 
-                files_to_process: list[str] = processor.get_files_to_process()
+                files_to_process: ProcessingBatch = processor.get_files_to_process()
 
-                if not files_to_process:
+                if not files_to_process.files:
                     self._logger.info(f"No files to process for job {job.id}")
 
                     job.mark_processing_complete()
 
                 else:
-                    processed_files = self._process_files(
-                        processor=processor,
-                        files_to_process=files_to_process,
-                    )
+                    processor_outputs = self._process_files(processor=processor)
 
                     feature_state = self._update_feature_state(
                         feature_state=feature_state,
-                        processed_files=processed_files,
+                        processor_outputs=processor_outputs,
                     )
 
                     job.mark_processing_complete()
@@ -87,28 +86,30 @@ class ProcessJobUseCase(UseCase):
     def _process_files(
             self,
             processor: Processor,
-            files_to_process: list[str],
-    ) -> list[str]:
+    ) -> list[ProcessorOutput]:
+        processor_outputs: list[ProcessorOutput] = processor.process()
 
-        self._logger.info(f"Processing {len(files_to_process)} files.")
+        self._logger.info(f"Processed {len(processor_outputs)} files. Will update feature state.")
 
-        processed_files = processor.process(files_to_process=files_to_process)
-
-        self._logger.info(f"Processed {len(processed_files)} files. Will update feature state.")
-
-        return processed_files
+        return processor_outputs
 
     def _update_feature_state(
             self,
             feature_state: FeatureState,
-            processed_files: list[str],
+            processor_outputs: list[ProcessorOutput],
     ) -> FeatureState:
 
         self._logger.info(f"Updating feature state of {feature_state.id}.")
 
-        feature_state = self._feature_state_repository.mark_files_processed(
-            feature_state_id=feature_state.id,
-            processed_files=processed_files,
-        )
+        for output in processor_outputs:
+            feature_state.set_file_processed_path(
+                file=output.source_file,
+                group=output.group,
+                format_name=output.format_name,
+                path=output.path,
+                zoom_levels=output.zoom_levels,
+            )
+
+        self._feature_state_repository.save(feature_state)
 
         return feature_state

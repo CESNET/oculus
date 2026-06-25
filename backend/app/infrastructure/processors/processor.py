@@ -2,10 +2,18 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
-from ...domain import Job, FeatureState
+from ...domain import Job, FeatureState, ProcessorOutput
 from ...settings import settings
+
+
+@dataclass(slots=True)
+class ProcessingBatch:
+    files: list[Path]
+    outputs: dict
 
 
 class Processor(ABC):
@@ -26,10 +34,18 @@ class Processor(ABC):
             "processed"
         )
 
-    def get_files_to_process(self) -> list[str]:
-        files_to_process: list[str] = []
+        self._input_files: ProcessingBatch | None = None
+        self._input_files = self.get_files_to_process()
 
-        for filename in self._job.requested_files:
+    def get_files_to_process(self) -> ProcessingBatch:
+        demanded_formats = self._job.request_properties.get(
+            "outputs",
+            settings.DEFAULT_PROCESSING_OUTPUT_FORMATS,
+        )
+
+        files_to_process: list[Path] = []
+
+        for filename in self._job.get_requested_files():
 
             file_state = self._feature_state.get_file_state(filename)
 
@@ -39,36 +55,40 @@ class Processor(ABC):
             if not file_state.is_downloaded:
                 raise ValueError(f"File {filename} is expected to be downloaded, but it is not.")
 
-            if file_state.is_processed:
+            if file_state.satisfies_outputs(demanded_formats):
+                print(f"File {filename} is already processed, skipping.")
                 continue
 
-            files_to_process.append(str(file_state.download_path))
+            if file_state.download_path is None:
+                raise ValueError(f"File {filename} is expected to have a download path, but it does not.")
 
-        return files_to_process
+            files_to_process.append(file_state.download_path)
 
-    def process(
-            self,
-            files_to_process: list[str]
-    ) -> list[str]:
+        return ProcessingBatch(
+            files=files_to_process,
+            outputs=demanded_formats,
+        )
 
-        self._logger.info(f"Processing job {self._job.id}")
+    def process(self) -> list[ProcessorOutput]:
+        if self._input_files is None:
+            raise ValueError("No files to process.")
 
-        self._input_files = files_to_process
+        self._logger.info(f"Processing job {self._job.id}, total files to process: {len(self._input_files.files)}")
 
         self._ensure_output_dir()
 
         start = time.perf_counter()
 
-        processed_files: list[str] = self._process()
+        processed_outputs: list[ProcessorOutput] = self._process()
 
         end = time.perf_counter()
 
-        self._logger.info(f"Processed {len(processed_files)} files in {(end - start):.3f}")
+        self._logger.info(f"Processed {len(processed_outputs)} files in {(end - start):.3f}")
 
-        return processed_files
+        return processed_outputs
 
     @abstractmethod
-    def _process(self) -> list[str]:
+    def _process(self) -> list[ProcessorOutput]:
         ...
 
     def _ensure_output_dir(self):
@@ -91,10 +111,7 @@ class Processor(ABC):
 
         except (ValueError, TypeError):
 
-            self._logger.warning(
-                f"Invalid {param_name}: {value}. "
-                f"Using default {default}"
-            )
+            self._logger.warning(f"Invalid {param_name}: {value}. Using default {default}")
 
             return default
 
