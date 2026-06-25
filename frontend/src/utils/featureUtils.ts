@@ -227,5 +227,5 @@ const visualizeSentinel2 = (
 const visualizeLandsat = (
     feature: Feature
 ) => {
-    return {"NOTYETIMPLEMENTED": "Not yet implemented!"}; //TODO
+    return {"NOTYETIMPLEMENTED": "Not yet implemented!", "FEATURE": feature}; //TODO
 };
