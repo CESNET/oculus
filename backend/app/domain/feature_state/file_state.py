@@ -155,6 +155,7 @@ class FileState:
             "download_path": str(self.download_path) if self.download_path else None,
             TileGroup.FULL_PRODUCT.value: self.full_product.to_dict(),
             TileGroup.WM_TILES.value: self.wm_tiles.to_dict(),
+            "wm_tiles_zoom_levels": self.wm_tiles_zoom_levels,
         }
 
     @classmethod
@@ -170,5 +171,8 @@ class FileState:
             ),
             wm_tiles=ProcessedGroup.from_dict(
                 data.get(TileGroup.WM_TILES.value, {}),
+            ),
+            wm_tiles_zoom_levels=set(
+                data.get("wm_tiles_zoom_levels", [])
             ),
         )
