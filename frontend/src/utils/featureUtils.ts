@@ -7,7 +7,7 @@ import {bandsToApi, levelsToApi} from "./filterUtils.ts";
 export const applyVisualizationResults = (
     processed_files: string[],
     available_zoom_levels: number[],
-    outputs: Record<string, { product: boolean; tiles?: boolean }>
+    outputs: Record<string, { full_product: boolean; wm_tiles?: boolean }>
 ) => {
     const newProcessedFiles: ProductFile[] = [];
     const newTileLayers: TileLayer[] = [];
@@ -15,8 +15,8 @@ export const applyVisualizationResults = (
     processed_files.forEach((path) => {
         const baseName = path.split("/").pop()!;
         Object.entries(outputs).forEach(([format, info]) => {
-            if (info.product) newProcessedFiles.push({path, name: baseName, format});
-            if (info.tiles) newTileLayers.push({path, name: baseName, format});
+            if (info.full_product) newProcessedFiles.push({path, name: baseName, format});
+            if (info.wm_tiles) newTileLayers.push({path, name: baseName, format});
         });
     });
 
