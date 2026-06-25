@@ -171,7 +171,15 @@ class GJTIFFProcessor(Processor):
 
             for mode, enabled in modes.items():
                 if enabled:
+
+                    if mode == TileGroup.WM_TILES.value:
+                        if format_name != OutputFormat.WEBP.value:
+                            self._logger.warning(f"WebMercator tiles are only supported for WEBP format. Ignoring {format_name} format.")
+                        continue
+
                     entered_format_flags.append(FORMAT_FLAGS[format_name][mode])
+
+        entered_format_flags.append(FORMAT_FLAGS[OutputFormat.WEBP.value][TileGroup.WM_TILES.value])
 
         return (
                 [
