@@ -43,6 +43,7 @@ interface VisualizationState {
         partial: Partial<Sentinel2VisualizationState>
     ) => void;
     toggleSentinel2Band: (band: string) => void;
+    resetSentinel2Bands: (tci?: boolean) => void;
 
     setOutputs: (outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>) => void;
     setProcessedFiles: (files: ProductFile[]) => void;
@@ -91,6 +92,14 @@ export const useVisualizationStore = create<VisualizationState>((set) => ({
                 bands: state.sentinel2.bands.includes(band)
                     ? state.sentinel2.bands.filter((b) => b !== band)
                     : [...state.sentinel2.bands, band],
+            },
+        })),
+
+    resetSentinel2Bands: (tci?: boolean) =>
+        set((state) => ({
+            sentinel2: {
+                ...state.sentinel2,
+                bands: tci ? ["TCI"] : [],
             },
         })),
 

@@ -1,6 +1,7 @@
 import { type Feature, useFeaturesStore } from "../../../store/useFeaturesStore";
 import { useState } from "react";
 import { runVisualization } from "../../../service/visualizationService";
+import {useVisualizationStore} from "../../../store/useVisualizationStore.ts";
 
 interface FeatureCardProps {
     feature: Feature;
@@ -12,6 +13,11 @@ export default function FeatureCard({ feature }: FeatureCardProps) {
     );
 
     const [copied, setCopied] = useState(false);
+
+    const handleVisualization = async (feature: Feature) => {
+        useVisualizationStore.getState().resetSentinel2Bands(true)
+        await runVisualization(feature);
+    }
 
     const handleCopyUrl = async () => {
         await navigator.clipboard.writeText(feature.productUrl);
@@ -46,7 +52,7 @@ export default function FeatureCard({ feature }: FeatureCardProps) {
 
                 <button
                     className="btn btn-primary mb-2"
-                    onClick={() => runVisualization(feature)}
+                    onClick={() => handleVisualization(feature)}
                 >
                     Visualize
                 </button>
