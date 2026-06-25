@@ -172,6 +172,14 @@ class GJTIFFProcessor(Processor):
             for mode, enabled in modes.items():
                 if enabled:
 
+                    '''
+                    ### GJTiff only exports into one WebMercator tiles format at a time. Defaulting to WebP.
+                    
+                    CESNET Slack #meta-esa-vizualizace:
+                    20260318: matejkaj: Ale řekl bych, že GjTiff neumí generovat víc formátů celých produktů najednou?
+                    20260318: xpulec: No neuměl, ale už jsem přidal. Platí to teda ale jen pro celkový obrázek (-W/-J/-P), ne dlaždice, tam je možné pořád generovat jen v jednom formátu.
+                    '''
+
                     if mode == TileGroup.WM_TILES.value:
                         if format_name != OutputFormat.WEBP.value:
                             self._logger.warning(f"WebMercator tiles are only supported for WEBP format. Ignoring {format_name} format.")
