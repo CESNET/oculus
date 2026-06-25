@@ -1,7 +1,6 @@
-import {
-    type Sentinel2VisualizationState,
-    useVisualizationStore,
-} from "../../store/useVisualizationStore";
+import {useMemo} from "react";
+
+import {type Sentinel2VisualizationState, useVisualizationStore} from "../../store/useVisualizationStore";
 import {useFiltersStore} from "../../store/useFiltersStore";
 import {useFeaturesStore} from "../../store/useFeaturesStore";
 
@@ -11,6 +10,25 @@ import {runVisualization} from "../../service/visualizationService";
 
 import ProcessedFileCard from "./visualization/ProcessedFileCard";
 import MultiButtonGroup from "./MultiButtonGroup.tsx";
+
+/**
+ * Shared comparator:
+ * sort by format first, then by name naturally (B2 < B10)
+ */
+function compareNameAndFormat(
+    a: { name: string; format: string },
+    b: { name: string; format: string }
+) {
+    const formatCompare = a.format.localeCompare(b.format);
+
+    if (formatCompare !== 0) {
+        return formatCompare;
+    }
+
+    return a.name.localeCompare(b.name, undefined, {
+        numeric: true,
+    });
+}
 
 export default function VisualizationTab() {
     const dataset = useFiltersStore((s) => s.dataset);
@@ -35,10 +53,26 @@ export default function VisualizationTab() {
     const hasLayers = tileLayers.length > 0;
     const hasFiles = processedFiles.length > 0;
 
-    const sentinel2Defaults =
-        getAllVisualizationOptions(
-            Dataset.Sentinel2
-        ) as Sentinel2VisualizationState;
+    const sentinel2Defaults = getAllVisualizationOptions(Dataset.Sentinel2) as Sentinel2VisualizationState;
+
+    /**
+     * Tile layers sorted but preserving original index mapping
+     */
+    const sortedTileLayers = useMemo(() => {
+        return tileLayers.map((tile, originalIndex) => ({
+            tile,
+            originalIndex,
+        })).sort((a, b) =>
+            compareNameAndFormat(a.tile, b.tile)
+        );
+    }, [tileLayers]);
+
+    /**
+     * Processed files sorted consistently
+     */
+    const sortedProcessedFiles = useMemo(() => {
+        return [...processedFiles].sort(compareNameAndFormat);
+    }, [processedFiles]);
 
     if (!hasLayers && !hasFiles) {
         return (
@@ -86,16 +120,19 @@ export default function VisualizationTab() {
                         id="tileLayerSelect"
                         value={selectedTileLayerIndex ?? ""}
                         onChange={(e) =>
-                            setSelectedTileLayerIndex(
-                                Number(e.target.value)
-                            )
+                            setSelectedTileLayerIndex(Number(e.target.value))
                         }
                     >
-                        {tileLayers.map((tile, idx) => (
-                            <option key={idx} value={idx}>
-                                {tile.name} ({tile.format.toUpperCase()})
-                            </option>
-                        ))}
+                        {sortedTileLayers.map(
+                            ({tile, originalIndex}) => (
+                                <option
+                                    key={`${tile.name}-${tile.format}`}
+                                    value={originalIndex}
+                                >
+                                    {tile.name}.{tile.format.toUpperCase()}
+                                </option>
+                            )
+                        )}
                     </select>
 
                     <label style={{marginTop: "1rem"}}>
@@ -129,7 +166,7 @@ export default function VisualizationTab() {
                     <h3>Processed Files</h3>
 
                     <div className="processed-files-list">
-                        {processedFiles.map((file) => (
+                        {sortedProcessedFiles.map((file) => (
                             <ProcessedFileCard
                                 key={file.path}
                                 file={file}
