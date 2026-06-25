@@ -227,8 +227,5 @@ const visualizeSentinel2 = (
 const visualizeLandsat = (
     feature: Feature
 ) => {
-    throw new Error(
-        "Dataset visualization not implemented: " +
-        feature.dataset
-    );
+    return {"NOTYETIMPLEMENTED": "Not yet implemented!"}; //TODO
 };
