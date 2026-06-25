@@ -155,7 +155,7 @@ class FileState:
             "download_path": str(self.download_path) if self.download_path else None,
             TileGroup.FULL_PRODUCT.value: self.full_product.to_dict(),
             TileGroup.WM_TILES.value: self.wm_tiles.to_dict(),
-            "wm_tiles_zoom_levels": str(self.wm_tiles_zoom_levels),
+            "wm_tiles_zoom_levels": sorted(self.wm_tiles_zoom_levels),
         }
 
     @classmethod
