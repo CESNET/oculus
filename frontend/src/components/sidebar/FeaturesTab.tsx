@@ -1,5 +1,6 @@
-import {type Feature, useFeaturesStore} from "../../store/useFeaturesStore";
+import {useFeaturesStore} from "../../store/useFeaturesStore";
 import FeatureCard from "./features/FeatureCard";
+import type {Feature} from "../../types/feature.ts";
 
 export default function FeaturesTab() {
     const featureIds = useFeaturesStore((s) => s.featureIds);

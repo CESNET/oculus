@@ -1,44 +1,18 @@
-import { create } from "zustand";
-import { Dataset } from "../types/datasets";
+import {create} from "zustand";
+import {Dataset} from "../types/datasets";
+import type {BoundingBox, DatetimeRange, Sentinel1Filter, Sentinel2Filter} from "../types/filters.ts";
 
-// -----------------------------
-// Typy
-// -----------------------------
-export interface BoundingBox {
-    north: number;
-    south: number;
-    east: number;
-    west: number;
-}
-
-export interface Datetime {
-    start: string;
-    end: string;
-}
-
-export interface Sentinel1FilterState {
-    levels: string[];
-    operationalModes: string[];
-    productTypes: string[];
-    polarizations: string[];
-}
-
-export interface Sentinel2FilterState {
-    cloudCover: number | null;
-    levels: string[];
-}
-
-export interface FiltersState {
+export interface FiltersStore {
     dataset: Dataset;
     setDataset: (d: Dataset) => void;
 
     bbox: BoundingBox;
-    datetime: Datetime;
+    datetime: DatetimeRange;
 
-    sentinel1: Sentinel1FilterState;
-    sentinel2: Sentinel2FilterState;
+    sentinel1: Sentinel1Filter;
+    sentinel2: Sentinel2Filter;
 
-    setFilters: (filters: Partial<FiltersState>) => void;
+    setFilters: (filters: Partial<FiltersStore>) => void;
 
     // bbox + datetime
     setBbox: (bbox: Partial<BoundingBox>) => void;
@@ -47,12 +21,12 @@ export interface FiltersState {
 
     // sentinel1
     toggleSentinel1: (
-        key: keyof Sentinel1FilterState,
+        key: keyof Sentinel1Filter,
         value: string
     ) => void;
 
     // sentinel2
-    setSentinel2: (partial: Partial<Sentinel2FilterState>) => void;
+    setSentinel2: (partial: Partial<Sentinel2Filter>) => void;
     toggleSentinel2: (
         key: "levels",
         value: string
@@ -84,7 +58,7 @@ const getDefaultRange = () => {
 // -----------------------------
 // Store
 // -----------------------------
-export const useFiltersStore = create<FiltersState>((set) => ({
+export const useFiltersStore = create<FiltersStore>((set) => ({
     dataset: Dataset.Sentinel2,
     setDataset: (dataset) => set({ dataset }),
 

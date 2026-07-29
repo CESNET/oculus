@@ -2,14 +2,14 @@ import {create} from "zustand";
 
 export interface ProductFile {
     path: string;
-    name: string; // s příponou
+    name: string; // with extension
     format: string;
 }
 
 export interface TileLayer {
-    path: string; // složka s dlaždicemi
-    name: string; // bez přípony, pro select
-    format: string; // webp, jpg, ...
+    path: string; // path to folder with tiles
+    name: string; // without extension
+    format: string; // webp, jpg, png
 }
 
 export interface Sentinel1VisualizationState {
@@ -33,7 +33,7 @@ interface VisualizationState {
     tileLayers: TileLayer[];
     availableZoomLevels: number[];
     selectedTileLayerIndex: number | null;
-    opacity: number; // globální pro vybraný tileLayer (0..1)
+    opacity: number; // global for selected tile layer (0..1)
 
 
     setJobId: (id: string | null) => void;

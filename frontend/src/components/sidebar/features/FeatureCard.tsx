@@ -1,33 +1,64 @@
-import { type Feature, useFeaturesStore } from "../../../store/useFeaturesStore";
-import { useState } from "react";
-import { runVisualization } from "../../../service/visualizationService";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
+
+import {useFeaturesStore} from "../../../store/useFeaturesStore";
+import {useState} from "react";
+import {runVisualization} from "../../../service/visualizationService";
 import {useVisualizationStore} from "../../../store/useVisualizationStore.ts";
+import type {Feature} from "../../../types/feature.ts";
 
 interface FeatureCardProps {
     feature: Feature;
 }
 
-export default function FeatureCard({ feature }: FeatureCardProps) {
+export default function FeatureCard({feature}: FeatureCardProps) {
     const setHoveredId = useFeaturesStore(
         (state) => state.setHoveredFeatureId
     );
 
-    const [copied, setCopied] = useState(false);
+    const [copiedName, setCopiedName] = useState(false);
+    const [copiedId, setCopiedId] = useState(false);
+    const [copiedUrl, setCopiedUrl] = useState(false);
 
     const handleVisualization = async (feature: Feature) => {
         useVisualizationStore.getState().resetSentinel2Bands(true)
         await runVisualization(feature);
     }
 
+    const handleCopyId = async () => {
+        await navigator.clipboard.writeText(feature.id);
+
+        setCopiedId(true);
+
+        setTimeout(() => {
+            setCopiedId(false);
+        }, 2000);
+    };
+
+    const handleCopyName = async () => {
+        await navigator.clipboard.writeText(feature.name);
+
+        setCopiedName(true);
+
+        setTimeout(() => {
+            setCopiedName(false);
+        }, 2000);
+    };
+
     const handleCopyUrl = async () => {
         await navigator.clipboard.writeText(feature.productUrl);
 
-        setCopied(true);
+        setCopiedUrl(true);
 
         setTimeout(() => {
-            setCopied(false);
+            setCopiedUrl(false);
         }, 2000);
     };
+
+    const formattedDateTime = new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "medium",
+    }).format(new Date(feature.acquisitionDateTime));
 
     return (
         <div
@@ -39,15 +70,73 @@ export default function FeatureCard({ feature }: FeatureCardProps) {
                 <h5 className="card-title">{feature.title}</h5>
 
                 <p className="card-text mb-1">
-                    <strong>Platform:</strong>&nbsp;{feature.platform}
+                    <strong>Date:</strong>&nbsp;{formattedDateTime}
                 </p>
 
-                <p className="card-text mb-1">
-                    <strong>Date:</strong>&nbsp;{feature.acquisitionDate}
+                <p className="card-text mb-1 d-flex">
+                    <strong className="me-2">Name:</strong>
+
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip>
+                                {
+                                    copiedName
+                                        ? (<small>Copied to clipboard</small>)
+                                        : (
+                                            <>
+                                                <code>{feature.name}</code>
+
+                                                <hr className="my-1" />
+
+                                                <small>Click to copy</small>
+                                            </>
+                                        )
+                                }
+                            </Tooltip>
+                        }
+                    >
+                        <span
+                            className="feature-name"
+                            onClick={handleCopyName}
+                            style={{cursor: "pointer"}}
+                        >
+                            <u>{feature.name}</u>
+                        </span>
+                    </OverlayTrigger>
                 </p>
 
-                <p className="card-text mb-3">
-                    <strong>ID:</strong>&nbsp;{feature.id}
+                <p className="card-text mb-3 d-flex">
+                    <strong className="me-2">ID:</strong>
+
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip>
+                                {
+                                    copiedId
+                                        ? (<small>Copied to clipboard</small>)
+                                        : (
+                                            <>
+                                                <code>{feature.id}</code>
+
+                                                <hr className="my-1" />
+
+                                                <small>Click to copy</small>
+                                            </>
+                                        )
+                                }
+                            </Tooltip>
+                        }
+                    >
+                        <span
+                            className="feature-id"
+                            onClick={handleCopyId}
+                            style={{cursor: "pointer"}}
+                        >
+                            <u>{feature.id}</u>
+                        </span>
+                    </OverlayTrigger>
                 </p>
 
                 <button
@@ -72,7 +161,7 @@ export default function FeatureCard({ feature }: FeatureCardProps) {
                         onClick={handleCopyUrl}
                         title="Copy product URL"
                     >
-                        <i className={`bi ${copied ? "bi-check" : "bi-clipboard"}`} />
+                        <i className={`bi ${copiedUrl ? "bi-check" : "bi-clipboard"}`} />
                     </button>
                 </div>
             </div>

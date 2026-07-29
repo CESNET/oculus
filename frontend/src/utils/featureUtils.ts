@@ -1,10 +1,10 @@
 import {Dataset, DatasetFamily, DatasetToFamily} from "../types/datasets";
 import {type ProductFile, type TileLayer, useVisualizationStore} from "../store/useVisualizationStore";
-import type {Feature} from "../store/useFeaturesStore";
 import {useFiltersStore} from "../store/useFiltersStore";
 import {levelsToApi} from "./filterUtils";
 import {bandsToApi} from "./visualizationUtils";
 import type {ProcessedFileState} from "../types/visualization.ts";
+import type {Feature} from "../types/feature.ts";
 
 // ======================================================
 // APPLY VISUALIZATION RESULTS

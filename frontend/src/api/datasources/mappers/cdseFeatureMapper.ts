@@ -1,5 +1,5 @@
-import type {Feature} from "../../../store/useFeaturesStore.ts";
-import {Dataset} from "../../../types/datasets.ts"; // Importuj svůj enum
+import {Dataset} from "../../../types/datasets.ts";
+import type {Feature} from "../../../types/feature.ts";
 
 /**
  * Parsování WKT na souřadnice (zůstává stejné)
@@ -27,9 +27,10 @@ export const mapCDSEToFeature = (item: any, dataset: Dataset): Feature => {
     return {
         id: id,
         title: item.Name,
+        name: item.Name,
         // Pokud API nevrátí název kolekce, použijeme přímo hodnotu z našeho Dataset "enumu"
         platform: item.Collection?.Name ?? dataset,
-        acquisitionDate: item.ContentDate?.Start ?? "",
+        acquisitionDateTime: item.ContentDate?.Start ?? "",
         productUrl: `https://catalogue.dataspace.copernicus.eu/odata/v1/Products(${id})`,
         dataset,
         geometry: {

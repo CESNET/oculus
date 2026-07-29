@@ -5,7 +5,8 @@ import {useVisualizationStore} from "../store/useVisualizationStore";
 import {useLoadingStore} from "../store/useLoadingStore";
 import {useSidebarStore} from "../store/useSidebarStore";
 
-import type {Feature} from "../store/useFeaturesStore";
+
+import type {Feature} from "../types/feature.ts";
 
 export async function runVisualization(feature: Feature) {
     const {startLoading, stopLoading} = useLoadingStore.getState();

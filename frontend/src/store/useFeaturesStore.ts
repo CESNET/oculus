@@ -1,18 +1,5 @@
-import { create } from "zustand";
-import type { Dataset } from "../types/datasets";
-
-export interface Feature {
-    id: string;
-    title: string;
-    platform: string;
-    acquisitionDate: string;
-    productUrl: string;
-    dataset: Dataset;
-    geometry: {
-        type: "Polygon";
-        coordinates: [number, number][][];
-    };
-}
+import {create} from "zustand";
+import type {Feature} from "../types/feature.ts";
 
 export interface FeaturesState {
     // normalized state

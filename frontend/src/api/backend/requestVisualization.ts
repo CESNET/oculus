@@ -1,6 +1,6 @@
-import {type Feature} from "../../store/useFeaturesStore";
 import {visualizeFeature} from "../../utils/featureUtils";
 import type {VisualizationOptions, VisualizationResult, JobEventData} from "../../types/visualization.ts";
+import type {Feature} from "../../types/feature.ts";
 
 // ==========================================
 // CONFIG
