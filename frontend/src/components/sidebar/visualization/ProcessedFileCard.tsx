@@ -1,4 +1,4 @@
-import type {ProductFile} from "../../../store/useVisualizationStore";
+import type {ProductFile} from "../../../types/visualization.ts";
 
 /**
  * ProcessedFileCard
