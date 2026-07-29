@@ -27,10 +27,7 @@ export async function runVisualization(feature: Feature) {
         visualizationStore.setJobId(job_id);
         visualizationStore.setFeatureId(feature.id);
 
-        applyVisualizationResults(
-            processed_files,
-            visualizationStore.outputs
-        );
+        applyVisualizationResults(processed_files);
 
         if (useSidebarStore.getState().activeTab !== 2) {
             useSidebarStore.getState().setActiveTab(2);
@@ -40,8 +37,7 @@ export async function runVisualization(feature: Feature) {
         if (err.name === "AbortError") {
             console.log("Visualization aborted");
         } else {
-            console.error("Error during visualization:", err
-            );
+            console.error("Error during visualization:", err);
         }
     } finally {
         stopLoading();
