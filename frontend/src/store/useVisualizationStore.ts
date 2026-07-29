@@ -1,16 +1,8 @@
 import {create} from "zustand";
-
-export interface ProductFile {
-    path: string;
-    name: string; // with extension
-    format: string;
-}
-
-export interface TileLayer {
-    path: string; // path to folder with tiles
-    name: string; // without extension
-    format: string; // webp, jpg, png
-}
+import type {
+    ProcessedFileState,
+    VisualizationOutput
+} from "../types/visualization";
 
 export interface Sentinel1VisualizationState {
     // zatím nic
@@ -28,85 +20,134 @@ interface VisualizationState {
     sentinel1: Sentinel1VisualizationState;
     sentinel2: Sentinel2VisualizationState;
 
-    outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>;
-    processedFiles: ProductFile[];
-    tileLayers: TileLayer[];
-    availableZoomLevels: number[];
-    selectedTileLayerIndex: number | null;
-    opacity: number; // global for selected tile layer (0..1)
+    /**
+     * Original response from backend
+     */
+    processedFiles: Record<string, ProcessedFileState>;
+
+    /**
+     * Requested outputs
+     */
+    outputs: Record<string, VisualizationOutput>;
+
+    /**
+     * Currently displayed WM tile layer
+     */
+    selectedTileLayerPath: string | null;
+
+    opacity: number;
 
 
-    setJobId: (id: string | null) => void;
-    setFeatureId: (id: string | null) => void;
+    setJobId(id: string | null): void;
 
-    setSentinel2: (
-        partial: Partial<Sentinel2VisualizationState>
-    ) => void;
-    toggleSentinel2Band: (band: string) => void;
-    resetSentinel2Bands: (tci?: boolean) => void;
+    setFeatureId(id: string | null): void;
 
-    setOutputs: (outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>) => void;
-    setProcessedFiles: (files: ProductFile[]) => void;
-    setTileLayers: (tiles: TileLayer[]) => void;
-    setAvailableZoomLevels: (availableZoomLevels: number[]) => void;
-    setSelectedTileLayerIndex: (index: number | null) => void;
-    setOpacity: (opacity: number) => void;
+    setProcessedFiles(files: Record<string, ProcessedFileState>): void;
+
+    setOutputs(outputs: Record<string, VisualizationOutput>): void;
+
+    setSelectedTileLayerPath(path: string | null): void;
+
+    setOpacity(opacity: number): void;
+
+    setSentinel2(partial: Partial<Sentinel2VisualizationState>): void;
+
+    toggleSentinel2Band(band: string): void;
+
+    resetSentinel2Bands(tci?: boolean): void;
 }
 
-export const useVisualizationStore = create<VisualizationState>((set) => ({
-    jobId: null,
-    featureId: null,
 
-    sentinel1: {},
+export const useVisualizationStore =
+    create<VisualizationState>((set) => ({
+        jobId: null,
+        featureId: null,
 
-    sentinel2: {
-        bands: ["TCI"],
-    },
+        sentinel1: {},
 
-    outputs: {
-        jpg: {full_product: true, wm_tiles: false},
-        png: {full_product: false, wm_tiles: false},
-        webp: {full_product: false, wm_tiles: true}
-    },
-    processedFiles: [],
-    tileLayers: [],
-    availableZoomLevels: [],
-    selectedTileLayerIndex: null,
-    opacity: 0.8,
+        sentinel2: {
+            bands: ["TCI"],
+        },
 
-    setJobId: (id) => set({jobId: id}),
-    setFeatureId: (id) => set({featureId: id}),
+        processedFiles: {},
 
-    setSentinel2: (partial) =>
-        set((state) => ({
+        outputs: {
+            jpg: {
+                full_product: true,
+                wm_tiles: false,
+            },
+
+            png: {
+                full_product: false,
+                wm_tiles: false,
+            },
+
+            webp: {
+                full_product: false,
+                wm_tiles: true,
+            },
+        },
+
+        selectedTileLayerPath: null,
+
+        opacity: 0.8,
+
+        setJobId: (id) => set({
+            jobId: id,
+        }),
+
+        setFeatureId: (id) => set({
+            featureId: id,
+        }),
+
+        setProcessedFiles: (files) => set({
+            processedFiles: files,
+        }),
+
+        setOutputs: (outputs) => set({
+            outputs,
+        }),
+
+        setSelectedTileLayerPath: (path) => set({
+            selectedTileLayerPath: path,
+        }),
+
+        setOpacity: (opacity) => set({
+            opacity,
+        }),
+
+
+        setSentinel2: (partial) => set((state) => ({
             sentinel2: {
                 ...state.sentinel2,
                 ...partial,
             },
         })),
 
-    toggleSentinel2Band: (band) =>
-        set((state) => ({
-            sentinel2: {
-                ...state.sentinel2,
-                bands: state.sentinel2.bands.includes(band)
-                    ? state.sentinel2.bands.filter((b) => b !== band)
-                    : [...state.sentinel2.bands, band],
-            },
-        })),
+        toggleSentinel2Band: (band) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
 
-    resetSentinel2Bands: (tci?: boolean) =>
-        set((state) => ({
-            sentinel2: {
-                ...state.sentinel2,
-                bands: tci ? ["TCI"] : [],
-            },
-        })),
+                    bands: state.sentinel2.bands.includes(band)
+                        ? state.sentinel2.bands.filter(
+                            b => b !== band
+                        )
+                        : [
+                            ...state.sentinel2.bands,
+                            band
+                        ],
+                },
+            })),
 
-    setOutputs: (outputs) => set({outputs}),
-    setProcessedFiles: (files) => set({processedFiles: files}),
-    setTileLayers: (tiles) => set({tileLayers: tiles}),
-    setAvailableZoomLevels: (availableZoomLevels) => set({availableZoomLevels: availableZoomLevels}),
-    setSelectedTileLayerIndex: (index) => set({selectedTileLayerIndex: index}),
-    setOpacity: (opacity) => set({opacity})
-}));
+        resetSentinel2Bands: (tci = false) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+
+                    bands: tci
+                        ? ["TCI"]
+                        : [],
+                },
+            })),
+    }));

@@ -31,6 +31,25 @@ export interface ProcessedFileState {
     wm_tiles_zoom_levels: number[];
 }
 
+export interface VisualizationOutput {
+    full_product: boolean;
+    wm_tiles: boolean;
+}
+
+export interface ProductFile {
+    path: string;
+    name: string; // with extension
+    format: string;
+}
+
+
+export interface TileLayer {
+    path: string; // path to folder with tiles
+    name: string; // without extension
+    format: string; // webp, jpg, png
+    zoomLevels: number[];
+}
+
 export interface VisualizationResult {
     job_id: string;
     processed_files: Record<string, ProcessedFileState>;

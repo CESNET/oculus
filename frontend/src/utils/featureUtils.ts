@@ -1,5 +1,5 @@
 import {Dataset, DatasetFamily, DatasetToFamily} from "../types/datasets";
-import {type ProductFile, type TileLayer, useVisualizationStore} from "../store/useVisualizationStore";
+import {useVisualizationStore} from "../store/useVisualizationStore";
 import {useFiltersStore} from "../store/useFiltersStore";
 import {levelsToApi} from "./filterUtils";
 import {bandsToApi} from "./visualizationUtils";
@@ -11,54 +11,23 @@ import type {Feature} from "../types/feature.ts";
 // ======================================================
 
 export const applyVisualizationResults = (
-    processedFiles: Record<string, ProcessedFileState>,
-    outputs: Record<string, { full_product: boolean; wm_tiles?: boolean; }>
+    processedFiles: Record<string, ProcessedFileState>
 ) => {
-    const newProcessedFiles: ProductFile[] = [];
-    const newTileLayers: TileLayer[] = [];
+    const visualizationStore = useVisualizationStore.getState();
 
-    let availableZoomLevels: number[] = [];
+    visualizationStore.setProcessedFiles(processedFiles);
 
-    Object.values(processedFiles).forEach((file) => {
-        if (!availableZoomLevels.length) {
-            availableZoomLevels = file.wm_tiles_zoom_levels ?? [];
-        }
+    const firstLayer =
+        Object.values(processedFiles)
+            .find(file =>
+                Object.values(file.wm_tiles)
+                    .some(path => path !== null)
+            );
 
-        Object.entries(outputs).forEach(
-            ([format, outputConfig]) => {
-                const fullProductPath = file.full_product[format as keyof typeof file.full_product];
-                const tilePath = file.wm_tiles[format as keyof typeof file.wm_tiles];
-
-                if (outputConfig.full_product && fullProductPath) {
-                    newProcessedFiles.push(
-                        {
-                            path: fullProductPath,
-                            name: file.filename,
-                            format,
-                        }
-                    );
-                }
-
-                if (outputConfig.wm_tiles && tilePath) {
-                    newTileLayers.push(
-                        {
-                            path: tilePath,
-                            name: file.filename,
-                            format,
-                        }
-                    );
-                }
-            }
-        );
-    });
-
-    const visualizationStore =
-        useVisualizationStore.getState();
-
-    visualizationStore.setProcessedFiles(newProcessedFiles);
-    visualizationStore.setTileLayers(newTileLayers);
-    visualizationStore.setAvailableZoomLevels(availableZoomLevels);
-    visualizationStore.setSelectedTileLayerIndex(newTileLayers.length ? 0 : null);
+    if (firstLayer) {
+        const firstPath = Object.values(firstLayer.wm_tiles).find(path => path !== null);
+        visualizationStore.setSelectedTileLayerPath(firstPath ?? null);
+    }
 };
 
 // ======================================================
