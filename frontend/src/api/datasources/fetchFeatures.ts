@@ -1,22 +1,26 @@
-import { type FiltersState } from "../../store/useFiltersStore.ts";
-import { Dataset } from "../../types/datasets.ts";
-import { fetchCDSEFeatures } from "./fetchCDSEFeatures.ts";
+import type { FiltersStore } from "../../store/useFiltersStore";
+import { Dataset } from "../../types/datasets";
 
-export const fetchFeatures = async (
-    filters: FiltersState,
+import { fetchSentinel1Features } from "./fetchSentinel1Features";
+import { fetchSentinel2Features } from "./fetchSentinel2Features";
+
+export async function fetchFeatures(
+    filters: FiltersStore,
     dataset: Dataset,
-    signal?: AbortSignal
-) => {
+    signal?: AbortSignal,
+) {
     switch (dataset) {
         case Dataset.Sentinel1:
+            return fetchSentinel1Features(filters, signal);
+
         case Dataset.Sentinel2:
-            return fetchCDSEFeatures(filters, dataset, signal);
+            return fetchSentinel2Features(filters, signal);
 
         case Dataset.Landsat:
             console.warn("Landsat fetch not implemented yet");
             return [];
 
         default:
-            throw new Error("Unknown dataset: " + dataset);
+            throw new Error(`Unsupported dataset: ${dataset}`);
     }
-};
+}

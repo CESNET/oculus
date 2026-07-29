@@ -1,14 +1,15 @@
 import {useFiltersStore} from "../../../store/useFiltersStore";
-import MultiButtonGroup from "./MultiButtonGroup";
+import MultiButtonGroup from "../MultiButtonGroup.tsx";
 import {Dataset} from "../../../types/datasets";
-import {getAllOptions} from "../../../utils/filterUtils.ts";
-import {type Sentinel1FilterState} from "../../../store/useFiltersStore";
+import {getAllFilterOptions} from "../../../utils/filterUtils.ts";
+
+import type {Sentinel1Filter} from "../../../types/filters.ts";
 
 export default function Sentinel1Filter() {
     const sentinel1 = useFiltersStore((s) => s.sentinel1);
     const toggleSentinel1 = useFiltersStore((s) => s.toggleSentinel1);
 
-    const defaults = getAllOptions(Dataset.Sentinel1) as Sentinel1FilterState;
+    const defaults = getAllFilterOptions(Dataset.Sentinel1) as Sentinel1Filter;
 
     return (
         <>

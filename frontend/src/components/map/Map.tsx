@@ -15,6 +15,7 @@ import {useFiltersStore} from '../../store/useFiltersStore';
 import {useFeaturesStore} from '../../store/useFeaturesStore';
 import {useVisualizationStore} from '../../store/useVisualizationStore';
 
+import OpenFreeMapLayer from "./OpenFreeMapLayer.tsx";
 import UserLocationMarker from './UserLocationMarker';
 import LocateButton from './LocateButton';
 import ProductLayer from './layers/ProductLayer';
@@ -135,10 +136,13 @@ const Map: React.FC<Props> = ({
         <MapContainer center={center} zoom={zoom} className="w-100 h-100">
 
             {/* Base map */}
+            {/*
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap contributors"
             />
+            */}
+            <OpenFreeMapLayer />
 
             {/* Hover highlight */}
             {hoveredFeature && (

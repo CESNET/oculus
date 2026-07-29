@@ -1,77 +1,151 @@
 services:
-  app:
+
+  # ==================== FRONTEND / ENTRYPOINT ====================
+#  nginx:
+#    build: ./frontend
+#    container_name: oculus_nginx
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - ./frontend/nginx/certs:/etc/letsencrypt
+#      - ./frontend/dist:/var/www/html
+#      - data:/data:ro
+#    env_file:
+#      - ./env/frontend.env
+#    depends_on:
+#      - backend
+#    restart: always
+#    networks:
+#      - public
+#      - internal-app
+#
+#
+#  certbot:
+#    image: certbot/certbot
+#    container_name: oculus_certbot
+#    volumes:
+#      - ./frontend/nginx/certs:/etc/letsencrypt
+#      - ./frontend/dist:/var/www/html
+#    entrypoint: >
+#      sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/html --non-interactive; sleep 12h & wait $${!}; done"
+#    restart: always
+#    networks:
+#      - public
+
+
+  # ==================== BACKEND ====================
+  backend:
     build: ./backend
     container_name: oculus_backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    ports:
-      - "8000:8000"
     volumes:
-      - data_volume:/data
+      - data:/data
     env_file:
-      - backend/.env
+      - ./env/backend.env
+      - ./env/mongo.env
+      - ./env/redis.env
     depends_on:
       - redis
       - mongo
-#      - gjtiff
+      #- gjtiff
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - internal-app
+      - internal-db
 
+
+  # ==================== CELERY ====================
   celery-worker:
-    container_name: oculus_celery-worker
     build: ./backend
+    container_name: oculus_celery-worker
     command: celery -A app.infrastructure.celery.celery_app.celery worker -l info
     volumes:
-      - data_volume:/data
+      - data:/data
     env_file:
-      - backend/.env
+      - ./env/backend.env
+      - ./env/mongo.env
+      - ./env/redis.env
     depends_on:
       - redis
       - mongo
     restart: always
+    networks:
+      - internal-app
+      - internal-db
+
 
   celery-worker-processing:
     build: ./backend
     container_name: oculus_celery-worker-processing
     command: celery -A app.infrastructure.celery.celery_app.celery worker -Q process_task_queue --concurrency=1 -l info
     volumes:
-      - data_volume:/data
+      - data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     env_file:
-      - backend/.env
+      - ./env/backend.env
+      - ./env/mongo.env
+      - ./env/redis.env
     depends_on:
       - redis
       - mongo
     restart: always
+    networks:
+      - internal-app
+      - internal-db
+
 
   celery-beat:
     build: ./backend
     container_name: oculus_celery-beat
     command: celery -A app.infrastructure.celery.celery_app.celery beat --loglevel=info
     volumes:
-      - data_volume:/data
+      - data:/data
+    env_file:
+      - ./env/backend.env
+      - ./env/mongo.env
+      - ./env/redis.env
     depends_on:
       - redis
       - mongo
-    env_file:
-      - backend/.env
     restart: always
+    networks:
+      - internal-app
+      - internal-db
 
+
+  # ==================== DATABASE (NO INTERNET) ====================
   redis:
     image: redis:7
     container_name: oculus_redis
-    ports:
-      - "6379:6379"
+    command: sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+    env_file:
+      - ./env/redis.env
     restart: always
+    networks:
+      - internal-db
+
 
   mongo:
     image: mongo:6
     container_name: oculus_mongo
-    ports:
-      - "27017:27017"
     command: --quiet
+    volumes:
+      - mongo:/data/db
+      - ./utils/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    env_file:
+      - ./env/mongo.env
     restart: always
+    networks:
+      - internal-db
 
+
+  # ==================== GPU / PROCESSING ====================
 #  gjtiff:
 #    build: ./gjtiff
-#    container_name: oculus_gjtiff # !!! This container must be named 'oculus_gjtiff' as GJTIFFProcessor Python class is hardcoded to this name !!!
+#    container_name: oculus_gjtiff
 #    command: [ "sleep", "infinity" ]
 #    deploy:
 #      resources:
@@ -82,7 +156,29 @@ services:
 #              capabilities: [ gpu ]
 #    volumes:
 #      - ./gjtiff:/gjtiff
-#      - data_volume:/data
+#      - data:/data
+#    networks:
+#      - internal-app
 
+
+# ==================== VOLUMES ====================
 volumes:
-  data_volume:
+  data:
+  mongo:
+
+
+# ==================== NETWORKS ====================
+networks:
+
+  # public network (nginx)
+  public:
+    driver: bridge
+
+  # application network (backend + celery workers)
+  internal-app:
+    driver: bridge
+
+  # internal separated network (mongo + redis)
+  internal-db:
+    driver: bridge
+    internal: true

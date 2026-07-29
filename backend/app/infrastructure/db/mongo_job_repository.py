@@ -1,40 +1,78 @@
-from datetime import datetime, timezone
+from pymongo.collection import Collection
 
-from .mongo import get_collection
-from ...domain import Job, JobRepository
+from ...domain import (
+    Job,
+    JobId,
+    JobNotFound,
+    JobRepository,
+)
 
 
-class MongoJobRepository(JobRepository):
+class MongoJobRepository(
+    JobRepository
+):
 
-    def _get_collection(self):
-        return get_collection(collection_name="jobs")
+    def __init__(
+            self,
+            collection: Collection,
+    ):
+        self.collection = collection
 
-    def get(self, job_id: str) -> Job:
-        doc = self._get_collection().find_one({"_id": job_id})
-        if not doc:
-            raise ValueError("Job not found in the database")
+    def _to_doc(
+            self,
+            job: Job,
+    ) -> dict:
+        doc = job.to_dict()
+        doc["_id"] = str(job.id)
 
-        self._get_collection().find_one_and_update(
-            {"_id": job_id},
-            {"$set": {"last_accessed": datetime.now(tz=timezone.utc)}}
+        return doc
+
+    def _from_doc(
+            self,
+            doc: dict,
+    ) -> Job:
+        return Job.from_dict(
+            JobId.parse(doc["_id"]),
+            doc,
         )
 
-        return Job.deserialize(doc)
-
-    def _save(self, job: Job):
-        now = datetime.now(tz=timezone.utc)
-
-        data = job.serialize()
-        data["last_accessed"] = now
-
-        self._get_collection().update_one(
-            {"_id": job.id},
-            {"$set": data},
-            upsert=True
+    def get(
+            self,
+            job_id: JobId,
+    ) -> Job:
+        doc = self.collection.find_one(
+            {"_id": str(job_id)}
         )
 
-    def find_expired(self, threshold: datetime) -> list[Job]:
-        return list(self._get_collection().find({"last_accessed": {"$lt": threshold}}))
+        if doc is None:
+            raise JobNotFound(f"Job {job_id} was not found")
 
-    def delete(self, job_id: str):
-        self._get_collection().delete_one({"_id": job_id})
+        return self._from_doc(doc)
+
+    def save(
+            self,
+            job: Job,
+    ) -> Job:
+        # replace_one with upsert=True; if the document doesn't exist, it will be created, otherwise it will be updated
+
+        result = self.collection.replace_one(
+            {"_id": str(job.id)},
+            self._to_doc(job),
+            upsert=True,
+        )
+
+        if not result.acknowledged:
+            raise RuntimeError("Failed to save job")
+
+        return job
+
+    def delete(
+            self,
+            job_id: JobId,
+    ) -> None:
+        result = self.collection.delete_one(
+            {"_id": str(job_id)}
+        )
+
+        if result.deleted_count == 0:
+            raise JobNotFound(f"Job {job_id} was not found")

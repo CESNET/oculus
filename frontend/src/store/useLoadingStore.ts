@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import {create} from "zustand";
 
 interface LoadingState {
     isLoading: boolean;
@@ -13,15 +13,15 @@ export const useLoadingStore = create<LoadingState>((set, get) => ({
 
     startLoading: () => {
         const controller = new AbortController();
-        set({ isLoading: true, abortController: controller });
+        set({isLoading: true, abortController: controller});
         return controller;
     },
 
     stopLoading: () => {
-        const { abortController } = get();
+        const {abortController} = get();
         if (abortController) {
             abortController.abort(); // Zruší probíhající fetch
         }
-        set({ isLoading: false, abortController: null });
+        set({isLoading: false, abortController: null});
     }
 }));

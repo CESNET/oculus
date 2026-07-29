@@ -248,6 +248,15 @@
     color: #475569;
 }
 
+.feature-card .card-text .feature-id,
+.feature-card .card-text .feature-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
 /* =========================
    VISUALIZE TAB (aligned, NOT separate system)
    ========================= */

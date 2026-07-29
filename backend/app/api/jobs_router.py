@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 from ..application.events import job_event_generator
 from ..bootstrap_container import bootstrap_container
+from ..domain import JobId
+
 
 jobs_router = APIRouter()
 
@@ -20,14 +22,15 @@ def create_job(request: CreateJobRequestModel):
     job_id = bootstrap_container.create_job().execute(
         dataset=request.dataset,
         metadata=request.metadata,
-        properties=request.properties
+        request_properties=request.properties
     )
-    return {"job_id": job_id}
+    return {"job_id": str(job_id)}
 
 
 @jobs_router.get("/{job_id}")
 def get_job(job_id: str):
-    return bootstrap_container.repository.get(job_id).serialize()
+    job_id = JobId.parse(job_id)
+    return bootstrap_container.job_repository.get(job_id).serialize()
 
 
 @jobs_router.get("/{job_id}/events")
@@ -44,14 +47,16 @@ class CancelJobRequestModel(BaseModel):
 
 @jobs_router.post("/cancel")
 def cancel_job(request: CancelJobRequestModel):
-    job = bootstrap_container.repository.get(request.job_id)
+    job_id = JobId.parse(request.job_id)
+
+    job = bootstrap_container.job_repository.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    if job.status in ("FINISHED", "FAILED"):
+    if job.current_status in ("FINISHED", "FAILED"):
         raise HTTPException(status_code=400, detail="Cannot cancel a finished job")
 
-    success = bootstrap_container.cancel_job().execute(job.id)
+    success: JobId = bootstrap_container.cancel_job().execute(job.id)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to cancel job")
 

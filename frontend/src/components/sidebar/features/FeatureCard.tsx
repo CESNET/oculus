@@ -1,55 +1,64 @@
-import {type Feature, useFeaturesStore} from "../../../store/useFeaturesStore.ts";
-import {useVisualizationStore} from "../../../store/useVisualizationStore.ts";
-import {useSidebarStore} from "../../../store/useSidebarStore.ts";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
+
+import {useFeaturesStore} from "../../../store/useFeaturesStore";
 import {useState} from "react";
-import {useLoadingStore} from "../../../store/useLoadingStore.ts";
-import {requestVisualization} from "../../../api/backend/requestVisualization.ts";
-import {applyVisualizationResults} from "../../../utils/featureUtils.ts";
+import {runVisualization} from "../../../service/visualizationService";
+import {useVisualizationStore} from "../../../store/useVisualizationStore.ts";
+import type {Feature} from "../../../types/feature.ts";
 
 interface FeatureCardProps {
     feature: Feature;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
-    const setHoveredId = useFeaturesStore(state => state.setHoveredFeatureId);
+export default function FeatureCard({feature}: FeatureCardProps) {
+    const setHoveredId = useFeaturesStore(
+        (state) => state.setHoveredFeatureId
+    );
 
-    const [copied, setUrlCopied] = useState(false);
+    const [copiedName, setCopiedName] = useState(false);
+    const [copiedId, setCopiedId] = useState(false);
+    const [copiedUrl, setCopiedUrl] = useState(false);
 
-    const handleUrlCopy = () => {
-        navigator.clipboard.writeText(feature.productUrl).then(() => {
-            setUrlCopied(true);
-            setTimeout(() => setUrlCopied(false), 2000);
-        });
+    const handleVisualization = async (feature: Feature) => {
+        useVisualizationStore.getState().resetSentinel2Bands(true)
+        await runVisualization(feature);
+    }
+
+    const handleCopyId = async () => {
+        await navigator.clipboard.writeText(feature.id);
+
+        setCopiedId(true);
+
+        setTimeout(() => {
+            setCopiedId(false);
+        }, 2000);
     };
 
-    const handleVisualize = async () => {
-        const {startLoading, stopLoading} = useLoadingStore.getState();
-        const controller = startLoading();
+    const handleCopyName = async () => {
+        await navigator.clipboard.writeText(feature.name);
 
-        try {
-            const {job_id, processed_files, available_zoom_levels} = await requestVisualization(feature, {
-                signal: controller.signal,
-                onMessage: (status) => console.log("Job status:", status)
-            });
+        setCopiedName(true);
 
-            useVisualizationStore.getState().setJobId(job_id);
-            useVisualizationStore.getState().setFeatureId(feature.id);
-
-            applyVisualizationResults(
-                processed_files,
-                available_zoom_levels,
-                useVisualizationStore.getState().outputs
-            );
-            useSidebarStore.getState().setActiveTab(2);
-
-        } catch (err: any) {
-            if (err.name === "AbortError") console.log("Visualization aborted");
-            else console.error("Error during visualization:", err);
-
-        } finally {
-            stopLoading();
-        }
+        setTimeout(() => {
+            setCopiedName(false);
+        }, 2000);
     };
+
+    const handleCopyUrl = async () => {
+        await navigator.clipboard.writeText(feature.productUrl);
+
+        setCopiedUrl(true);
+
+        setTimeout(() => {
+            setCopiedUrl(false);
+        }, 2000);
+    };
+
+    const formattedDateTime = new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "medium",
+    }).format(new Date(feature.acquisitionDateTime));
 
     return (
         <div
@@ -59,11 +68,81 @@ const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
         >
             <div className="card-body d-flex flex-column">
                 <h5 className="card-title">{feature.title}</h5>
-                <p className="card-text mb-1"><strong>Platform:</strong>&nbsp;{feature.platform}</p>
-                <p className="card-text mb-1"><strong>Date:</strong>&nbsp;{feature.acquisitionDate}</p>
-                <p className="card-text mb-3"><strong>ID:</strong>&nbsp;{feature.id}</p>
 
-                <button className="btn btn-primary mb-2" onClick={handleVisualize}>
+                <p className="card-text mb-1">
+                    <strong>Date:</strong>&nbsp;{formattedDateTime}
+                </p>
+
+                <p className="card-text mb-1 d-flex">
+                    <strong className="me-2">Name:</strong>
+
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip>
+                                {
+                                    copiedName
+                                        ? (<small>Copied to clipboard</small>)
+                                        : (
+                                            <>
+                                                <code>{feature.name}</code>
+
+                                                <hr className="my-1" />
+
+                                                <small>Click to copy</small>
+                                            </>
+                                        )
+                                }
+                            </Tooltip>
+                        }
+                    >
+                        <span
+                            className="feature-name"
+                            onClick={handleCopyName}
+                            style={{cursor: "pointer"}}
+                        >
+                            <u>{feature.name}</u>
+                        </span>
+                    </OverlayTrigger>
+                </p>
+
+                <p className="card-text mb-3 d-flex">
+                    <strong className="me-2">ID:</strong>
+
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip>
+                                {
+                                    copiedId
+                                        ? (<small>Copied to clipboard</small>)
+                                        : (
+                                            <>
+                                                <code>{feature.id}</code>
+
+                                                <hr className="my-1" />
+
+                                                <small>Click to copy</small>
+                                            </>
+                                        )
+                                }
+                            </Tooltip>
+                        }
+                    >
+                        <span
+                            className="feature-id"
+                            onClick={handleCopyId}
+                            style={{cursor: "pointer"}}
+                        >
+                            <u>{feature.id}</u>
+                        </span>
+                    </OverlayTrigger>
+                </p>
+
+                <button
+                    className="btn btn-primary mb-2"
+                    onClick={() => handleVisualization(feature)}
+                >
                     Visualize
                 </button>
 
@@ -78,16 +157,14 @@ const FeatureCard: React.FC<FeatureCardProps> = ({feature}) => {
                     </a>
 
                     <button
-                        className="btn btn-outline-secondary btn-sm btn-sm"
-                        onClick={handleUrlCopy}
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={handleCopyUrl}
                         title="Copy product URL"
                     >
-                        <i className={`bi ${copied ? "bi-check" : "bi-clipboard"}`} />
+                        <i className={`bi ${copiedUrl ? "bi-check" : "bi-clipboard"}`} />
                     </button>
                 </div>
             </div>
         </div>
     );
-};
-
-export default FeatureCard;
+}

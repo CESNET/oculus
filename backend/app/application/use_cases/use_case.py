@@ -1,45 +1,60 @@
 import logging
 from typing import Optional
 
-from .exceptions import CheckJobUseCaseFailedException, CheckJobUseCaseCancelledException
-from ...domain import Job, JobRepository, JobStatus, FAILED_STATUSES
-from ...infrastructure.redis.redis_pubsub import RedisPubSub
+from ...domain import Job, JobRepository, JobId, FAILED_STATUSES
+from ...infrastructure.redis import RedisPubSub
 from ...settings import settings
 
 
 class UseCase:
-    def __init__(self, repository: JobRepository, redis_pubsub: RedisPubSub, logger: Optional[logging.Logger] = None):
-        self._repository = repository
-        self._redis_pubsub: RedisPubSub = redis_pubsub
-        self._logger = logger or logging.getLogger(settings.APP_NAME)
+    """
+    Base class for job execution use cases.
+    """
 
-    def _save_job(self, job: Job):
-        self._repository.save(job)
-        self._redis_pubsub.publish(job.id, job.status)
+    def __init__(
+            self,
+            job_repository: JobRepository,
+            redis_pubsub: RedisPubSub,
+            logger: Optional[logging.Logger] = None,
+    ):
+        self._job_repository: JobRepository = job_repository
+        self._redis_pubsub: RedisPubSub = redis_pubsub
+        self._logger: logging.Logger = logger or logging.getLogger(settings.APP_NAME)
+
+    def _save_job(self, job: Job) -> Job:
+        """
+        Persist job and publish status update.
+        """
+        job = self._job_repository.save(job)
+        self._redis_pubsub.publish(job.id, job.current_status)
+
+        return job
 
     def _execute(self, job: Job) -> Job:
-        ...
+        """
+        To be implemented by subclasses.
+        """
+        raise NotImplementedError
 
-    def execute(self, job_id: Optional[str]) -> str:
+    def execute(self, job_id: str) -> str:
+        """
+        Entry point for job execution.
+        """
+
+        job_id = JobId.parse(job_id)
+
         if not job_id:
             raise ValueError("Job ID is required")
 
-        job = self._repository.get(job_id)
+        job = self._job_repository.get(job_id)
 
         try:
             job = self._execute(job)
 
-        except CheckJobUseCaseFailedException:
-            raise
-
-        except CheckJobUseCaseCancelledException:
-            raise
-
         except Exception as e:
-            if job.status not in FAILED_STATUSES:
-                job.status = JobStatus.FAILED
-                job.fail_reason = f"Exception: {e}"
+            if job.current_status not in FAILED_STATUSES:
+                job.mark_failed(reason=str(e))
 
-            self._save_job(job)
+        job = self._save_job(job)
 
-        return job.id
+        return job_id.value

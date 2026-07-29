@@ -1,0 +1,42 @@
+import logging
+import os
+from abc import ABC, abstractmethod
+from pathlib import Path
+
+from ....settings import settings
+
+
+class BaseProvider(ABC):
+    def __init__(
+            self,
+            feature_id: str,
+            feature_root_directory: Path,
+            logger: logging.Logger | None = None
+    ):
+        self._logger = logger or logging.getLogger(settings.APP_NAME)
+
+        self._job = ""
+
+        self._feature_id = feature_id
+
+        self._feature_download_directory: Path = feature_root_directory / "downloaded"
+
+    @abstractmethod
+    def has_product(self) -> bool:
+        ...
+
+    @abstractmethod
+    def list_product_files(self) -> list[str]:
+        ...
+
+    def download_product_files(self, files_to_download: list[str]) -> list[str]:
+        return self._download_product_files(files_to_download=set(files_to_download))
+
+    @abstractmethod
+    def _download_product_files(self, files_to_download: set[str]) -> list[str]:
+        ...
+
+    def download_entire_product(self) -> list[str]:
+        files_to_download: list[str] = self.list_product_files()
+        downloaded_files: list[str] = self.download_product_files(files_to_download=files_to_download)
+        return downloaded_files
