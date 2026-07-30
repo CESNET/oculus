@@ -9,7 +9,7 @@ type Props = {
 };
 
 export default function ProcessedFileCard({file}: Props) {
-    const fullPath = `${file.path}.${file.format}`;
+    const fullPath = `${file.path}`;
 
     return (
         <div className="card feature-card processed-file-card">

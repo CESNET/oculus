@@ -137,7 +137,7 @@ export default function VisualizationTab() {
                                     key={`${tile.path}`}
                                     value={tile.path}
                                 >
-                                    {tile.name}.{tile.format.toUpperCase()}
+                                    {tile.name.toUpperCase()}.{tile.format.toUpperCase()}
                                 </option>
                             )
                         )}
