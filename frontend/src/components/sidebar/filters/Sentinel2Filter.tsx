@@ -1,9 +1,9 @@
-import {useFiltersStore} from "../../../store/useFiltersStore";
-import MultiButtonGroup from "../MultiButtonGroup.tsx";
+import ButtonGroup from "../ButtonGroup.tsx";
 import {Dataset} from "../../../types/datasets";
 import {getAllFilterOptions} from "../../../utils/filterUtils.ts";
 
 import type {Sentinel2Filter} from "../../../types/filters.ts";
+import {useFiltersStore} from "../../../store/useFiltersStore.ts";
 
 export default function Sentinel2Filter() {
     const sentinel2 = useFiltersStore((s) => s.sentinel2);
@@ -44,7 +44,8 @@ export default function Sentinel2Filter() {
                 </label>
             </div>
 
-            <MultiButtonGroup
+            <ButtonGroup
+                multiple
                 label="Levels"
                 values={defaults.levels}
                 selected={sentinel2.levels}

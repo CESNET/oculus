@@ -1,8 +1,5 @@
 import {Dataset} from "../types/datasets";
-import type {
-    Sentinel1VisualizationState,
-    Sentinel2VisualizationState
-} from "../store/useVisualizationStore";
+
 import type {
     ProcessedFileState,
     ProductFile,
@@ -59,27 +56,6 @@ export function getSelectedTileLayer(
             layer.path === selectedPath
     ) ?? null;
 }
-
-// Defaultní hodnoty pro všechny dataset typy
-export const getAllVisualizationOptions = (dataset: Dataset): Sentinel1VisualizationState | Sentinel2VisualizationState => {
-    switch (dataset) {
-        case Dataset.Sentinel1:
-            return {} as Sentinel1VisualizationState;
-
-        case Dataset.Sentinel2:
-            return {
-                bands: ["1", "2", "3", "4", "5", "6", "7", "8", "8A", "9", "10", "11", "12", "TCI"],
-            } as Sentinel2VisualizationState;
-
-        case Dataset.Landsat:
-            return {
-                bands: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-            } as Sentinel2VisualizationState; // Landsat zatím používá stejný tvar jako Sentinel2
-
-        default:
-            throw new Error("Unknown dataset in getAllOptions");
-    }
-};
 
 export const bandToApi = (dataset: Dataset, band: string): string => {
     if (dataset === Dataset.Sentinel2) {

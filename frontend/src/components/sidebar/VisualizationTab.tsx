@@ -1,17 +1,15 @@
 import {useMemo} from "react";
 
 import {useVisualizationStore} from "../../store/useVisualizationStore";
-import type {Sentinel2VisualizationState} from "../../store/useVisualizationStore";
+
 import {useFiltersStore} from "../../store/useFiltersStore";
-import {useFeaturesStore} from "../../store/useFeaturesStore";
 
 import {Dataset} from "../../types/datasets";
 
-import {getAllVisualizationOptions, getProductFiles, getTileLayers} from "../../utils/visualizationUtils";
-import {runVisualization} from "../../service/visualizationService";
+import {getProductFiles, getTileLayers} from "../../utils/visualizationUtils";
 
 import ProcessedFileCard from "./visualization/ProcessedFileCard";
-import MultiButtonGroup from "./MultiButtonGroup.tsx";
+import Sentinel2VisualizationOptions from "./visualization/Sentinel2VisualizationOptions";
 
 function compareNameAndFormat(
     a: { name: string; format: string },
@@ -32,20 +30,19 @@ export default function VisualizationTab() {
     const dataset = useFiltersStore((s) => s.dataset);
 
     const {
-        featureId,
+        //featureId,
         processedFiles,
         selectedTileLayerPath,
         setSelectedTileLayerPath,
         opacity,
         setOpacity,
-        sentinel2,
-        toggleSentinel2Band,
     } = useVisualizationStore();
 
-
+    /*
     const feature = useFeaturesStore(
         s => featureId ? s.featuresById[featureId] : undefined
     );
+     */
 
 
     /**
@@ -62,9 +59,6 @@ export default function VisualizationTab() {
 
     const hasLayers = tileLayers.length > 0;
     const hasFiles = productFiles.length > 0;
-
-
-    const sentinel2Defaults = getAllVisualizationOptions(Dataset.Sentinel2) as Sentinel2VisualizationState;
 
     const sortedTileLayers = useMemo(
         () => [...tileLayers].sort(compareNameAndFormat), [tileLayers]
@@ -94,30 +88,13 @@ export default function VisualizationTab() {
                 <div className="filter-section">
 
                     <h3>
-                        Visualization Settings
+                        Visualization options
                     </h3>
 
 
                     {dataset === Dataset.Sentinel2 && (
-                        <MultiButtonGroup
-                            label="Bands"
-                            values={sentinel2Defaults.bands}
-                            selected={sentinel2.bands}
-                            onToggle={toggleSentinel2Band}
-                        />
+                        <Sentinel2VisualizationOptions />
                     )}
-
-                    <button
-                        className="btn btn-primary mb-3"
-                        disabled={!feature}
-                        onClick={() => {
-                            if (feature) {
-                                runVisualization(feature);
-                            }
-                        }}
-                    >
-                        Re-render Visualization
-                    </button>
 
                     <label htmlFor="tileLayerSelect">
                         Active Tile Layer
@@ -130,7 +107,6 @@ export default function VisualizationTab() {
                             setSelectedTileLayerPath(e.target.value || null)
                         }
                     >
-
                         {sortedTileLayers.map(
                             tile => (
                                 <option
@@ -172,14 +148,11 @@ export default function VisualizationTab() {
 
             {hasFiles && (
                 <div className="filter-section">
-
                     <h3>
                         Processed Files
                     </h3>
 
-
                     <div className="processed-files-list">
-
                         {sortedProcessedFiles.map(
                             file => (
                                 <ProcessedFileCard
@@ -188,7 +161,6 @@ export default function VisualizationTab() {
                                 />
                             )
                         )}
-
                     </div>
                 </div>
             )}

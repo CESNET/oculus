@@ -1,19 +1,19 @@
 #!/bin/sh
 
-REPO_DIR=./gjtiff
-REPO_URL=https://github.com/MartinPulec/gjtiff.git
+GJTIFF_DIR=./gjtiff
+GJTIFF_REPO_URL=https://github.com/MartinPulec/gjtiff.git
 
-mkdir -p $REPO_DIR
+mkdir -p $GJTIFF_DIR
 
-if [ -d "$REPO_DIR/.git" ]; then
+if [ -d "$GJTIFF_DIR/.git" ]; then
     echo "Repository exists, updating..."
-    cd "$REPO_DIR"
+    cd "$GJTIFF_DIR"
     git fetch origin
     git reset --hard origin/main
     echo "Repository updated."
 else
     echo "Repository does not exist, cloning..."
-    git clone "$REPO_URL" "$REPO_DIR"
+    git clone "$GJTIFF_REPO_URL" "$GJTIFF_DIR"
     echo "Repository cloned."
 fi
 

@@ -161,7 +161,7 @@ const visualizeSentinel2 = (
         throw new Error("Sentinel-2 filters missing levels");
     }
 
-    if (!visualization.bands.length) {
+    if (!visualization.selectedBands.length) {
         throw new Error("Sentinel-2 visualization missing bands");
     }
 
@@ -183,7 +183,7 @@ const visualizeSentinel2 = (
 
             bands: bandsToApi(
                 feature.dataset,
-                visualization.bands
+                visualization.selectedBands
             ),
         },
     };

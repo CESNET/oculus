@@ -1,5 +1,5 @@
 import {useFiltersStore} from "../../../store/useFiltersStore";
-import MultiButtonGroup from "../MultiButtonGroup.tsx";
+import ButtonGroup from "../ButtonGroup.tsx";
 import {Dataset} from "../../../types/datasets";
 import {getAllFilterOptions} from "../../../utils/filterUtils.ts";
 
@@ -13,28 +13,32 @@ export default function Sentinel1Filter() {
 
     return (
         <>
-            <MultiButtonGroup
+            <ButtonGroup
+                multiple
                 label="Levels"
                 values={defaults.levels}
                 selected={sentinel1.levels}
                 onToggle={(v) => toggleSentinel1("levels", v)}
             />
 
-            <MultiButtonGroup
+            <ButtonGroup
+                multiple
                 label="Operational Modes"
                 values={defaults.operationalModes}
                 selected={sentinel1.operationalModes}
                 onToggle={(v) => toggleSentinel1("operationalModes", v)}
             />
 
-            <MultiButtonGroup
+            <ButtonGroup
+                multiple
                 label="Product Types"
                 values={defaults.productTypes}
                 selected={sentinel1.productTypes}
                 onToggle={(v) => toggleSentinel1("productTypes", v)}
             />
 
-            <MultiButtonGroup
+            <ButtonGroup
+                multiple
                 label="Polarizations"
                 values={defaults.polarizations}
                 selected={sentinel1.polarizations}
