@@ -1,32 +1,38 @@
+import {useVisualizationStore} from "../../../store/useVisualizationStore";
+
 import {
     SENTINEL2_VISUALIZATION_MODE,
 } from "../../../types/visualization/sentinel2";
 
-import {useVisualizationStore} from "../../../store/useVisualizationStore";
-
-import Sentinel2VisualizationModeSelector from "./Sentinel2VisualizationModeSelector.tsx";
-import Sentinel2SingleBandOptions from "./Sentinel2SingleBandOptions.tsx";
-import Sentinel2RGBCompositeOptions from "./Sentinel2RGBCompositeOptions.tsx";
+import Sentinel2VisualizationModeSelector from "./Sentinel2VisualizationModeSelector";
+import Sentinel2SingleBandOptions from "./Sentinel2SingleBandOptions";
+import Sentinel2RGBCompositeOptions from "./Sentinel2RGBCompositeOptions";
 import Sentinel2PresetOptions from "./Sentinel2PresetOptions";
+import RunVisualizationButton from "./RunVisualizationButton";
 
-export default function Sentinel2VisualizationOptions() {
-    const sentinel2 = useVisualizationStore(s => s.sentinel2);
+
+export default function Sentinel2Options() {
+    const mode = useVisualizationStore(
+        (s) => s.sentinel2.mode
+    );
 
     return (
         <>
             <Sentinel2VisualizationModeSelector />
 
-            {sentinel2.mode === SENTINEL2_VISUALIZATION_MODE.SINGLE_BANDS && (
+            {mode === SENTINEL2_VISUALIZATION_MODE.SINGLE_BANDS && (
                 <Sentinel2SingleBandOptions />
             )}
 
-            {sentinel2.mode === SENTINEL2_VISUALIZATION_MODE.CUSTOM_RGB && (
+            {mode === SENTINEL2_VISUALIZATION_MODE.CUSTOM_RGB && (
                 <Sentinel2RGBCompositeOptions />
             )}
 
-            {sentinel2.mode === SENTINEL2_VISUALIZATION_MODE.PRESETS && (
+            {mode === SENTINEL2_VISUALIZATION_MODE.PRESETS && (
                 <Sentinel2PresetOptions />
             )}
+
+            <RunVisualizationButton />
         </>
     );
 }
