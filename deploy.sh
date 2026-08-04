@@ -17,4 +17,5 @@ else
     echo "Repository cloned."
 fi
 
+docker compose build --no-cache
 docker compose up -d
