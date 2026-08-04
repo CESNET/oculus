@@ -1,5 +1,8 @@
 #!/bin/sh
 
+git fetch origin
+git pull
+
 GJTIFF_DIR=./gjtiff
 GJTIFF_REPO_URL=https://github.com/MartinPulec/gjtiff.git
 
