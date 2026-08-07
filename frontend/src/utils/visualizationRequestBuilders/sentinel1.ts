@@ -9,8 +9,9 @@ import type {
 } from "../../types/visualization/request";
 
 export function buildSentinel1Visualization(
-    feature: Feature,
-    state: Sentinel1VisualizationState,
+    //todo odebrat _
+    _feature: Feature,
+    _state: Sentinel1VisualizationState,
 ): Partial<VisualizationProperties> {
     return {
         visualizations: {},

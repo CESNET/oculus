@@ -9,8 +9,9 @@ import type {
 } from "../../types/visualization/request";
 
 export function buildLandsatVisualization(
-    feature: Feature,
-    state: LandsatVisualizationState
+    //todo odebrat _
+    _feature: Feature,
+    _state: LandsatVisualizationState
 ): Partial<VisualizationProperties> {
     return {
         visualizations: {},
