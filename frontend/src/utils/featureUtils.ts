@@ -34,7 +34,7 @@ export const applyVisualizationResults = (
 // VISUALIZATION PAYLOAD
 // ======================================================
 
-export const visualizeFeature = (feature: Feature) => {
+export const getVisualizationRequestPayload = (feature: Feature) => {
     const outputs = useVisualizationStore.getState().outputs;
 
     const payload: any = {

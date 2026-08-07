@@ -1,4 +1,4 @@
-import {visualizeFeature} from "../../utils/featureUtils";
+import {getVisualizationRequestPayload} from "../../utils/featureUtils";
 import type {VisualizationOptions, VisualizationResult, JobEventData} from "../../types/visualization.ts";
 import type {Feature} from "../../types/feature.ts";
 
@@ -39,7 +39,7 @@ const createVisualizationJob = async (
     feature: Feature,
     signal?: AbortSignal
 ): Promise<string> => {
-    const payload = visualizeFeature(feature);
+    const payload = getVisualizationRequestPayload(feature);
 
     const res = await fetch(`${API_URL}/jobs/create`, {
         method: "POST",

@@ -22,13 +22,35 @@ export interface Sentinel1VisualizationState {
 
 
 export interface Sentinel2VisualizationState {
+    /**
+     * UI only.
+     */
     mode: Sentinel2VisualizationMode;
 
+    /**
+     * Individual bands to generate.
+     */
     selectedBands: Sentinel2Band[];
+
+    /**
+     * Presets to generate.
+     */
     selectedPresetIds: Sentinel2PresetId[];
+
+    /**
+     * Generate custom RGB composite.
+     */
+    generateRGB: boolean;
+
+    /**
+     * RGB composite definition.
+     */
     selectedRGBComposite: Sentinel2RGBComposite;
 }
 
+export interface LandsatVisualizationState {
+    // Todo with landsat implementation
+}
 
 const DEFAULT_SENTINEL2_STATE: Sentinel2VisualizationState = {
     mode: SENTINEL2_VISUALIZATION_MODE.SINGLE_BANDS,
@@ -37,11 +59,13 @@ const DEFAULT_SENTINEL2_STATE: Sentinel2VisualizationState = {
 
     selectedPresetIds: [],
 
+    generateRGB: false,
+
     selectedRGBComposite: DEFAULT_SENTINEL2_RGB_COMPOSITE,
 };
 
 
-interface VisualizationState {
+export interface VisualizationState {
     jobId: string | null;
 
     featureId: string | null;
@@ -50,19 +74,12 @@ interface VisualizationState {
 
     sentinel2: Sentinel2VisualizationState;
 
-    /**
-     * Original response from backend
-     */
+    landsat: LandsatVisualizationState;
+
     processedFiles: Record<string, ProcessedFileState>;
 
-    /**
-     * Requested outputs
-     */
     outputs: Record<string, VisualizationOutput>;
 
-    /**
-     * Currently displayed WM tile layer
-     */
     selectedTileLayerPath: string | null;
 
     opacity: number;
@@ -71,16 +88,28 @@ interface VisualizationState {
 
     setFeatureId(id: string | null): void;
 
-    setProcessedFiles(files: Record<string, ProcessedFileState>): void;
+    setProcessedFiles(
+        files: Record<string, ProcessedFileState>
+    ): void;
 
-    setOutputs(outputs: Record<string, VisualizationOutput>): void;
+    setOutputs(
+        outputs: Record<string, VisualizationOutput>
+    ): void;
 
-    setSelectedTileLayerPath(path: string | null): void;
+    setSelectedTileLayerPath(
+        path: string | null
+    ): void;
 
-    setOpacity(opacity: number): void;
+    setOpacity(
+        opacity: number
+    ): void;
 
     setSentinel2(
         partial: Partial<Sentinel2VisualizationState>
+    ): void;
+
+    setGenerateSentinel2RGB(
+        enabled: boolean
     ): void;
 
     setSentinel2RGBComposite(
@@ -118,6 +147,8 @@ export const useVisualizationStore =
 
         sentinel2: DEFAULT_SENTINEL2_STATE,
 
+        landsat: {},
+
         processedFiles: {},
 
         outputs: {
@@ -141,42 +172,17 @@ export const useVisualizationStore =
 
         opacity: 0.8,
 
+        setJobId: (jobId) => set({jobId}),
 
-        setJobId: (jobId) =>
-            set({
-                jobId,
-            }),
+        setFeatureId: (featureId) => set({featureId}),
 
+        setProcessedFiles: (processedFiles) => set({processedFiles}),
 
-        setFeatureId: (featureId) =>
-            set({
-                featureId,
-            }),
+        setOutputs: (outputs) => set({outputs}),
 
+        setSelectedTileLayerPath: (selectedTileLayerPath) => set({selectedTileLayerPath}),
 
-        setProcessedFiles: (processedFiles) =>
-            set({
-                processedFiles,
-            }),
-
-
-        setOutputs: (outputs) =>
-            set({
-                outputs,
-            }),
-
-
-        setSelectedTileLayerPath: (selectedTileLayerPath) =>
-            set({
-                selectedTileLayerPath,
-            }),
-
-
-        setOpacity: (opacity) =>
-            set({
-                opacity,
-            }),
-
+        setOpacity: (opacity) => set({opacity}),
 
         setSentinel2: (partial) =>
             set((state) => ({
@@ -186,6 +192,13 @@ export const useVisualizationStore =
                 },
             })),
 
+        setGenerateSentinel2RGB: (generateRGB) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+                    generateRGB,
+                },
+            })),
 
         setSentinel2RGBComposite: (selectedRGBComposite) =>
             set((state) => ({
@@ -195,7 +208,6 @@ export const useVisualizationStore =
                 },
             })),
 
-
         toggleSentinel2Band: (band) =>
             set((state) => ({
                 sentinel2: {
@@ -204,7 +216,7 @@ export const useVisualizationStore =
                     selectedBands:
                         state.sentinel2.selectedBands.includes(band)
                             ? state.sentinel2.selectedBands.filter(
-                                (b) => b !== band
+                                b => b !== band
                             )
                             : [
                                 ...state.sentinel2.selectedBands,
@@ -213,18 +225,14 @@ export const useVisualizationStore =
                 },
             })),
 
-
         resetSentinel2Bands: (tci = false) =>
             set((state) => ({
                 sentinel2: {
                     ...state.sentinel2,
 
-                    selectedBands: tci
-                        ? ["TCI"]
-                        : [],
+                    selectedBands: tci ? ["TCI"] : [],
                 },
             })),
-
 
         toggleSentinel2Preset: (preset) =>
             set((state) => ({
@@ -232,11 +240,9 @@ export const useVisualizationStore =
                     ...state.sentinel2,
 
                     selectedPresetIds:
-                        state.sentinel2.selectedPresetIds.includes(
-                            preset
-                        )
+                        state.sentinel2.selectedPresetIds.includes(preset)
                             ? state.sentinel2.selectedPresetIds.filter(
-                                (p) => p !== preset
+                                p => p !== preset
                             )
                             : [
                                 ...state.sentinel2.selectedPresetIds,
@@ -244,7 +250,6 @@ export const useVisualizationStore =
                             ],
                 },
             })),
-
 
         resetSentinel2Presets: () =>
             set((state) => ({
@@ -255,17 +260,17 @@ export const useVisualizationStore =
                 },
             })),
 
-
         resetSentinel2RGBComposite: () =>
             set((state) => ({
                 sentinel2: {
                     ...state.sentinel2,
 
+                    generateRGB: false,
+
                     selectedRGBComposite:
                     DEFAULT_SENTINEL2_RGB_COMPOSITE,
                 },
             })),
-
 
         resetSentinel2: () =>
             set({

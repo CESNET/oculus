@@ -1,88 +1,90 @@
 import type {ButtonOption} from "../../components/sidebar/ButtonGroup.tsx";
 
-export interface Sentinel2BandOption {
-    value: string;
+/**
+ * Sentinel-2 available band definition.
+ */
+export interface Sentinel2BandDefinition {
+    id: string;
     label: string;
 }
 
+
 /**
- * Sentinel-2 available bands for visualization.
+ * Sentinel-2 available bands.
  */
-export const SENTINEL2_BAND_OPTIONS = [
+export const SENTINEL2_BANDS = [
     {
-        value: "1",
+        id: "1",
         label: "B1 - Coastal Aerosol",
     },
     {
-        value: "2",
+        id: "2",
         label: "B2 - Blue",
     },
     {
-        value: "3",
+        id: "3",
         label: "B3 - Green",
     },
     {
-        value: "4",
+        id: "4",
         label: "B4 - Red",
     },
     {
-        value: "5",
+        id: "5",
         label: "B5 - Vegetation Red Edge",
     },
     {
-        value: "6",
+        id: "6",
         label: "B6 - Vegetation Red Edge",
     },
     {
-        value: "7",
+        id: "7",
         label: "B7 - Vegetation Red Edge",
     },
     {
-        value: "8",
+        id: "8",
         label: "B8 - NIR",
     },
     {
-        value: "8A",
+        id: "8A",
         label: "B8A - Narrow NIR",
     },
     {
-        value: "9",
+        id: "9",
         label: "B9 - Water Vapour",
     },
     {
-        value: "10",
+        id: "10",
         label: "B10 - Cirrus",
     },
     {
-        value: "11",
+        id: "11",
         label: "B11 - SWIR 1",
     },
     {
-        value: "12",
+        id: "12",
         label: "B12 - SWIR 2",
     },
     {
-        value: "TCI",
+        id: "TCI",
         label: "TCI - True Color Image",
     },
-] as const satisfies readonly Sentinel2BandOption[];
+] as const satisfies readonly Sentinel2BandDefinition[];
 
-export type Sentinel2Band = typeof SENTINEL2_BAND_OPTIONS[number]["value"];
+export type Sentinel2Band = typeof SENTINEL2_BANDS[number]["id"];
 
 
 /**
  * Bands usable in RGB composites.
  */
-export const SENTINEL2_SPECTRAL_BAND_OPTIONS =
-    SENTINEL2_BAND_OPTIONS.filter(
-        band => band.value !== "TCI"
-    );
+export const SENTINEL2_SPECTRAL_BANDS =
+    SENTINEL2_BANDS.filter(band => band.id !== "TCI");
 
-export type Sentinel2SpectralBand = typeof SENTINEL2_SPECTRAL_BAND_OPTIONS[number]["value"];
+export type Sentinel2SpectralBand = typeof SENTINEL2_SPECTRAL_BANDS[number]["id"];
 
 
 /**
- * Visualization mode selected by the user.
+ * Visualization mode selected in UI.
  */
 export const SENTINEL2_VISUALIZATION_MODE = {
     SINGLE_BANDS: "single-bands",
@@ -94,7 +96,7 @@ export type Sentinel2VisualizationMode = typeof SENTINEL2_VISUALIZATION_MODE[key
 
 
 /**
- * Supported preset visualization types.
+ * Preset types.
  */
 export const SENTINEL2_PRESET_TYPE = {
     RGB_COMPOSITE: "rgb-composite",
@@ -113,6 +115,12 @@ export interface Sentinel2RGBComposite {
     blue: Sentinel2SpectralBand;
 }
 
+export const DEFAULT_SENTINEL2_RGB_COMPOSITE: Sentinel2RGBComposite = {
+    red: "4",
+    green: "3",
+    blue: "2",
+};
+
 
 /**
  * Spectral index.
@@ -128,10 +136,10 @@ export interface Sentinel2SpectralIndex {
 
 
 /**
- * Base preset definition.
+ * Base preset.
  */
 export interface Sentinel2PresetBase {
-    value: string;
+    id: string;
     label: string;
 
     presetType: Sentinel2PresetType;
@@ -141,47 +149,32 @@ export interface Sentinel2PresetBase {
 /**
  * RGB preset.
  */
-export interface Sentinel2RGBPreset
-    extends Sentinel2PresetBase {
-
+export interface Sentinel2RGBPreset extends Sentinel2PresetBase {
     presetType: typeof SENTINEL2_PRESET_TYPE.RGB_COMPOSITE;
-
     composite: Sentinel2RGBComposite;
 }
-
-export const DEFAULT_SENTINEL2_RGB_COMPOSITE: Sentinel2RGBComposite = {
-    red: "4",
-    green: "3",
-    blue: "2",
-};
 
 
 /**
  * Spectral index preset.
  */
-export interface Sentinel2SpectralIndexPreset
-    extends Sentinel2PresetBase {
-
+export interface Sentinel2SpectralIndexPreset extends Sentinel2PresetBase {
     presetType: typeof SENTINEL2_PRESET_TYPE.SPECTRAL_INDEX;
-
     index: Sentinel2SpectralIndex;
 }
 
 
 /**
- * Any predefined preset.
+ * Any preset.
  */
-export type Sentinel2Preset =
-    | Sentinel2RGBPreset
-    | Sentinel2SpectralIndexPreset;
-
+export type Sentinel2Preset = | Sentinel2RGBPreset | Sentinel2SpectralIndexPreset;
 
 /**
  * Available presets.
  */
 export const SENTINEL2_PRESETS = [
     {
-        value: "true-color",
+        id: "true-color",
         label: "True Color",
 
         presetType: SENTINEL2_PRESET_TYPE.RGB_COMPOSITE,
@@ -194,7 +187,7 @@ export const SENTINEL2_PRESETS = [
     },
 
     {
-        value: "false-color-infrared",
+        id: "false-color-infrared",
         label: "False Color Infrared",
 
         presetType: SENTINEL2_PRESET_TYPE.RGB_COMPOSITE,
@@ -207,7 +200,7 @@ export const SENTINEL2_PRESETS = [
     },
 
     {
-        value: "agriculture",
+        id: "agriculture",
         label: "Agriculture",
 
         presetType: SENTINEL2_PRESET_TYPE.RGB_COMPOSITE,
@@ -220,7 +213,7 @@ export const SENTINEL2_PRESETS = [
     },
 
     {
-        value: "geology",
+        id: "geology",
         label: "Geology",
 
         presetType: SENTINEL2_PRESET_TYPE.RGB_COMPOSITE,
@@ -233,12 +226,11 @@ export const SENTINEL2_PRESETS = [
     },
 
     /*
-    // zatim jen priprava, asi se bude muset jeste predelat
     {
-        value: "ndvi",
+        id: "ndvi",
         label: "NDVI",
 
-        presetType: SENTINEL2_PRESET_VISUALIZATION.SPECTRAL_INDEX,
+        presetType: SENTINEL2_PRESET_TYPE.SPECTRAL_INDEX,
 
         index: {
             expression: "(B08-B04)/(B08+B04)",
@@ -250,11 +242,25 @@ export const SENTINEL2_PRESETS = [
     */
 ] as const satisfies readonly Sentinel2Preset[];
 
-export type Sentinel2PresetId = typeof SENTINEL2_PRESETS[number]["value"];
+export type Sentinel2PresetId = typeof SENTINEL2_PRESETS[number]["id"];
 
+
+/**
+ * Button options.
+ */
 export const SENTINEL2_PRESET_OPTIONS = SENTINEL2_PRESETS.map(
-    ({value, label}) => ({
-        value,
+    ({id, label}) => ({
+        value: id,
         label,
     }),
 ) satisfies readonly ButtonOption<Sentinel2PresetId>[];
+
+
+/**
+ * Payload sent to backend.
+ */
+export interface Sentinel2Visualizations {
+    bands?: Sentinel2Band[];
+    rgb?: Sentinel2RGBComposite;
+    presets?: Sentinel2PresetId[];
+}
