@@ -73,6 +73,13 @@ export const SENTINEL2_BANDS = [
 
 export type Sentinel2Band = typeof SENTINEL2_BANDS[number]["id"];
 
+export const SENTINEL2_BAND_OPTIONS =
+    SENTINEL2_BANDS.map(
+        band => ({
+            value: band.id,
+            label: band.label,
+        }),
+    );
 
 /**
  * Bands usable in RGB composites.
@@ -82,6 +89,13 @@ export const SENTINEL2_SPECTRAL_BANDS =
 
 export type Sentinel2SpectralBand = typeof SENTINEL2_SPECTRAL_BANDS[number]["id"];
 
+export const SENTINEL2_SPECTRAL_BAND_OPTIONS =
+    SENTINEL2_SPECTRAL_BANDS.map(
+        band => ({
+            value: band.id,
+            label: band.label,
+        }),
+    );
 
 /**
  * Visualization mode selected in UI.
