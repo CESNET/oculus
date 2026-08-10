@@ -1,5 +1,4 @@
 import {requestVisualization} from "../api/backend/requestVisualization";
-import {applyVisualizationResults} from "../utils/featureUtils";
 
 import {useVisualizationStore} from "../store/useVisualizationStore";
 import {useLoadingStore} from "../store/useLoadingStore";
@@ -7,6 +6,7 @@ import {useSidebarStore} from "../store/useSidebarStore";
 
 
 import type {Feature} from "../types/feature.ts";
+import {applyVisualizationResults} from "../utils/visualizationUtils.ts";
 
 export async function runVisualization(feature: Feature) {
     const {startLoading, stopLoading} = useLoadingStore.getState();

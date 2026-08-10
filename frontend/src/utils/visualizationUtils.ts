@@ -1,10 +1,7 @@
 import {Dataset} from "../types/datasets";
 
-import type {
-    ProcessedFileState,
-    ProductFile,
-    TileLayer,
-} from "../types/visualization";
+import type {ProcessedFileState, ProductFile, TileLayer,} from "../types/visualization";
+import {useVisualizationStore} from "../store/useVisualizationStore.ts";
 
 
 // ======================================================
@@ -136,3 +133,23 @@ export const bandsToApi = (
                 band,
             ),
     );
+
+export const applyVisualizationResults = (
+    processedFiles: Record<string, ProcessedFileState>
+) => {
+    const visualizationStore = useVisualizationStore.getState();
+
+    visualizationStore.setProcessedFiles(processedFiles);
+
+    const firstLayer =
+        Object.values(processedFiles)
+            .find(file =>
+                Object.values(file.wm_tiles)
+                    .some(path => path !== null)
+            );
+
+    if (firstLayer) {
+        const firstPath = Object.values(firstLayer.wm_tiles).find(path => path !== null);
+        visualizationStore.setSelectedTileLayerPath(firstPath ?? null);
+    }
+};

@@ -6,7 +6,7 @@ import {
 
 import {
     useVisualizationStore,
-    type VisualizationState
+    type VisualizationState,
 } from "../store/useVisualizationStore";
 
 import type {Feature} from "../types/feature";
@@ -15,7 +15,6 @@ import type {
     VisualizationRequest,
     VisualizationProperties,
 } from "../types/visualization/request";
-
 
 import {
     buildSentinel1Visualization,
@@ -58,20 +57,22 @@ const buildDatasetVisualization = (
             );
 
         default:
-            throw new Error(`Visualization not supported for dataset: ${feature.dataset}`,);
+            throw new Error(`Visualization not supported for dataset: ${feature.dataset}`);
     }
 };
-
 
 // ======================================================
 // REQUEST BUILDER
 // ======================================================
 
-export function getVisualizationRequestPayload(feature: Feature,): VisualizationRequest {
+export const getVisualizationRequestPayload = (feature: Feature,): VisualizationRequest => {
     const state = useVisualizationStore.getState();
 
-    const payload: VisualizationRequest = {
+    const datasetVisualization = buildDatasetVisualization(feature, state);
+
+    return {
         dataset: feature.dataset,
+
         properties: {
             quality: 80,
             zoom_levels: [
@@ -84,45 +85,31 @@ export function getVisualizationRequestPayload(feature: Feature,): Visualization
                 14,
             ],
             outputs: state.outputs,
+            ...datasetVisualization,
         },
+
+        metadata: buildMetadata(feature),
     };
-
-
-    payload.metadata = buildMetadata(feature);
-
-    Object.assign(
-        payload.properties,
-        buildDatasetVisualization(
-            feature,
-            state,
-        ),
-    );
-
-    return payload;
-}
+};
 
 
 // ======================================================
 // METADATA
 // ======================================================
 
-function buildMetadata(
-    feature: Feature,
-): Record<string, string> {
+const buildMetadata = (feature: Feature): Record<string, string> => {
     switch (DatasetToFamily[feature.dataset]) {
         case DatasetFamily.Sentinel:
             return {
-                "sentinel:feature_id":
-                feature.id,
+                "sentinel:feature_id": feature.id,
             };
 
         case DatasetFamily.Landsat:
             return {
-                "landsat:feature_id":
-                feature.id,
+                "landsat:feature_id": feature.id,
             };
 
         default:
             throw new Error(`Unknown dataset family: ${feature.dataset}`,);
     }
-}
+};
