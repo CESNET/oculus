@@ -32,11 +32,20 @@ export default function Sentinel2VisualizationModeSelector() {
 
             selected={mode}
 
-            onChange={(mode) =>
-                setSentinel2({
-                    mode,
-                })
-            }
+            onChange={(mode) => {
+                if (
+                    mode === SENTINEL2_VISUALIZATION_MODE.CUSTOM_RGB &&
+                    !useVisualizationStore.getState().sentinel2.generateRGB
+                ) {
+                    setSentinel2({
+                        mode,
+                        generateRGB: true,
+                    });
+                    return;
+                }
+
+                setSentinel2({mode});
+            }}
         />
     );
 }

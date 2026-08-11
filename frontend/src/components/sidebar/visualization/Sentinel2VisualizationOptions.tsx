@@ -18,10 +18,6 @@ export default function Sentinel2Options() {
         (s) => s.sentinel2.mode
     );
 
-    if (mode === SENTINEL2_VISUALIZATION_MODE.CUSTOM_RGB) {
-        useVisualizationStore.getState().setGenerateSentinel2RGB(true);
-    }
-
     return (
         <>
             <Sentinel2VisualizationModeSelector />
