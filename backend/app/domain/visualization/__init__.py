@@ -1,1 +1,1 @@
-from sentinel_2 import *
+from .sentinel_2 import *
