@@ -1,4 +1,6 @@
-import {useVisualizationStore} from "../../../store/useVisualizationStore";
+import {
+    useVisualizationStore,
+} from "../../../store/useVisualizationStore";
 
 import {
     SENTINEL2_VISUALIZATION_MODE,
@@ -15,6 +17,10 @@ export default function Sentinel2Options() {
     const mode = useVisualizationStore(
         (s) => s.sentinel2.mode
     );
+
+    if (mode === SENTINEL2_VISUALIZATION_MODE.CUSTOM_RGB) {
+        useVisualizationStore.getState().setGenerateSentinel2RGB(true);
+    }
 
     return (
         <>

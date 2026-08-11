@@ -48,6 +48,8 @@ class DownloadService(ABC):
 
         return files_to_download
 
+    """
+    20260811 - seems like not used, possibly can be deleted..?
     def filter_files(
             self,
             available_files: list[str],
@@ -68,6 +70,7 @@ class DownloadService(ABC):
             for name, original_path in available_map.items()
             if name not in already_downloaded_names
         ]
+    """
 
     @abstractmethod
     def _filter_files(self, available_files: list[str]) -> list[str]:

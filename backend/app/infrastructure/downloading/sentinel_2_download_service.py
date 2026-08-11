@@ -1,6 +1,7 @@
 import re
 from typing import Optional
 
+from ...domain.visualization import filter_sentinel2_files
 from .sentinel_download_service import SentinelDownloadService
 from ...domain import Job, FeatureState
 
@@ -35,33 +36,16 @@ class Sentinel2DownloadService(SentinelDownloadService):
                 filtered_files.append(available_file)
 
         filtered_files = self._prune_low_resolution_files(files=filtered_files)
-        filtered_files = self._filter_requested_bands(files=filtered_files)
 
-        return filtered_files
+        visualizations = self._job.request_properties.get(
+            "visualizations",
+            {}
+        )
 
-    def _filter_requested_bands(self, files: list[str]) -> list[str]:
-        """
-        Filter only requested bands
-        """
-        if not files:
-            return []
-
-        bands = self._job.request_properties.get("filters", {}).get("bands")
-
-        if not bands:
-            return files
-
-        filtered_files: list[str] = []
-
-        for file in files:
-            filename = file.split("/")[-1]
-            filename_parts = re.split(r'[_.]', filename)
-
-            # Check if any band matches any part of the filename
-            if not any(band in filename_parts for band in bands):
-                continue
-
-            filtered_files.append(file)
+        filtered_files = filter_sentinel2_files(
+            files=filtered_files,
+            visualizations=visualizations,
+        )
 
         return filtered_files
 
