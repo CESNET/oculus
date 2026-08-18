@@ -185,6 +185,7 @@ class GJTIFFProcessor(Processor):
             quality: int,
             zoom_levels: str,
     ) -> list[str]:
+        print(f"Input files: {input_files}")
 
         visualizations = self._job.request_properties.get("visualizations", {})
 
@@ -192,6 +193,8 @@ class GJTIFFProcessor(Processor):
             self._extract_sentinel2_band(file): file
             for file in input_files
         }
+
+        print(f"Input files by band: {[band.value for band in input_files_by_band]}")
 
         visualization_inputs: list[str] = []
 
