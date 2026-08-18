@@ -74,7 +74,7 @@ class DownloadJobUseCase(UseCase):
                         downloaded_files=downloaded_files,
                     )
 
-                    job.set_requested_files(requested_files=downloaded_files)
+                    # job.set_requested_files(requested_files=downloaded_files)
 
                     job.mark_downloading_complete()
 
