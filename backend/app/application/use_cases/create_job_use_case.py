@@ -21,8 +21,6 @@ class CreateJobUseCase:
         self._logger = logging.getLogger(settings.APP_NAME)
 
     def execute(self, dataset: str, metadata: dict, request_properties: dict) -> JobId:
-        print(f"Creating Job; dataset: {dataset}, metadata: {metadata}, request body: {request_properties}")
-
         job_dataset = JobDataset.from_str(dataset)
 
         if job_dataset.family.value not in settings.ENABLED_DATASETS:

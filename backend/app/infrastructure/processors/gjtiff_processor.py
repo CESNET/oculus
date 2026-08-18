@@ -1,10 +1,20 @@
+import re
 from pathlib import Path
 
 import docker
 from docker.errors import DockerException
 
 from .processor import Processor
-from ...domain import TileGroup, OutputFormat, ProcessorOutput
+from ...domain import (
+    TileGroup,
+    OutputFormat,
+    ProcessorOutput,
+    Sentinel2Band,
+    Sentinel2IndexPreset,
+    SENTINEL2_INDEX_BANDS,
+    Sentinel2RGBPreset,
+    SENTINEL2_PRESETS
+)
 from ...settings import settings
 
 FORMAT_FLAGS = {
@@ -18,8 +28,6 @@ class GJTIFFProcessor(Processor):
     _GJTIFF_CONTAINER_NAME = "oculus_gjtiff"
 
     def _process(self) -> list[ProcessorOutput]:
-        print(f"GJTIFF___ job: {self._job}")
-
         quality = self._validate_int_param(
             self._job.request_properties.get("quality"),
             settings.DEFAULT_PROCESSING_QUALITY,
@@ -38,12 +46,12 @@ class GJTIFFProcessor(Processor):
             zoom_levels=",".join(map(str, zoom_levels)),
         )
 
-        #gjtiff_container = self._get_container()
-        #self._run_command(gjtiff_container, command)  # TODO uncomment for production, delete below for testing
+        gjtiff_container = self._get_container()
+        self._run_command(gjtiff_container, command)  # TODO uncomment for production, delete below for testing
 
-        print(f"Now runing gjtiff: {command}")
-        import time
-        time.sleep(5)
+        # print(f"Now runing gjtiff: {command}")
+        # import time
+        # time.sleep(5)
 
         return self._discover_outputs(wm_zoom_levels=zoom_levels)
 
@@ -149,15 +157,131 @@ class GJTIFFProcessor(Processor):
         except DockerException as e:
             raise RuntimeError(f"GJTIFF container '{self._GJTIFF_CONTAINER_NAME}' not found. Error: {e}")
 
+    def _get_band_file(
+            self,
+            band: Sentinel2Band,
+            input_files: list[Path],
+    ) -> Path:
+        for file in input_files:
+            if f"_{band.value}_" in file.name:
+                return file
+
+        raise RuntimeError(f"Required Sentinel-2 band {band.value} was not found in input files.")
+
+    def _extract_sentinel2_band(self, file: Path) -> Sentinel2Band:
+        filename_parts = re.split(r"[_.]", file.name)
+
+        for band in Sentinel2Band:
+            if band.value in filename_parts:
+                return band
+
+        raise RuntimeError(f"Unable to determine Sentinel-2 band from filename: {file.name}")
+
     def _build_command(
             self,
             output_formats: dict,
             input_files: list[Path],
             quality: int,
-            zoom_levels: str
+            zoom_levels: str,
     ) -> list[str]:
 
-        input_files = [str(file) for file in input_files]
+        visualizations = self._job.request_properties.get("visualizations", {})
+
+        input_files_by_band = {
+            self._extract_sentinel2_band(file): file
+            for file in input_files
+        }
+
+        visualization_inputs: list[str] = []
+
+        # ==================================================
+        # Individual bands
+        # ==================================================
+
+        for band in visualizations.get("bands", []):
+            try:
+                band_enum = Sentinel2Band(band)
+            except ValueError:
+                self._logger.warning(f"Unknown Sentinel-2 band: {band}")
+                continue
+
+            file = input_files_by_band.get(band_enum)
+
+            if file is None:
+                raise RuntimeError(f"Required band {band_enum.value} was not found in input files.")
+
+            visualization_inputs.append(str(file))
+
+        # ==================================================
+        # Custom RGB
+        # ==================================================
+
+        rgb = visualizations.get("rgb_composite")
+
+        if rgb:
+            try:
+                red = input_files_by_band[
+                    Sentinel2Band(rgb["red"])
+                ]
+                green = input_files_by_band[
+                    Sentinel2Band(rgb["green"])
+                ]
+                blue = input_files_by_band[
+                    Sentinel2Band(rgb["blue"])
+                ]
+
+            except (KeyError, ValueError) as e:
+                raise RuntimeError(f"Unable to build Sentinel-2 RGB composite: {rgb}") from e
+
+            visualization_inputs.append(
+                ",".join([
+                    str(red),
+                    str(green),
+                    str(blue),
+                ])
+            )
+
+        # ==================================================
+        # Presets
+        # ==================================================
+
+        for preset_id in visualizations.get("presets", []):
+
+            preset = SENTINEL2_PRESETS.get(preset_id)
+
+            if preset is None:
+                self._logger.warning(f"Unknown Sentinel-2 preset: {preset_id}")
+                continue
+
+            # ----------------------------------------------
+            # RGB preset
+            # ----------------------------------------------
+
+            if isinstance(preset, Sentinel2RGBPreset):
+
+                files = [
+                    input_files_by_band[preset.composite.red],
+                    input_files_by_band[preset.composite.green],
+                    input_files_by_band[preset.composite.blue],
+                ]
+
+                visualization_inputs.append(",".join(map(str, files)))
+
+            # ----------------------------------------------
+            # Index preset
+            # ----------------------------------------------
+
+            elif isinstance(preset, Sentinel2IndexPreset):
+
+                bands = SENTINEL2_INDEX_BANDS[preset.index]
+
+                files = [input_files_by_band[band] for band in bands]
+
+                visualization_inputs.append(f"{preset.index.value}@{",".join(map(str, files))}")
+
+        # ==================================================
+        # Format flags
+        # ==================================================
 
         entered_format_flags = []
 
@@ -167,36 +291,47 @@ class GJTIFFProcessor(Processor):
                 raise TypeError(f"Unknown format: {format_name}")
 
             for mode, enabled in modes.items():
-                if enabled:
 
-                    '''
-                    ### GJTiff only exports into one WebMercator tiles format at a time. Defaulting to WebP.
-                    
-                    CESNET Slack #meta-esa-vizualizace:
-                    20260318: matejkaj: Ale řekl bych, že GjTiff neumí generovat víc formátů celých produktů najednou?
-                    20260318: xpulec: No neuměl, ale už jsem přidal. Platí to teda ale jen pro celkový obrázek (-W/-J/-P), ne dlaždice, tam je možné pořád generovat jen v jednom formátu.
-                    '''
+                if not enabled:
+                    continue
 
-                    if mode == TileGroup.WM_TILES.value:
-                        if format_name != OutputFormat.WEBP.value:
-                            self._logger.warning(
-                                f"WebMercator tiles are only supported for WEBP format. Ignoring {format_name} format.")
+                '''
+                ### GJTiff only exports into one WebMercator tiles format at a time. Defaulting to WebP.
+
+                CESNET Slack #meta-esa-vizualizace:
+                20260318: matejkaj: Ale řekl bych, že GjTiff neumí generovat víc formátů celých produktů najednou?
+                20260318: xpulec: No neuměl, ale už jsem přidal. Platí to teda ale jen pro celkový obrázek (-W/-J/-P), ne dlaždice, tam je možné pořád generovat jen v jednom formátu.
+                '''
+
+                if mode == TileGroup.WM_TILES.value:
+
+                    if format_name != OutputFormat.WEBP.value:
+                        self._logger.warning(
+                            f"WebMercator tiles are only supported for WEBP format. Ignoring {format_name} format."
+                        )
                         continue
 
-                    entered_format_flags.append(FORMAT_FLAGS[format_name][mode])
+                entered_format_flags.append(
+                    FORMAT_FLAGS[format_name][mode]
+                )
 
+        # Default WM tiles to WebP
         entered_format_flags.append(FORMAT_FLAGS[OutputFormat.WEBP.value][TileGroup.WM_TILES.value])
 
+        # ==================================================
+        # Command
+        # ==================================================
+
         return (
-                [
-                    "gjtiff",
-                    "-q", str(quality),
-                    "-Q",
-                    "-z", zoom_levels,
-                    "-o", self._path_to_processed,
-                ]
-                + entered_format_flags
-                + input_files
+            [
+                "gjtiff",
+                "-q", str(quality),
+                "-Q",
+                "-z", zoom_levels,
+                "-o", self._path_to_processed,
+                *entered_format_flags,
+                *visualization_inputs,
+            ]
         )
 
     def _run_command(

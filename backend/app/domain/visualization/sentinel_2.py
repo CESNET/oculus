@@ -36,16 +36,48 @@ class Sentinel2RGBComposite:
 
 
 # ======================================================
-# SPECTRAL INDEX
+# INDEXES
 # ======================================================
 
-@dataclass(frozen=True)
-class Sentinel2SpectralIndex:
-    expression: str
-    required_bands: tuple[Sentinel2Band, ...]
-    min: float | None = None
-    max: float | None = None
-    color_map: str | None = None
+class Sentinel2Index(StrEnum):
+    HONS = "HONS"
+    NDVI = "NDVI"
+    NDWI = "NDWI"
+    NDMI = "NDMI"
+    NDSI = "NDSI"
+    ND_UNSPEC = "ND_UNSPEC"
+
+
+# Band order is aligned with GJTIFF input
+SENTINEL2_INDEX_BANDS: dict[Sentinel2Index, tuple[Sentinel2Band, ...]] = {
+    Sentinel2Index.HONS: (
+        Sentinel2Band.B4,
+        Sentinel2Band.B3,
+        Sentinel2Band.B2,
+    ),
+
+    Sentinel2Index.NDVI: (
+        Sentinel2Band.B8,
+        Sentinel2Band.B4,
+    ),
+
+    Sentinel2Index.NDWI: (
+        Sentinel2Band.B3,
+        Sentinel2Band.B8,
+    ),
+
+    Sentinel2Index.NDMI: (
+        Sentinel2Band.B8A,
+        Sentinel2Band.B11,
+    ),
+
+    Sentinel2Index.NDSI: (
+        Sentinel2Band.B3,
+        Sentinel2Band.B11,
+        Sentinel2Band.B4,
+        Sentinel2Band.B2,
+    ),
+}
 
 
 # ======================================================
@@ -54,7 +86,7 @@ class Sentinel2SpectralIndex:
 
 class Sentinel2PresetType(StrEnum):
     RGB_COMPOSITE = "rgb-composite"
-    SPECTRAL_INDEX = "spectral-index"
+    INDEX = "index"
 
 
 @dataclass(frozen=True)
@@ -70,11 +102,15 @@ class Sentinel2RGBPreset(Sentinel2PresetBase):
 
 
 @dataclass(frozen=True)
-class Sentinel2SpectralIndexPreset(Sentinel2PresetBase):
-    index: Sentinel2SpectralIndex
+class Sentinel2IndexPreset(Sentinel2PresetBase):
+    index: Sentinel2Index
 
 
 SENTINEL2_PRESETS = {
+    # ======================================================
+    # RGB PRESETS
+    # ======================================================
+
     "true-color": Sentinel2RGBPreset(
         id="true-color",
         label="True Color",
@@ -118,6 +154,45 @@ SENTINEL2_PRESETS = {
             blue=Sentinel2Band.B2,
         ),
     ),
+
+    # ======================================================
+    # INDEX PRESETS
+    # ======================================================
+
+    "hons": Sentinel2IndexPreset(
+        id="hons",
+        label="HONS",
+        preset_type=Sentinel2PresetType.INDEX,
+        index=Sentinel2Index.HONS,
+    ),
+
+    "ndvi": Sentinel2IndexPreset(
+        id="ndvi",
+        label="NDVI",
+        preset_type=Sentinel2PresetType.INDEX,
+        index=Sentinel2Index.NDVI,
+    ),
+
+    "ndwi": Sentinel2IndexPreset(
+        id="ndwi",
+        label="NDWI",
+        preset_type=Sentinel2PresetType.INDEX,
+        index=Sentinel2Index.NDWI,
+    ),
+
+    "ndmi": Sentinel2IndexPreset(
+        id="ndmi",
+        label="NDMI",
+        preset_type=Sentinel2PresetType.INDEX,
+        index=Sentinel2Index.NDMI,
+    ),
+
+    "ndsi": Sentinel2IndexPreset(
+        id="ndsi",
+        label="NDSI",
+        preset_type=Sentinel2PresetType.INDEX,
+        index=Sentinel2Index.NDSI,
+    ),
 }
 
 
@@ -125,12 +200,10 @@ SENTINEL2_PRESETS = {
 # VISUALIZATION HELPERS
 # ======================================================
 
-def get_required_sentinel2_bands(
-    visualizations: dict,
-) -> set[Sentinel2Band]:
+def get_required_sentinel2_bands(visualizations: dict) -> set[Sentinel2Band]:
     required_bands: set[Sentinel2Band] = set()
 
-    # Direct bands
+    # Single bands
     for band in visualizations.get("bands", []):
         try:
             required_bands.add(Sentinel2Band(band))
@@ -144,6 +217,7 @@ def get_required_sentinel2_bands(
         for channel in ("red", "green", "blue"):
             try:
                 required_bands.add(Sentinel2Band(rgb[channel]))
+                
             except (KeyError, ValueError):
                 continue
 
@@ -161,15 +235,17 @@ def get_required_sentinel2_bands(
                 preset.composite.blue,
             })
 
-        elif isinstance(preset, Sentinel2SpectralIndexPreset):
-            required_bands.update(preset.index.required_bands)
+        elif isinstance(preset, Sentinel2IndexPreset):
+            required_bands.update(
+                SENTINEL2_INDEX_BANDS[preset.index]
+            )
 
     return required_bands
 
 
 def filter_sentinel2_files(
-    files: list[str],
-    visualizations: dict,
+        files: list[str],
+        visualizations: dict,
 ) -> list[str]:
     if not files:
         return []
@@ -186,8 +262,8 @@ def filter_sentinel2_files(
         filename_parts = re.split(r"[_.]", filename)
 
         if not any(
-            band.value in filename_parts
-            for band in required_bands
+                band.value in filename_parts
+                for band in required_bands
         ):
             continue
 
