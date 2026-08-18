@@ -21,7 +21,7 @@ class CreateJobUseCase:
         self._logger = logging.getLogger(settings.APP_NAME)
 
     def execute(self, dataset: str, metadata: dict, request_properties: dict) -> JobId:
-        self._logger.debug(f"Creating Job; dataset: {dataset}, metadata: {metadata}, request body: {request_properties}")
+        print(f"Creating Job; dataset: {dataset}, metadata: {metadata}, request body: {request_properties}")
 
         job_dataset = JobDataset.from_str(dataset)
 

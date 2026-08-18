@@ -18,6 +18,7 @@ class GJTIFFProcessor(Processor):
     _GJTIFF_CONTAINER_NAME = "oculus_gjtiff"
 
     def _process(self) -> list[ProcessorOutput]:
+        print(f"GJTIFF___ job: {self._job}")
 
         quality = self._validate_int_param(
             self._job.request_properties.get("quality"),
@@ -37,12 +38,12 @@ class GJTIFFProcessor(Processor):
             zoom_levels=",".join(map(str, zoom_levels)),
         )
 
-        gjtiff_container = self._get_container()
-        self._run_command(gjtiff_container, command)  # TODO uncomment for production, delete below for testing
+        #gjtiff_container = self._get_container()
+        #self._run_command(gjtiff_container, command)  # TODO uncomment for production, delete below for testing
 
-        #print(f"Now runing gjtiff: {command}")
-        #import time
-        #time.sleep(5)
+        print(f"Now runing gjtiff: {command}")
+        import time
+        time.sleep(5)
 
         return self._discover_outputs(wm_zoom_levels=zoom_levels)
 

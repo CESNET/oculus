@@ -28,15 +28,10 @@ export function buildSentinel2Visualization(
 
 
     if (visualization.generateRGB) {
-        visualizations.rgb = {
-            red:
-                `B${visualization.selectedRGBComposite.red.padStart(2, "0")}`,
-
-            green:
-                `B${visualization.selectedRGBComposite.green.padStart(2, "0")}`,
-
-            blue:
-                `B${visualization.selectedRGBComposite.blue.padStart(2, "0")}`,
+        visualizations.rgb_composite = {
+            red: `B${visualization.selectedRGBComposite.red.padStart(2, "0")}`,
+            green: `B${visualization.selectedRGBComposite.green.padStart(2, "0")}`,
+            blue: `B${visualization.selectedRGBComposite.blue.padStart(2, "0")}`,
         };
     }
 

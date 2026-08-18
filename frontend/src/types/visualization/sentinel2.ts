@@ -119,7 +119,7 @@ export type Sentinel2VisualizationMode = typeof SENTINEL2_VISUALIZATION_MODE[key
 
 
 // ======================================================
-// RGB
+// RGB COMPOSITE
 // ======================================================
 
 export interface Sentinel2RGBComposite {
@@ -137,16 +137,80 @@ export const DEFAULT_SENTINEL2_RGB_COMPOSITE: Sentinel2RGBComposite = {
 
 
 // ======================================================
-// SPECTRAL INDEX
+// FEATURES / SPECTRAL INDICES
 // ======================================================
 
-export interface Sentinel2SpectralIndex {
-    expression: string;
+export const SENTINEL2_INDEX = {
+    HONS: "HONS",
+    NDVI: "NDVI",
+    NDWI: "NDWI",
+    NDMI: "NDMI",
+    NDSI: "NDSI",
+    ND_UNSPEC: "ND_UNSPEC",
+} as const;
 
-    min?: number;
-    max?: number;
 
-    colorMap?: string;
+export type Sentinel2Index = typeof SENTINEL2_INDEX[keyof typeof SENTINEL2_INDEX];
+
+
+// ======================================================
+// REQUIRED BANDS FOR FIXED FEATURES
+// ======================================================
+
+/**
+ * Required input bands for features with a fixed definition.
+ *
+ * The order is important because it corresponds to the order
+ * expected by gjtiff:
+ *
+ * HONS      -> B04, B03, B02
+ * NDVI      -> B08, B04
+ * NDWI      -> B03, B08
+ * NDMI      -> B8A, B11
+ * NDSI      -> B03, B11, B04, B02
+ */
+export const SENTINEL2_INDEX_BANDS = {
+    [SENTINEL2_INDEX.HONS]: ["4", "3", "2"],
+    [SENTINEL2_INDEX.NDVI]: ["8", "4"],
+    [SENTINEL2_INDEX.NDWI]: ["3", "8"],
+    [SENTINEL2_INDEX.NDMI]: ["8A", "11"],
+    [SENTINEL2_INDEX.NDSI]: ["3", "11", "4", "2"],
+} as const satisfies Record<
+    Exclude<Sentinel2Index, typeof SENTINEL2_INDEX.ND_UNSPEC>,
+    readonly Sentinel2SpectralBand[]
+>;
+
+
+// ======================================================
+// CUSTOM NORMALIZED DIFFERENCE
+// ======================================================
+
+/**
+ * Generic normalized difference:
+ *
+ *     (Bx - By) / (Bx + By)
+ *
+ * Unlike the fixed spectral indices, the user chooses
+ * both input bands.
+ */
+export interface Sentinel2CustomNormalizedDifference {
+    band1: Sentinel2SpectralBand;
+    band2: Sentinel2SpectralBand;
+}
+
+
+// ======================================================
+// INDEX VISUALIZATION
+// ======================================================
+
+export interface Sentinel2IndexVisualization {
+    index: Sentinel2Index;
+
+    /**
+     * Only used for ND_UNSPEC.
+     */
+    band1?: Sentinel2SpectralBand;
+    band2?: Sentinel2SpectralBand;
 }
 
 
@@ -156,11 +220,11 @@ export interface Sentinel2SpectralIndex {
 
 export const SENTINEL2_PRESET_TYPE = {
     RGB_COMPOSITE: "rgb-composite",
-    SPECTRAL_INDEX: "spectral-index",
+    INDEX: "index",
 } as const;
 
 
-export type Sentinel2PresetType = typeof SENTINEL2_PRESET_TYPE[        keyof typeof SENTINEL2_PRESET_TYPE        ];
+export type Sentinel2PresetType = typeof SENTINEL2_PRESET_TYPE[keyof typeof SENTINEL2_PRESET_TYPE];
 
 
 export interface Sentinel2PresetBase {
@@ -176,14 +240,24 @@ export interface Sentinel2RGBPreset extends Sentinel2PresetBase {
 }
 
 
-export interface Sentinel2SpectralIndexPreset extends Sentinel2PresetBase {
-    presetType: typeof SENTINEL2_PRESET_TYPE.SPECTRAL_INDEX;
-    index: Sentinel2SpectralIndex;
+export interface Sentinel2IndexPreset extends Sentinel2PresetBase {
+    presetType: typeof SENTINEL2_PRESET_TYPE.INDEX;
+    index: Sentinel2Index;
 }
 
-export type Sentinel2Preset = | Sentinel2RGBPreset | Sentinel2SpectralIndexPreset;
+
+export type Sentinel2Preset = Sentinel2RGBPreset | Sentinel2IndexPreset;
+
+
+// ======================================================
+// PRESET DEFINITIONS
+// ======================================================
 
 export const SENTINEL2_PRESETS = [
+    // --------------------------------------------------
+    // RGB composites
+    // --------------------------------------------------
+
     {
         id: "true-color",
         label: "True Color",
@@ -235,10 +309,60 @@ export const SENTINEL2_PRESETS = [
             blue: "2",
         },
     },
+
+    // --------------------------------------------------
+    // Spectral / combined features
+    // --------------------------------------------------
+
+    {
+        id: "hons",
+        label: "HONS",
+
+        presetType: SENTINEL2_PRESET_TYPE.INDEX,
+
+        index: SENTINEL2_INDEX.HONS,
+    },
+
+    {
+        id: "ndvi",
+        label: "NDVI",
+
+        presetType: SENTINEL2_PRESET_TYPE.INDEX,
+
+        index: SENTINEL2_INDEX.NDVI,
+    },
+
+    {
+        id: "ndwi",
+        label: "NDWI",
+
+        presetType: SENTINEL2_PRESET_TYPE.INDEX,
+
+        index: SENTINEL2_INDEX.NDWI,
+    },
+
+    {
+        id: "ndmi",
+        label: "NDMI",
+
+        presetType: SENTINEL2_PRESET_TYPE.INDEX,
+
+        index: SENTINEL2_INDEX.NDMI,
+    },
+
+    {
+        id: "ndsi",
+        label: "NDSI",
+
+        presetType: SENTINEL2_PRESET_TYPE.INDEX,
+
+        index: SENTINEL2_INDEX.NDSI,
+    },
 ] as const satisfies readonly Sentinel2Preset[];
 
-export type Sentinel2PresetId =
-    typeof SENTINEL2_PRESETS[number]["id"];
+
+export type Sentinel2PresetId = typeof SENTINEL2_PRESETS[number]["id"];
+
 
 // UI adapter
 
@@ -256,14 +380,54 @@ export const SENTINEL2_PRESET_OPTIONS =
 // ======================================================
 
 export interface Sentinel2RGBVisualization {
-    red: string;
-    green: string;
-    blue: string;
+    red: Sentinel2SpectralBand;
+    green: Sentinel2SpectralBand;
+    blue: Sentinel2SpectralBand;
 }
 
 
 export interface Sentinel2Visualizations {
-    bands?: string[];
+    /**
+     * Individual bands to generate.
+     *
+     * Example:
+     * ["4", "8", "11"]
+     */
+    bands?: Sentinel2SpectralBand[];
+
+    /**
+     * Custom RGB composite.
+     *
+     * Example:
+     * {
+     *     red: "8",
+     *     green: "4",
+     *     blue: "3"
+     * }
+     */
     rgb?: Sentinel2RGBVisualization;
+
+    /**
+     * Spectral / combined features.
+     *
+     * Fixed features:
+     *     { feature: "NDVI" }
+     *     { feature: "NDWI" }
+     *     { feature: "NDMI" }
+     *     { feature: "NDSI" }
+     *     { feature: "HONS" }
+     *
+     * Custom:
+     *     {
+     *         feature: "ND_UNSPEC",
+     *         band1: "8",
+     *         band2: "4"
+     *     }
+     */
+    features?: Sentinel2IndexVisualization[];
+
+    /**
+     * Named presets.
+     */
     presets?: Sentinel2PresetId[];
 }

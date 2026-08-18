@@ -8,19 +8,19 @@ from enum import StrEnum
 # ======================================================
 
 class Sentinel2Band(StrEnum):
-    B1 = "1"
-    B2 = "2"
-    B3 = "3"
-    B4 = "4"
-    B5 = "5"
-    B6 = "6"
-    B7 = "7"
-    B8 = "8"
-    B8A = "8A"
-    B9 = "9"
-    B10 = "10"
-    B11 = "11"
-    B12 = "12"
+    B1 = "B01"
+    B2 = "B02"
+    B3 = "B03"
+    B4 = "B04"
+    B5 = "B05"
+    B6 = "B06"
+    B7 = "B07"
+    B8 = "B08"
+    B8A = "B8A"
+    B9 = "B09"
+    B10 = "B10"
+    B11 = "B11"
+    B12 = "B12"
     TCI = "TCI"
 
 
@@ -138,7 +138,7 @@ def get_required_sentinel2_bands(
             continue
 
     # Custom RGB
-    rgb = visualizations.get("rgb")
+    rgb = visualizations.get("rgb_composite")
 
     if rgb:
         for channel in ("red", "green", "blue"):
