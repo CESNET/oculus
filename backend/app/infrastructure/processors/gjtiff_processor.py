@@ -160,13 +160,14 @@ class GJTIFFProcessor(Processor):
     def _get_band_file(
             self,
             band: Sentinel2Band,
-            input_files: list[Path],
+            input_files_by_band: dict[Sentinel2Band, Path],
     ) -> Path:
-        for file in input_files:
-            if f"_{band.value}_" in file.name:
-                return file
+        file = input_files_by_band.get(band)
 
-        raise RuntimeError(f"Required Sentinel-2 band {band.value} was not found in input files.")
+        if file is None:
+            raise RuntimeError(f"Required Sentinel-2 band {band.value} was not found in input files.")
+
+        return file
 
     def _extract_sentinel2_band(self, file: Path) -> Sentinel2Band:
         filename_parts = re.split(r"[_.]", file.name)
@@ -205,10 +206,10 @@ class GJTIFFProcessor(Processor):
                 self._logger.warning(f"Unknown Sentinel-2 band: {band}")
                 continue
 
-            file = input_files_by_band.get(band_enum)
-
-            if file is None:
-                raise RuntimeError(f"Required band {band_enum.value} was not found in input files.")
+            file = self._get_band_file(
+                band_enum,
+                input_files_by_band,
+            )
 
             visualization_inputs.append(str(file))
 
@@ -220,15 +221,18 @@ class GJTIFFProcessor(Processor):
 
         if rgb:
             try:
-                red = input_files_by_band[
-                    Sentinel2Band(rgb["red"])
-                ]
-                green = input_files_by_band[
-                    Sentinel2Band(rgb["green"])
-                ]
-                blue = input_files_by_band[
-                    Sentinel2Band(rgb["blue"])
-                ]
+                red = self._get_band_file(
+                    Sentinel2Band(rgb["red"]),
+                    input_files_by_band,
+                )
+                green = self._get_band_file(
+                    Sentinel2Band(rgb["green"]),
+                    input_files_by_band,
+                )
+                blue = self._get_band_file(
+                    Sentinel2Band(rgb["blue"]),
+                    input_files_by_band,
+                )
 
             except (KeyError, ValueError) as e:
                 raise RuntimeError(f"Unable to build Sentinel-2 RGB composite: {rgb}") from e
@@ -246,7 +250,6 @@ class GJTIFFProcessor(Processor):
         # ==================================================
 
         for preset_id in visualizations.get("presets", []):
-
             preset = SENTINEL2_PRESETS.get(preset_id)
 
             if preset is None:
@@ -258,11 +261,19 @@ class GJTIFFProcessor(Processor):
             # ----------------------------------------------
 
             if isinstance(preset, Sentinel2RGBPreset):
-
                 files = [
-                    input_files_by_band[preset.composite.red],
-                    input_files_by_band[preset.composite.green],
-                    input_files_by_band[preset.composite.blue],
+                    self._get_band_file(
+                        preset.composite.red,
+                        input_files_by_band,
+                    ),
+                    self._get_band_file(
+                        preset.composite.green,
+                        input_files_by_band,
+                    ),
+                    self._get_band_file(
+                        preset.composite.blue,
+                        input_files_by_band,
+                    ),
                 ]
 
                 visualization_inputs.append(",".join(map(str, files)))
@@ -272,12 +283,17 @@ class GJTIFFProcessor(Processor):
             # ----------------------------------------------
 
             elif isinstance(preset, Sentinel2IndexPreset):
-
                 bands = SENTINEL2_INDEX_BANDS[preset.index]
 
-                files = [input_files_by_band[band] for band in bands]
+                files = [
+                    self._get_band_file(
+                        band,
+                        input_files_by_band,
+                    )
+                    for band in bands
+                ]
 
-                visualization_inputs.append(f"{preset.index.value}@{",".join(map(str, files))}")
+                visualization_inputs.append(f"{preset.index.value}@{','.join(map(str, files))}")
 
         # ==================================================
         # Format flags
@@ -311,9 +327,7 @@ class GJTIFFProcessor(Processor):
                         )
                         continue
 
-                entered_format_flags.append(
-                    FORMAT_FLAGS[format_name][mode]
-                )
+                entered_format_flags.append(FORMAT_FLAGS[format_name][mode])
 
         # Default WM tiles to WebP
         entered_format_flags.append(FORMAT_FLAGS[OutputFormat.WEBP.value][TileGroup.WM_TILES.value])
