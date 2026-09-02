@@ -61,6 +61,7 @@ const buildDatasetVisualization = (
     }
 };
 
+
 // ======================================================
 // REQUEST BUILDER
 // ======================================================
@@ -84,7 +85,9 @@ export const getVisualizationRequestPayload = (feature: Feature,): Visualization
                 13,
                 14,
             ],
+
             outputs: state.outputs,
+
             ...datasetVisualization,
         },
 

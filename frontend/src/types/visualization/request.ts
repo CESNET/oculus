@@ -1,11 +1,11 @@
 import type {Dataset} from "../datasets";
-import type {VisualizationOutput} from "../visualization.ts";
+import type {VisualizationRequestOutput} from "../visualization.ts";
 import type {Sentinel2Visualizations} from "./sentinel2";
 
 export interface VisualizationProperties {
     quality: number;
     zoom_levels: number[];
-    outputs: Record<string, VisualizationOutput>;
+    outputs: Record<string, VisualizationRequestOutput>;
     visualizations?: Sentinel2Visualizations;
 }
 

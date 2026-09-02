@@ -2,7 +2,7 @@ import {create} from "zustand";
 
 import type {
     ProcessedFileState,
-    VisualizationOutput,
+    VisualizationRequestOutput,
 } from "../types/visualization";
 
 import {
@@ -15,6 +15,10 @@ import {
     type Sentinel2VisualizationMode,
 } from "../types/visualization/sentinel2";
 
+
+// ======================================================
+// DATASET VISUALIZATION STATE
+// ======================================================
 
 export interface Sentinel1VisualizationState {
     // zatím nic
@@ -48,9 +52,15 @@ export interface Sentinel2VisualizationState {
     selectedRGBComposite: Sentinel2RGBComposite;
 }
 
+
 export interface LandsatVisualizationState {
-    // Todo with landsat implementation
+    // TODO: with Landsat implementation
 }
+
+
+// ======================================================
+// DEFAULT STATE
+// ======================================================
 
 const DEFAULT_SENTINEL2_STATE: Sentinel2VisualizationState = {
     mode: SENTINEL2_VISUALIZATION_MODE.SINGLE_BANDS,
@@ -65,10 +75,23 @@ const DEFAULT_SENTINEL2_STATE: Sentinel2VisualizationState = {
 };
 
 
+// ======================================================
+// STORE
+// ======================================================
+
 export interface VisualizationState {
+    // --------------------------------------------------
+    // Job
+    // --------------------------------------------------
+
     jobId: string | null;
 
     featureId: string | null;
+
+
+    // --------------------------------------------------
+    // Dataset-specific visualization settings
+    // --------------------------------------------------
 
     sentinel1: Sentinel1VisualizationState;
 
@@ -76,24 +99,73 @@ export interface VisualizationState {
 
     landsat: LandsatVisualizationState;
 
+
+    // --------------------------------------------------
+    // Request output configuration
+    // --------------------------------------------------
+
+    /**
+     * Output formats requested from the backend.
+     *
+     * Example:
+     *
+     * {
+     *     jpg: {
+     *         full_product: true,
+     *         wm_tiles: false,
+     *     },
+     *     webp: {
+     *         full_product: false,
+     *         wm_tiles: true,
+     *     },
+     * }
+     */
+    outputs: Record<string, VisualizationRequestOutput>;
+
+
+    // --------------------------------------------------
+    // Processing results
+    // --------------------------------------------------
+
+    /**
+     * Actual visualization outputs returned by the backend.
+     *
+     * Key = visualization ID, e.g.:
+     *   "TCI"
+     *   "B02"
+     *   "rgb_B04-B8A-B11"
+     *   "ndvi_B08-B04"
+     */
     processedFiles: Record<string, ProcessedFileState>;
 
-    outputs: Record<string, VisualizationOutput>;
+
+    // --------------------------------------------------
+    // Map
+    // --------------------------------------------------
 
     selectedTileLayerPath: string | null;
 
     opacity: number;
 
-    setJobId(id: string | null): void;
 
-    setFeatureId(id: string | null): void;
+    // --------------------------------------------------
+    // Generic setters
+    // --------------------------------------------------
 
-    setProcessedFiles(
-        files: Record<string, ProcessedFileState>
+    setJobId(
+        id: string | null
+    ): void;
+
+    setFeatureId(
+        id: string | null
     ): void;
 
     setOutputs(
-        outputs: Record<string, VisualizationOutput>
+        outputs: Record<string, VisualizationRequestOutput>
+    ): void;
+
+    setProcessedFiles(
+        files: Record<string, ProcessedFileState>
     ): void;
 
     setSelectedTileLayerPath(
@@ -103,6 +175,11 @@ export interface VisualizationState {
     setOpacity(
         opacity: number
     ): void;
+
+
+    // --------------------------------------------------
+    // Sentinel-2 setters
+    // --------------------------------------------------
 
     setSentinel2(
         partial: Partial<Sentinel2VisualizationState>
@@ -139,9 +216,18 @@ export interface VisualizationState {
 export const useVisualizationStore =
     create<VisualizationState>((set) => ({
 
+        // ==================================================
+        // INITIAL STATE
+        // ==================================================
+
         jobId: null,
 
         featureId: null,
+
+
+        // --------------------------------------------------
+        // Dataset state
+        // --------------------------------------------------
 
         sentinel1: {},
 
@@ -149,7 +235,10 @@ export const useVisualizationStore =
 
         landsat: {},
 
-        processedFiles: {},
+
+        // --------------------------------------------------
+        // Request output configuration
+        // --------------------------------------------------
 
         outputs: {
             jpg: {
@@ -168,21 +257,61 @@ export const useVisualizationStore =
             },
         },
 
+
+        // --------------------------------------------------
+        // Processing results
+        // --------------------------------------------------
+
+        processedFiles: {},
+
+
+        // --------------------------------------------------
+        // Map
+        // --------------------------------------------------
+
         selectedTileLayerPath: null,
 
         opacity: 0.8,
 
-        setJobId: (jobId) => set({jobId}),
 
-        setFeatureId: (featureId) => set({featureId}),
+        // ==================================================
+        // GENERIC SETTERS
+        // ==================================================
 
-        setProcessedFiles: (processedFiles) => set({processedFiles}),
+        setJobId: (jobId) =>
+            set({
+                jobId,
+            }),
 
-        setOutputs: (outputs) => set({outputs}),
+        setFeatureId: (featureId) =>
+            set({
+                featureId,
+            }),
 
-        setSelectedTileLayerPath: (selectedTileLayerPath) => set({selectedTileLayerPath}),
+        setOutputs: (outputs) =>
+            set({
+                outputs,
+            }),
 
-        setOpacity: (opacity) => set({opacity}),
+        setProcessedFiles: (processedFiles) =>
+            set({
+                processedFiles,
+            }),
+
+        setSelectedTileLayerPath: (selectedTileLayerPath) =>
+            set({
+                selectedTileLayerPath,
+            }),
+
+        setOpacity: (opacity) =>
+            set({
+                opacity,
+            }),
+
+
+        // ==================================================
+        // SENTINEL-2
+        // ==================================================
 
         setSentinel2: (partial) =>
             set((state) => ({
@@ -274,6 +403,16 @@ export const useVisualizationStore =
 
         resetSentinel2: () =>
             set({
-                sentinel2: DEFAULT_SENTINEL2_STATE,
+                sentinel2: {
+                    ...DEFAULT_SENTINEL2_STATE,
+
+                    selectedBands: [
+                        ...DEFAULT_SENTINEL2_STATE.selectedBands,
+                    ],
+
+                    selectedPresetIds: [
+                        ...DEFAULT_SENTINEL2_STATE.selectedPresetIds,
+                    ],
+                },
             }),
     }));

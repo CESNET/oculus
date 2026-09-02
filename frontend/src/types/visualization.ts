@@ -16,6 +16,18 @@ export type JobStatus =
 export type OutputFormat = "jpg" | "png" | "webp";
 
 
+/**
+ * Output configuration sent to backend.
+ */
+export interface VisualizationRequestOutput {
+    full_product: boolean;
+    wm_tiles: boolean;
+}
+
+
+/**
+ * Actual output returned by backend.
+ */
 export interface VisualizationFormatOutput {
     full_product: string | null;
     wm_tiles: string | null;
@@ -25,6 +37,21 @@ export interface VisualizationFormatOutput {
 
 export interface ProcessedFileState {
     outputs: Partial<Record<OutputFormat, VisualizationFormatOutput>>;
+}
+
+
+export interface ProductFile {
+    path: string;
+    name: string;
+    format: OutputFormat;
+}
+
+
+export interface TileLayer {
+    path: string;
+    name: string;
+    format: OutputFormat;
+    zoomLevels: number[];
 }
 
 
@@ -38,26 +65,4 @@ export interface JobEventData {
     job_id: string;
     current_status: JobStatus;
     visualizations?: Record<string, ProcessedFileState>;
-}
-
-
-export interface ProductFile {
-    path: string;
-    name: string; // with extension
-    format: OutputFormat;
-}
-
-
-export interface TileLayer {
-    path: string; // path to folder with tiles
-    name: string; // without extension
-    format: OutputFormat;
-    zoomLevels: number[];
-}
-
-
-export interface VisualizationOptions {
-    signal?: AbortSignal;
-    onMessage?: (msg: JobStatus) => void;
-    onCancel?: () => void;
 }
