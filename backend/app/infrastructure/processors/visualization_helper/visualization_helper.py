@@ -16,7 +16,7 @@ class VisualizationHelper(ABC):
     ):
         self._job: Job = job
         self._feature_state: FeatureState = feature_state
-        self._logger: logging.Logger = logger | logging.getLogger(settings.APP_NAME)
+        self._logger: logging.Logger = logger or logging.getLogger(settings.APP_NAME)
 
     def create_processing_plan(self) -> ProcessingPlan:
         return self._create_processing_plan()
