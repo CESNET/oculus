@@ -101,25 +101,20 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             try:
                 band = Sentinel2Band(band_name)
             except ValueError:
-                self._logger.warning(
-                    f"Unknown Sentinel-2 band: {band_name}"
-                )
+                self._logger.warning(f"Unknown Sentinel-2 band: {band_name}")
                 continue
 
             input_file = self._get_input_file(band)
 
             if input_file is None:
-                self._logger.warning(
-                    f"Required Sentinel-2 band {band.value} "
-                    f"was not found in feature state."
-                )
+                self._logger.warning(f"Required Sentinel-2 band {band.value} was not found in feature state.")
                 continue
 
             tasks.append(
                 VisualizationTask(
                     id=band.value,
                     input_files=(input_file,),
-                    prefix=False
+                    prefix=None
                 )
             )
 
@@ -158,7 +153,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=visualization_id,
             input_files=input_files,
-            prefix=False
+            prefix=None
         )
 
     # ======================================================
@@ -203,7 +198,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=preset.id,
             input_files=input_files,
-            prefix=False
+            prefix=None
         )
 
     def _get_preset_index_task(
@@ -220,7 +215,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=preset.id,
             input_files=input_files,
-            prefix=True
+            prefix=preset.index.value
         )
 
     # ======================================================
@@ -237,10 +232,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             input_file = self._get_input_file(band)
 
             if input_file is None:
-                self._logger.warning(
-                    f"Required Sentinel-2 band {band.value} "
-                    f"was not found in feature state."
-                )
+                self._logger.warning(f"Required Sentinel-2 band {band.value} was not found in feature state.")
                 return None
 
             input_files.append(input_file)

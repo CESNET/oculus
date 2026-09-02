@@ -7,4 +7,4 @@ from pathlib import Path
 class VisualizationTask:
     id: str
     input_files: tuple[Path, ...]
-    prefix: bool = False
+    prefix: str | None = None
