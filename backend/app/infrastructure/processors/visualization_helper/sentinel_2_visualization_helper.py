@@ -119,6 +119,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
                 VisualizationTask(
                     id=band.value,
                     input_files=(input_file,),
+                    prefix=False
                 )
             )
 
@@ -157,6 +158,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=visualization_id,
             input_files=input_files,
+            prefix=False
         )
 
     # ======================================================
@@ -201,6 +203,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=preset.id,
             input_files=input_files,
+            prefix=False
         )
 
     def _get_preset_index_task(
@@ -217,6 +220,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=preset.id,
             input_files=input_files,
+            prefix=True
         )
 
     # ======================================================

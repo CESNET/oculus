@@ -52,14 +52,13 @@ class GJTIFFProcessor(Processor):
 
         self._logger.info(f"GJTIFF command: {' '.join(command)}")
 
-        """
         container = self._get_container()
 
         self._run_command(
             container=container,
             command=command,
         )
-        """  # Todo uncomment for production
+        # Todo uncomment for production
 
         import time
         time.sleep(5)
@@ -79,14 +78,20 @@ class GJTIFFProcessor(Processor):
         visualization_inputs: list[str] = []
 
         for task in processing_plan.visualizations:
+
             input_files = ",".join(
                 str(path)
                 for path in task.input_files
             )
 
-            visualization_inputs.append(
-                f"{task.id.upper()}@{input_files}"
-            )
+            if task.prefix:
+                visualization_inputs.append(
+                    f"{task.id.upper()}@{input_files}"
+                )
+            else:
+                visualization_inputs.append(
+                    input_files
+                )
 
         format_flags = self._build_format_flags(
             processing_plan.outputs,
