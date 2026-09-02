@@ -4,7 +4,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .input_file_state import InputFileState
+from .tile_group import TileGroup
 from .visualization import VisualizationState
+from ..processor import ProcessorOutput
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,6 +99,36 @@ class FeatureState:
             self.visualizations[visualization_id] = visualization
 
         return visualization
+
+    def apply_processor_outputs(
+            self,
+            outputs: list[ProcessorOutput],
+    ) -> None:
+
+        for processor_output in outputs:
+
+            visualization = self.get_or_create_visualization(
+                processor_output.visualization_id,
+            )
+
+            if processor_output.group == TileGroup.FULL_PRODUCT:
+                visualization.set_full_product(
+                    format_name=processor_output.format_name,
+                    path=processor_output.path,
+                )
+
+            elif processor_output.group == TileGroup.WM_TILES:
+                visualization.set_wm_tiles(
+                    format_name=processor_output.format_name,
+                    path=processor_output.path,
+                    zoom_levels=processor_output.zoom_levels,
+                )
+
+            else:
+                raise ValueError(
+                    "Unsupported processor output group: "
+                    f"{processor_output.group}"
+                )
 
     # -------------------------
     # serialization

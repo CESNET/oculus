@@ -195,7 +195,7 @@ class GJTIFFProcessor(Processor):
                 )
             )
 
-        self._logger.info(f"GJTIFF normalized outputs: {normalized_outputs}")
+        self._logger.debug(f"GJTIFF normalized outputs: {normalized_outputs}")
 
         return normalized_outputs
 
@@ -335,7 +335,7 @@ class GJTIFFProcessor(Processor):
             command: list[str],
     ) -> str:
 
-        self._logger.info(f"Running GJTIFF command: {' '.join(command)}")
+        self._logger.debug(f"Running GJTIFF command: {' '.join(command)}")
 
         exec_result = container.exec_run(
             cmd=command,
@@ -363,6 +363,6 @@ class GJTIFFProcessor(Processor):
         )
 
         if stdout_text:
-            self._logger.info(f"GJTIFF output: {stdout_text}")
+            self._logger.debug(f"GJTIFF output: {stdout_text}")
 
         return stdout_text

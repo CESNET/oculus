@@ -37,6 +37,8 @@ class Processor(ABC):
 
         outputs: list[ProcessorOutput] = self._process(processing_plan)
 
+        self._feature_state.apply_processor_outputs(outputs)
+
         elapsed = time.perf_counter() - start
 
         self._logger.info(f"Processing finished in {elapsed:.3f}s.")
