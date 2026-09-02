@@ -225,9 +225,7 @@ class GJTIFFProcessor(Processor):
                 ProcessorOutput(
                     visualization_id=task.id,
                     group=TileGroup.FULL_PRODUCT,
-                    format_name=self._get_output_format(
-                        normalized_path,
-                    ),
+                    format_name=self._get_output_format(normalized_path),
                     path=normalized_path,
                 )
             )
@@ -246,29 +244,49 @@ class GJTIFFProcessor(Processor):
 
         normalized_outputs: list[ProcessorOutput] = []
 
+        wm_tile_formats = self._get_wm_tile_formats(
+            processing_plan=processing_plan,
+        )
+
+        if not wm_tile_formats:
+            return normalized_outputs
+
+        processed_directory = self._feature_state.feature_root_directory / "processed"
+
         for task in processing_plan.visualizations:
 
-            wm_tile_formats = self._get_wm_tile_formats(processing_plan=processing_plan)
+            # GJTIFF creates the directory using its own naming convention.
+            gjtiff_tiles_path = processed_directory / self._get_gjtiff_output_stem(task)
+
+            # Application uses the canonical visualization ID.
+            normalized_tiles_path = processed_directory / task.id
+
+            if not self._has_wm_tiles(
+                    path=gjtiff_tiles_path,
+                    zoom_levels=zoom_levels,
+            ):
+                self._logger.warning(
+                    f"Expected WM tiles were not generated for visualization '{task.id}': {gjtiff_tiles_path}"
+                )
+                continue
+
+            # Rename GJTIFF's directory to our canonical visualization ID.
+            if gjtiff_tiles_path != normalized_tiles_path:
+
+                if normalized_tiles_path.exists():
+                    raise RuntimeError(
+                        f"Cannot rename WM tiles directory because destination already exists: {normalized_tiles_path}"
+                    )
+
+                gjtiff_tiles_path.rename(normalized_tiles_path)
 
             for format_name in wm_tile_formats:
-
-                wm_tiles_path = self._get_wm_tiles_path(task=task)
-
-                if not self._has_wm_tiles(
-                        path=wm_tiles_path,
-                        zoom_levels=zoom_levels,
-                ):
-                    self._logger.warning(
-                        f"Expected WM tiles were not generated for visualization '{task.id}': {wm_tiles_path}"
-                    )
-                    continue
-
                 normalized_outputs.append(
                     ProcessorOutput(
                         visualization_id=task.id,
                         group=TileGroup.WM_TILES,
                         format_name=format_name,
-                        path=wm_tiles_path,
+                        path=normalized_tiles_path,
                         zoom_levels=tuple(zoom_levels),
                     )
                 )
