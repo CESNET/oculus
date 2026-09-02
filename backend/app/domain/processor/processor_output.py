@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..feature_state.file_state import TileGroup, OutputFormat
+from ..feature_state import TileGroup, OutputFormat
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProcessorOutput:
-    source_file: str
+    visualization_id: str
     group: TileGroup
     format_name: OutputFormat
     path: Path

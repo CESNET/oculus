@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -28,7 +27,7 @@ class Sentinel2Band(StrEnum):
 # RGB
 # ======================================================
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Sentinel2RGBComposite:
     red: Sentinel2Band
     green: Sentinel2Band
@@ -48,7 +47,7 @@ class Sentinel2Index(StrEnum):
     ND_UNSPEC = "ND_UNSPEC"
 
 
-# Band order is aligned with GJTIFF input
+# Band order is aligned with GJTIFF input.
 SENTINEL2_INDEX_BANDS: dict[Sentinel2Index, tuple[Sentinel2Band, ...]] = {
     Sentinel2Index.HONS: (
         Sentinel2Band.B4,
@@ -89,19 +88,19 @@ class Sentinel2PresetType(StrEnum):
     INDEX = "index"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Sentinel2PresetBase:
     id: str
     label: str
     preset_type: Sentinel2PresetType
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Sentinel2RGBPreset(Sentinel2PresetBase):
     composite: Sentinel2RGBComposite
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Sentinel2IndexPreset(Sentinel2PresetBase):
     index: Sentinel2Index
 
@@ -197,10 +196,16 @@ SENTINEL2_PRESETS = {
 
 
 # ======================================================
-# VISUALIZATION HELPERS
+# DOMAIN HELPERS
 # ======================================================
 
-def get_required_sentinel2_bands(visualizations: dict) -> set[Sentinel2Band]:
+def get_required_sentinel2_bands(
+        visualizations: dict,
+) -> set[Sentinel2Band]:
+    """
+    Return all Sentinel-2 bands required by a visualization request.
+    """
+
     required_bands: set[Sentinel2Band] = set()
 
     # Single bands
@@ -210,14 +215,14 @@ def get_required_sentinel2_bands(visualizations: dict) -> set[Sentinel2Band]:
         except ValueError:
             continue
 
-    # Custom RGB
+    # Custom RGB composite
     rgb = visualizations.get("rgb_composite")
 
     if rgb:
         for channel in ("red", "green", "blue"):
             try:
                 required_bands.add(Sentinel2Band(rgb[channel]))
-                
+
             except (KeyError, ValueError):
                 continue
 
@@ -241,32 +246,3 @@ def get_required_sentinel2_bands(visualizations: dict) -> set[Sentinel2Band]:
             )
 
     return required_bands
-
-
-def filter_sentinel2_files(
-        files: list[str],
-        visualizations: dict,
-) -> list[str]:
-    if not files:
-        return []
-
-    required_bands = get_required_sentinel2_bands(visualizations)
-
-    if not required_bands:
-        return files
-
-    filtered_files: list[str] = []
-
-    for file in files:
-        filename = file.split("/")[-1]
-        filename_parts = re.split(r"[_.]", filename)
-
-        if not any(
-                band.value in filename_parts
-                for band in required_bands
-        ):
-            continue
-
-        filtered_files.append(file)
-
-    return filtered_files

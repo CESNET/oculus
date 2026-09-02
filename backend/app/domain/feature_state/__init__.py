@@ -1,7 +1,10 @@
-from .feature_state import FeatureState, FeatureStateId, FileState
+from .feature_state import FeatureState, FeatureStateId, InputFileState
 from .feature_state_lock_repository import FeatureStateLockType, FeatureStateLockRepository
 from .feature_state_repository import FeatureStateRepository
-from .file_state import FileState, OutputFormat, ProcessedGroup, TileGroup
+from .input_file_state import InputFileState
+from .output_format import OutputFormat
+from .tile_group import TileGroup
+from .visualization import VisualizationOutput, VisualizationState
 
 __all__ = [
     "FeatureState",
@@ -9,8 +12,9 @@ __all__ = [
     "FeatureStateRepository",
     "FeatureStateLockType",
     "FeatureStateLockRepository",
-    "FileState",
+    "InputFileState",
     "OutputFormat",
     "TileGroup",
-    "ProcessedGroup",
+    "VisualizationOutput",
+    "VisualizationState",
 ]

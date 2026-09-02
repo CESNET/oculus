@@ -21,7 +21,7 @@ def _build_event_payload(job: Job, feature_state: FeatureState) -> dict:
     if job.current_status == JobStatus.FINISHED:
         payload["processed_files"] = {
             filename: state.to_dict()
-            for filename, state in feature_state.files.items()
+            for filename, state in feature_state.input_files.items()
         }
 
     if job.current_status in FAILED_STATUSES:

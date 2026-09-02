@@ -1,139 +1,283 @@
-import re
 from pathlib import Path
 
 import docker
 from docker.errors import DockerException
 
 from .processor import Processor
+from .visualization_helper import ProcessingPlan
 from ...domain import (
-    TileGroup,
     OutputFormat,
     ProcessorOutput,
-    Sentinel2Band,
-    Sentinel2IndexPreset,
-    SENTINEL2_INDEX_BANDS,
-    Sentinel2RGBPreset,
-    SENTINEL2_PRESETS
+    TileGroup,
 )
 from ...settings import settings
 
 FORMAT_FLAGS = {
-    OutputFormat.JPG.value: {TileGroup.FULL_PRODUCT.value: "-J", TileGroup.WM_TILES.value: "-j"},
-    OutputFormat.PNG.value: {TileGroup.FULL_PRODUCT.value: "-P", TileGroup.WM_TILES.value: "-p"},
-    OutputFormat.WEBP.value: {TileGroup.FULL_PRODUCT.value: "-W", TileGroup.WM_TILES.value: "-w"},
+    OutputFormat.JPG: {
+        TileGroup.FULL_PRODUCT: "-J",
+        TileGroup.WM_TILES: "-j",
+    },
+    OutputFormat.PNG: {
+        TileGroup.FULL_PRODUCT: "-P",
+        TileGroup.WM_TILES: "-p",
+    },
+    OutputFormat.WEBP: {
+        TileGroup.FULL_PRODUCT: "-W",
+        TileGroup.WM_TILES: "-w",
+    },
 }
 
 
 class GJTIFFProcessor(Processor):
     _GJTIFF_CONTAINER_NAME = "oculus_gjtiff"
 
-    def _process(self) -> list[ProcessorOutput]:
-        quality = self._validate_int_param(
+    def _process(
+            self,
+            processing_plan: ProcessingPlan,
+    ) -> list[ProcessorOutput]:
+
+        quality = self._validate_quality(
             self._job.request_properties.get("quality"),
-            settings.DEFAULT_PROCESSING_QUALITY,
-            "quality",
         )
 
         zoom_levels = self._validate_zoom_levels(
             self._job.request_properties.get("zoom_levels"),
-            settings.DEFAULT_PROCESSING_ZOOM_LEVELS,
         )
 
         command = self._build_command(
-            output_formats=self._input_files.outputs,
-            input_files=self._input_files.files,
+            processing_plan=processing_plan,
             quality=quality,
-            zoom_levels=",".join(map(str, zoom_levels)),
+            zoom_levels=zoom_levels,
         )
 
-        gjtiff_container = self._get_container()
-        self._run_command(gjtiff_container, command)  # TODO uncomment for production, delete below for testing
+        self._logger.info(f"GJTIFF command: {' '.join(command)}")
 
-        # print(f"Now runing gjtiff: {command}")
-        # import time
-        # time.sleep(5)
+        """
+        container = self._get_container()
 
-        return self._discover_outputs(wm_zoom_levels=zoom_levels)
+        self._run_command(
+            container=container,
+            command=command,
+        )
+        """  # Todo uncomment for production
 
-    def _discover_outputs(self, wm_zoom_levels: list[int]) -> list[ProcessorOutput]:
+        import time
+        time.sleep(5)
+
+        return self._discover_outputs(
+            processing_plan=processing_plan,
+            zoom_levels=zoom_levels,
+        )
+
+    def _build_command(
+            self,
+            processing_plan: ProcessingPlan,
+            quality: int,
+            zoom_levels: list[int],
+    ) -> list[str]:
+
+        visualization_inputs: list[str] = []
+
+        for task in processing_plan.visualizations:
+            input_files = ",".join(
+                str(path)
+                for path in task.input_files
+            )
+
+            visualization_inputs.append(
+                f"{task.id.upper()}@{input_files}"
+            )
+
+        format_flags = self._build_format_flags(
+            processing_plan.outputs,
+        )
+
+        processed_directory = (
+                self._feature_state.feature_root_directory
+                / "processed"
+        )
+
+        return [
+            "gjtiff",
+            "-q",
+            str(quality),
+            "-Q",
+            "-z",
+            ",".join(map(str, zoom_levels)),
+            "-o",
+            str(processed_directory),
+            *format_flags,
+            *visualization_inputs,
+        ]
+
+    @staticmethod
+    def _build_format_flags(
+            outputs: dict[OutputFormat, set[TileGroup]],
+    ) -> list[str]:
+
+        flags: list[str] = []
+
+        for format_name, groups in outputs.items():
+
+            if format_name not in FORMAT_FLAGS:
+                raise ValueError(
+                    f"Unsupported output format: {format_name}"
+                )
+
+            for group in groups:
+
+                flag = FORMAT_FLAGS[format_name].get(group)
+
+                if flag is None:
+                    raise ValueError(
+                        f"Unsupported output combination: "
+                        f"{format_name}/{group}"
+                    )
+
+                flags.append(flag)
+
+        return flags
+
+    @staticmethod
+    def _validate_quality(
+            value,
+    ) -> int:
+
+        if value is None:
+            return settings.DEFAULT_PROCESSING_QUALITY
+
+        try:
+            quality = int(value)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"Invalid quality: {value}"
+            )
+
+        if not 0 <= quality <= 100:
+            raise ValueError(
+                f"Quality must be between 0 and 100, got {quality}"
+            )
+
+        return quality
+
+    @staticmethod
+    def _validate_zoom_levels(
+            value,
+    ) -> list[int]:
+
+        if value is None:
+            return list(
+                settings.DEFAULT_PROCESSING_ZOOM_LEVELS
+            )
+
+        if isinstance(value, str):
+            value = value.split(",")
+
+        try:
+            zoom_levels = [
+                int(level)
+                for level in value
+            ]
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"Invalid zoom levels: {value}"
+            )
+
+        if any(level < 0 for level in zoom_levels):
+            raise ValueError(
+                f"Zoom levels must be non-negative: {zoom_levels}"
+            )
+
+        return zoom_levels
+
+    def _discover_outputs(
+            self,
+            processing_plan: ProcessingPlan,
+            zoom_levels: list[int],
+    ) -> list[ProcessorOutput]:
+
+        processed_directory = (
+                self._feature_state.feature_root_directory
+                / "processed"
+        )
+
+        if not processed_directory.exists():
+            return []
+
+        visualization_ids = {
+            task.id
+            for task in processing_plan.visualizations
+        }
 
         outputs: list[ProcessorOutput] = []
 
-        processed_dir = Path(self._path_to_processed)
+        for item in processed_directory.iterdir():
 
-        if not processed_dir.exists():
-            return outputs
-
-        # map: "TCI_10m" -> full input filename
-        requested_files = {
-            Path(f).stem: f
-            for f in self._job.requested_files
-        }
-
-        for item in processed_dir.iterdir():
-
-            # -------------------
-            # FULL outputs (files)
-            # -------------------
             if item.is_file():
 
-                try:
-                    fmt = OutputFormat(item.suffix.lstrip(".").lower())
-                except ValueError:
+                visualization_id = item.stem
+
+                if visualization_id not in visualization_ids:
                     continue
 
-                source_file = requested_files.get(item.stem)
-
-                if not source_file:
+                try:
+                    format_name = OutputFormat(
+                        item.suffix.lstrip(".").lower()
+                    )
+                except ValueError:
                     continue
 
                 outputs.append(
                     ProcessorOutput(
-                        source_file=source_file,
+                        visualization_id=visualization_id,
                         group=TileGroup.FULL_PRODUCT,
-                        format_name=fmt,
+                        format_name=format_name,
                         path=item,
                     )
                 )
 
-            # ------------------------
-            # WEB_MERCATOR (dirs)
-            # ------------------------
             elif item.is_dir():
 
-                # název složky = stem input file
-                source_file = requested_files.get(item.name)
+                visualization_id = item.name
 
-                if not source_file:
+                if visualization_id not in visualization_ids:
                     continue
 
-                formats = self._discover_tile_formats(item)
+                formats = self._discover_tile_formats(
+                    item
+                )
 
-                for fmt in formats:
+                for format_name in formats:
                     outputs.append(
                         ProcessorOutput(
-                            source_file=source_file,
+                            visualization_id=visualization_id,
                             group=TileGroup.WM_TILES,
-                            format_name=fmt,
+                            format_name=format_name,
                             path=item,
-                            zoom_levels=wm_zoom_levels,
+                            zoom_levels=zoom_levels,
                         )
                     )
 
         return outputs
 
     @staticmethod
-    def _discover_tile_formats(pyramid_root: Path) -> set[OutputFormat]:
+    def _discover_tile_formats(
+            pyramid_root: Path,
+    ) -> set[OutputFormat]:
 
         first_tile = next(
-            (p for p in pyramid_root.rglob("*") if p.is_file()),
+            (
+                path
+                for path in pyramid_root.rglob("*")
+                if path.is_file()
+            ),
             None,
         )
 
         if first_tile is None:
             return set()
 
-        formats = set()
+        formats: set[OutputFormat] = set()
 
         for file in first_tile.parent.iterdir():
 
@@ -141,215 +285,30 @@ class GJTIFFProcessor(Processor):
                 continue
 
             try:
-                formats.add(OutputFormat(file.suffix.lstrip(".").lower()))
+                formats.add(
+                    OutputFormat(
+                        file.suffix.lstrip(".").lower()
+                    )
+                )
             except ValueError:
-                pass
+                continue
 
         return formats
 
-    def _get_container(self) -> docker.models.containers.Container:
-
+    def _get_container(self):
         client = docker.from_env()
 
         try:
-            return client.containers.get(self._GJTIFF_CONTAINER_NAME)
+            return client.containers.get(
+                self._GJTIFF_CONTAINER_NAME
+            )
 
         except DockerException as e:
-            raise RuntimeError(f"GJTIFF container '{self._GJTIFF_CONTAINER_NAME}' not found. Error: {e}")
-
-    def _get_band_file(
-            self,
-            band: Sentinel2Band,
-            input_files_by_band: dict[Sentinel2Band, Path],
-    ) -> Path:
-        file = input_files_by_band.get(band)
-
-        if file is None:
-            raise RuntimeError(f"Required Sentinel-2 band {band.value} was not found in input files.")
-
-        return file
-
-    def _extract_sentinel2_band(self, file: Path) -> Sentinel2Band:
-        filename_parts = re.split(r"[_.]", file.name)
-
-        for band in Sentinel2Band:
-            if band.value in filename_parts:
-                return band
-
-        raise RuntimeError(f"Unable to determine Sentinel-2 band from filename: {file.name}")
-
-    def _build_command(
-            self,
-            output_formats: dict,
-            input_files: list[Path],
-            quality: int,
-            zoom_levels: str,
-    ) -> list[str]:
-        print(f"Input files: {input_files}")
-
-        visualizations = self._job.request_properties.get("visualizations", {})
-
-        input_files_by_band = {
-            self._extract_sentinel2_band(file): file
-            for file in input_files
-        }
-
-        print(f"Input files by band: {[band.value for band in input_files_by_band]}")
-
-        visualization_inputs: list[str] = []
-
-        # ==================================================
-        # Individual bands
-        # ==================================================
-
-        for band in visualizations.get("bands", []):
-            try:
-                band_enum = Sentinel2Band(band)
-            except ValueError:
-                self._logger.warning(f"Unknown Sentinel-2 band: {band}")
-                continue
-
-            file = self._get_band_file(
-                band_enum,
-                input_files_by_band,
-            )
-
-            visualization_inputs.append(str(file))
-
-        # ==================================================
-        # Custom RGB
-        # ==================================================
-
-        rgb = visualizations.get("rgb_composite")
-
-        if rgb:
-            try:
-                red = self._get_band_file(
-                    Sentinel2Band(rgb["red"]),
-                    input_files_by_band,
-                )
-                green = self._get_band_file(
-                    Sentinel2Band(rgb["green"]),
-                    input_files_by_band,
-                )
-                blue = self._get_band_file(
-                    Sentinel2Band(rgb["blue"]),
-                    input_files_by_band,
-                )
-
-            except (KeyError, ValueError) as e:
-                raise RuntimeError(f"Unable to build Sentinel-2 RGB composite: {rgb}") from e
-
-            visualization_inputs.append(
-                ",".join([
-                    str(red),
-                    str(green),
-                    str(blue),
-                ])
-            )
-
-        # ==================================================
-        # Presets
-        # ==================================================
-
-        for preset_id in visualizations.get("presets", []):
-            preset = SENTINEL2_PRESETS.get(preset_id)
-
-            if preset is None:
-                self._logger.warning(f"Unknown Sentinel-2 preset: {preset_id}")
-                continue
-
-            # ----------------------------------------------
-            # RGB preset
-            # ----------------------------------------------
-
-            if isinstance(preset, Sentinel2RGBPreset):
-                files = [
-                    self._get_band_file(
-                        preset.composite.red,
-                        input_files_by_band,
-                    ),
-                    self._get_band_file(
-                        preset.composite.green,
-                        input_files_by_band,
-                    ),
-                    self._get_band_file(
-                        preset.composite.blue,
-                        input_files_by_band,
-                    ),
-                ]
-
-                visualization_inputs.append(",".join(map(str, files)))
-
-            # ----------------------------------------------
-            # Index preset
-            # ----------------------------------------------
-
-            elif isinstance(preset, Sentinel2IndexPreset):
-                bands = SENTINEL2_INDEX_BANDS[preset.index]
-
-                files = [
-                    self._get_band_file(
-                        band,
-                        input_files_by_band,
-                    )
-                    for band in bands
-                ]
-
-                visualization_inputs.append(f"{preset.index.value}@{','.join(map(str, files))}")
-
-        # ==================================================
-        # Format flags
-        # ==================================================
-
-        entered_format_flags = []
-
-        for format_name, modes in output_formats.items():
-
-            if format_name not in FORMAT_FLAGS:
-                raise TypeError(f"Unknown format: {format_name}")
-
-            for mode, enabled in modes.items():
-
-                if not enabled:
-                    continue
-
-                '''
-                ### GJTiff only exports into one WebMercator tiles format at a time. Defaulting to WebP.
-
-                CESNET Slack #meta-esa-vizualizace:
-                20260318: matejkaj: Ale řekl bych, že GjTiff neumí generovat víc formátů celých produktů najednou?
-                20260318: xpulec: No neuměl, ale už jsem přidal. Platí to teda ale jen pro celkový obrázek (-W/-J/-P), ne dlaždice, tam je možné pořád generovat jen v jednom formátu.
-                '''
-
-                if mode == TileGroup.WM_TILES.value:
-
-                    if format_name != OutputFormat.WEBP.value:
-                        self._logger.warning(
-                            f"WebMercator tiles are only supported for WEBP format. Ignoring {format_name} format."
-                        )
-                        continue
-
-                entered_format_flags.append(FORMAT_FLAGS[format_name][mode])
-
-        # Default WM tiles to WebP
-        entered_format_flags.append(FORMAT_FLAGS[OutputFormat.WEBP.value][TileGroup.WM_TILES.value])
-
-        # ==================================================
-        # Command
-        # ==================================================
-
-        return (
-            [
-                "gjtiff",
-                "-q", str(quality),
-                "-Q",
-                "-z", zoom_levels,
-                "-o", self._path_to_processed,
-                *entered_format_flags,
-                *visualization_inputs,
-            ]
-        )
+            raise RuntimeError(
+                f"GJTIFF container "
+                f"'{self._GJTIFF_CONTAINER_NAME}' not found. "
+                f"Error: {e}"
+            ) from e
 
     def _run_command(
             self,
@@ -357,7 +316,9 @@ class GJTIFFProcessor(Processor):
             command: list[str],
     ) -> None:
 
-        self._logger.info(f"Running GJTIFF command: {' '.join(command)}")
+        self._logger.info(
+            f"Running GJTIFF command: {' '.join(command)}"
+        )
 
         exec_result = container.exec_run(
             cmd=command,
@@ -376,7 +337,12 @@ class GJTIFFProcessor(Processor):
                 else "Unknown error"
             )
 
-            raise RuntimeError(f"GJTIFF failed with exit code {exec_result.exit_code}: {error}")
+            raise RuntimeError(
+                "GJTIFF failed with exit code "
+                f"{exec_result.exit_code}: {error}"
+            )
 
         if stdout:
-            self._logger.info(stdout.decode("utf-8"))
+            self._logger.info(
+                stdout.decode("utf-8")
+            )

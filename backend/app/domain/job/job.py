@@ -50,8 +50,6 @@ class Job:
 
     cancel_reason: str | None = None
 
-    requested_files: list[str] = field(default_factory=list)
-
     # -------------------------
     # convenience
     # -------------------------
@@ -110,12 +108,6 @@ class Job:
     # -------------------------
     # behavior
     # -------------------------
-
-    def set_requested_files(self, requested_files: list[str]) -> None:
-        self.requested_files = [Path(requested_file).stem for requested_file in requested_files]
-
-    def get_requested_files(self) -> list[str]:
-        return self.requested_files
 
     def _touch(self) -> None:
         self.last_accessed = datetime.now(timezone.utc)
@@ -195,7 +187,6 @@ class Job:
             "last_accessed": self.last_accessed,
             "fail_reasons": self.fail_reasons,
             "cancel_reason": self.cancel_reason,
-            "requested_files": self.requested_files,
         }
 
     @classmethod
@@ -211,5 +202,4 @@ class Job:
             last_accessed=data["last_accessed"],
             fail_reasons=data.get("fail_reasons", []),
             cancel_reason=data.get("cancel_reason"),
-            requested_files=data.get("requested_files", []),
         )

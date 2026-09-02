@@ -34,49 +34,31 @@ class DownloadService(ABC):
         raise ValueError(f"Product {self._job.feature_id} not found in any provider")
 
     def get_requested_files(self) -> list[str]:
-        available_files: list[str] = self._provider.list_product_files()
-        requested_files: list[str] = self._filter_files(available_files=available_files)
+        available_files = self._provider.list_product_files()
 
-        return requested_files
+        return self._filter_files(available_files=available_files)
 
-    def get_files_to_download(self, requested_files: list[str]) -> list[str]:
-        files_to_download = [
+    def get_files_to_download(
+            self,
+            requested_files: list[str],
+    ) -> list[str]:
+        return [
             requested_file
             for requested_file in requested_files
             if not self._feature_state.is_file_downloaded(Path(requested_file).stem)
         ]
 
-        return files_to_download
-
-    """
-    20260811 - seems like not used, possibly can be deleted..?
-    def filter_files(
+    @abstractmethod
+    def _filter_files(
             self,
             available_files: list[str],
-            already_downloaded: set[str],
     ) -> list[str]:
-        available_files = self._filter_files(available_files)
-
-        available_map = {
-            Path(file).name: file for file in available_files
-        }
-
-        already_downloaded_names = [
-            Path(file).name for file in already_downloaded
-        ]
-
-        return [
-            original_path
-            for name, original_path in available_map.items()
-            if name not in already_downloaded_names
-        ]
-    """
-
-    @abstractmethod
-    def _filter_files(self, available_files: list[str]) -> list[str]:
         ...
 
-    def download(self, files_to_download:list[str]) -> list[str]:
+    def download(
+            self,
+            files_to_download: list[str],
+    ) -> list[str]:
         self._logger.info(f"Downloading job {self._job.id}")
 
         start = time.perf_counter()
