@@ -158,7 +158,7 @@ class GJTIFFProcessor(Processor):
             )
 
             if task is None:
-                self._logger.warning("Unable to match GJTIFF output to visualization task: {output}")
+                self._logger.warning(f"Unable to match GJTIFF output to visualization task: {output}")
                 continue
 
             output_file = Path(output_file)
