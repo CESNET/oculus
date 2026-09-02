@@ -102,6 +102,8 @@ class GJTIFFProcessor(Processor):
                 / "processed"
         )
 
+        processed_directory.mkdir(parents=True, exist_ok=True)
+
         return [
             "gjtiff",
             "-q",
