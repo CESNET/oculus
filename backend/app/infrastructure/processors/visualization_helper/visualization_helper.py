@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 
+from settings import settings
 from .processing_plan import ProcessingPlan
 from ....domain import FeatureState, Job
 
@@ -15,7 +16,7 @@ class VisualizationHelper(ABC):
     ):
         self._job: Job = job
         self._feature_state: FeatureState = feature_state
-        self._logger: logging.Logger = logger
+        self._logger: logging.Logger = logger | logging.getLogger(settings.APP_NAME)
 
     def create_processing_plan(self) -> ProcessingPlan:
         return self._create_processing_plan()
