@@ -134,9 +134,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             blue = Sentinel2Band(rgb["blue"])
 
         except (KeyError, ValueError):
-            self._logger.warning(
-                f"Invalid Sentinel-2 RGB composite: {rgb}"
-            )
+            self._logger.warning(f"Invalid Sentinel-2 RGB composite: {rgb}")
             return None
 
         bands = (red, green, blue)
@@ -146,9 +144,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         if input_files is None:
             return None
 
-        visualization_id = (
-            f"rgb:{red.value}:{green.value}:{blue.value}"
-        )
+        visualization_id = f"rgb_{red.value}-{green.value}-{blue.value}"
 
         return VisualizationTask(
             id=visualization_id,
@@ -167,9 +163,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         preset = SENTINEL2_PRESETS.get(preset_id)
 
         if preset is None:
-            self._logger.warning(
-                f"Unknown Sentinel-2 preset: {preset_id}"
-            )
+            self._logger.warning(f"Unknown Sentinel-2 preset: {preset_id}")
             return None
 
         if isinstance(preset, Sentinel2RGBPreset):
@@ -195,8 +189,10 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         if input_files is None:
             return None
 
+        visualization_id = f"rgb-{preset.id}_{'-'.join(band.value for band in bands)}"
+
         return VisualizationTask(
-            id=preset.id,
+            id=visualization_id,
             input_files=input_files,
             prefix=None
         )
@@ -212,8 +208,10 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         if input_files is None:
             return None
 
+        visualization_id = f"{preset.id}_{'-'.join(band.value for band in bands)}"
+
         return VisualizationTask(
-            id=preset.id,
+            id=visualization_id,
             input_files=input_files,
             prefix=preset.index.value
         )
