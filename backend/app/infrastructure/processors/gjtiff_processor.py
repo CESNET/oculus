@@ -71,31 +71,23 @@ class GJTIFFProcessor(Processor):
             zoom_levels: list[int],
     ) -> list[str]:
 
-        visualization_inputs: list[str] = []
-
-        for task in processing_plan.visualizations:
-
-            input_files = ",".join(
-                str(path)
-                for path in task.input_files
-            )
-
-            if task.prefix:
-                visualization_inputs.append(
-                    f"{task.id.upper()}@{input_files}"
-                )
-            else:
-                visualization_inputs.append(
-                    input_files
-                )
+        visualization_inputs = [
+            self._build_visualization_input(task)
+            for task in processing_plan.visualizations
+        ]
 
         format_flags = self._build_format_flags(
             processing_plan.outputs,
         )
 
-        processed_directory = self._feature_state.feature_root_directory / "processed"
+        processed_directory = (
+                self._feature_state.feature_root_directory / "processed"
+        )
 
-        processed_directory.mkdir(parents=True, exist_ok=True)
+        processed_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
         return [
             "gjtiff",
@@ -109,6 +101,21 @@ class GJTIFFProcessor(Processor):
             *format_flags,
             *visualization_inputs,
         ]
+
+    @staticmethod
+    def _build_visualization_input(
+            task: VisualizationTask,
+    ) -> str:
+
+        input_files = ",".join(
+            str(path)
+            for path in task.input_files
+        )
+
+        if task.prefix is not None:
+            return f"{task.prefix}@{input_files}"
+
+        return input_files
 
     @staticmethod
     def _build_format_flags(
@@ -140,11 +147,16 @@ class GJTIFFProcessor(Processor):
             zoom_levels: list[int],
     ) -> list[ProcessorOutput]:
 
-        outputs = json.loads(gjtiff_stdout)
+        try:
+            outputs = json.loads(gjtiff_stdout)
+
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("Unable to parse GJTIFF stdout as JSON") from exc
 
         normalized_outputs: list[ProcessorOutput] = []
 
         for output in outputs:
+
             input_file = output.get("infile")
             output_file = output.get("outfile")
 
@@ -168,7 +180,7 @@ class GJTIFFProcessor(Processor):
                 task=task,
             )
 
-            if normalized_path != output_file:
+            if output_file != normalized_path:
                 output_file.rename(normalized_path)
 
             normalized_outputs.append(
@@ -176,7 +188,7 @@ class GJTIFFProcessor(Processor):
                     visualization_id=task.id,
                     group=TileGroup.FULL_PRODUCT,
                     format_name=self._get_output_format(
-                        normalized_path
+                        normalized_path,
                     ),
                     path=normalized_path,
                     zoom_levels=zoom_levels,
@@ -194,77 +206,44 @@ class GJTIFFProcessor(Processor):
             input_file: str,
     ) -> VisualizationTask | None:
 
-        gjtiff_prefix, gjtiff_inputs = (
-            cls._parse_gjtiff_infile(input_file)
-        )
-
         for task in processing_plan.visualizations:
-            task_inputs = cls._get_input_identifiers(
-                task.input_files
+
+            actual_inputs = cls._get_gjtiff_inputs(
+                infile=input_file,
+                prefix=task.prefix,
             )
 
-            if task_inputs != gjtiff_inputs:
-                continue
+            expected_inputs = cls._get_input_identifiers(
+                task.input_files,
+            )
 
-            if task.prefix != gjtiff_prefix:
-                continue
-
-            return task
+            if actual_inputs == expected_inputs:
+                return task
 
         return None
 
     @staticmethod
-    def _parse_gjtiff_infile(
+    def _get_gjtiff_inputs(
             infile: str,
-    ) -> tuple[str | None, tuple[str, ...]]:
+            prefix: str | None,
+    ) -> tuple[str, ...]:
 
-        name = Path(infile).name
+        parts = Path(infile).name.split("-COMMA-")
 
-        parts = name.split("-COMMA-")
+        if prefix is not None:
 
-        if not parts:
-            return None, ()
+            prefix_separator = f"{prefix}-"
 
-        first = parts[0]
+            if not parts[0].startswith(prefix_separator):
+                return ()
 
-        prefix = None
+            parts[0] = parts[0][len(prefix_separator):]
 
-        # GJTIFF prefix is separated from the first input
-        # by a single '-'.
-        #
-        # Example:
-        #   NDVI-T33..._B08-COMMA-T33..._B04
-        #
-        # becomes:
-        #   prefix = "NDVI"
-        #   inputs = (
-        #       "T33..._B08",
-        #       "T33..._B04",
-        #   )
-
-        first_input = first
-
-        if "-" in first:
-            possible_prefix, possible_input = first.split(
-                "-",
-                1,
-            )
-
-            prefix = possible_prefix
-            first_input = possible_input
-
-        parts = [
-            first_input,
-            *parts[1:],
-        ]
-
-        inputs = tuple(
-            part
+        return tuple(
+            Path(part).stem
             for part in parts
             if part
         )
-
-        return prefix, inputs
 
     @staticmethod
     def _get_input_identifiers(
@@ -281,12 +260,14 @@ class GJTIFFProcessor(Processor):
             outfile: Path,
             task: VisualizationTask,
     ) -> Path:
+
         return outfile.with_name(f"{task.id}{outfile.suffix}")
 
     @staticmethod
     def _get_output_format(
             path: Path,
     ) -> OutputFormat:
+
         try:
             return OutputFormat(path.suffix.lstrip(".").lower())
 
@@ -304,8 +285,8 @@ class GJTIFFProcessor(Processor):
         try:
             quality = int(value)
 
-        except (TypeError, ValueError):
-            raise ValueError(f"Invalid quality: {value}")
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid quality: {value}") from exc
 
         if not 0 <= quality <= 100:
             raise ValueError(f"Quality must be between 0 and 100, got {quality}")
@@ -318,16 +299,21 @@ class GJTIFFProcessor(Processor):
     ) -> list[int]:
 
         if value is None:
-            return list(settings.DEFAULT_PROCESSING_ZOOM_LEVELS)
+            return list(
+                settings.DEFAULT_PROCESSING_ZOOM_LEVELS
+            )
 
         if isinstance(value, str):
             value = value.split(",")
 
         try:
-            zoom_levels = [int(level) for level in value]
+            zoom_levels = [
+                int(level)
+                for level in value
+            ]
 
-        except (TypeError, ValueError):
-            raise ValueError(f"Invalid zoom levels: {value}")
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid zoom levels: {value}") from exc
 
         if any(level < 0 for level in zoom_levels):
             raise ValueError(f"Zoom levels must be non-negative: {zoom_levels}")
@@ -340,12 +326,8 @@ class GJTIFFProcessor(Processor):
         try:
             return client.containers.get(self._GJTIFF_CONTAINER_NAME)
 
-        except DockerException as e:
-            raise RuntimeError(
-                f"GJTIFF container "
-                f"'{self._GJTIFF_CONTAINER_NAME}' not found. "
-                f"Error: {e}"
-            ) from e
+        except DockerException as exc:
+            raise RuntimeError(f"GJTIFF container '{self._GJTIFF_CONTAINER_NAME}' not found. Error: {exc}") from exc
 
     def _run_command(
             self,
@@ -367,14 +349,20 @@ class GJTIFFProcessor(Processor):
 
         if exec_result.exit_code != 0:
             error = (
-                stderr.decode('utf-8')
+                stderr.decode("utf-8")
                 if stderr
                 else "Unknown error"
             )
 
             raise RuntimeError(f"GJTIFF failed with exit code {exec_result.exit_code}: {error}")
 
-        if stdout:
-            self._logger.info(f"GJTIFF output: {stdout.decode('utf-8')}")
+        stdout_text = (
+            stdout.decode("utf-8")
+            if stdout
+            else ""
+        )
 
-        return stdout
+        if stdout_text:
+            self._logger.info(f"GJTIFF output: {stdout_text}")
+
+        return stdout_text
