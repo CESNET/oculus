@@ -3,10 +3,9 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from domain import ProcessorOutput
 from .visualization_helper import ProcessingPlan
 from .visualization_helper import VisualizationHelper
-from ...domain import FeatureState, Job
+from ...domain import FeatureState, Job, ProcessorOutput
 from ...settings import settings
 
 
