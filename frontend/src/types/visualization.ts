@@ -16,8 +16,12 @@ export type JobStatus =
 export type OutputFormat = "jpg" | "png" | "webp";
 
 
+// ======================================================
+// REQUEST
+// ======================================================
+
 /**
- * Output configuration sent to backend.
+ * Output configuration sent to the backend.
  */
 export interface VisualizationRequestOutput {
     full_product: boolean;
@@ -25,8 +29,12 @@ export interface VisualizationRequestOutput {
 }
 
 
+// ======================================================
+// RESPONSE
+// ======================================================
+
 /**
- * Actual output returned by backend.
+ * Actual output generated for one format.
  */
 export interface VisualizationFormatOutput {
     full_product: string | null;
@@ -35,17 +43,29 @@ export interface VisualizationFormatOutput {
 }
 
 
+/**
+ * Actual visualization result.
+ *
+ * Key in the parent `visualizations` object is the
+ * visualization ID, e.g. "TCI", "B02",
+ * "rgb_B04-B8A-B11", "ndvi_B08-B04".
+ */
 export interface ProcessedFileState {
-    outputs: Partial<Record<OutputFormat, VisualizationFormatOutput>>;
+    outputs: Partial<
+        Record<OutputFormat, VisualizationFormatOutput>
+    >;
 }
 
+
+// ======================================================
+// NORMALIZED OUTPUTS
+// ======================================================
 
 export interface ProductFile {
     path: string;
     name: string;
     format: OutputFormat;
 }
-
 
 export interface TileLayer {
     path: string;
@@ -54,6 +74,10 @@ export interface TileLayer {
     zoomLevels: number[];
 }
 
+
+// ======================================================
+// API RESPONSE
+// ======================================================
 
 export interface VisualizationResult {
     job_id: string;
@@ -64,5 +88,17 @@ export interface VisualizationResult {
 export interface JobEventData {
     job_id: string;
     current_status: JobStatus;
+
     visualizations?: Record<string, ProcessedFileState>;
+}
+
+
+// ======================================================
+// REQUEST OPTIONS
+// ======================================================
+
+export interface VisualizationOptions {
+    signal?: AbortSignal;
+    onMessage?: (status: JobStatus) => void;
+    onCancel?: () => void;
 }

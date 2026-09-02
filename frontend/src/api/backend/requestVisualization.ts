@@ -1,6 +1,14 @@
-import {getVisualizationRequestPayload} from "../../utils/visualizationRequest.ts";
-import type {VisualizationOptions, VisualizationResult, JobEventData} from "../../types/visualization.ts";
-import type {Feature} from "../../types/feature.ts";
+import {
+    getVisualizationRequestPayload
+} from "../../utils/visualizationRequest.ts";
+import type {
+    VisualizationOptions,
+    VisualizationResult,
+    JobEventData,
+} from "../../types/visualization.ts";
+import type {
+    Feature
+} from "../../types/feature.ts";
 
 // ==========================================
 // CONFIG
