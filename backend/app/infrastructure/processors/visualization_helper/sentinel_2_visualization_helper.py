@@ -19,44 +19,122 @@ from ....domain import (
 class Sentinel2VisualizationHelper(VisualizationHelper):
 
     def _create_processing_plan(self) -> ProcessingPlan:
-        properties = self._job.request_properties
+        request_properties = self._job.request_properties
 
-        visualizations = properties.get(
+        requested_visualizations = request_properties.get(
             "visualizations",
             {},
+        )
+
+        outputs = self._get_outputs(
+            request_properties.get("outputs", {})
         )
 
         tasks: list[VisualizationTask] = []
 
         # Single bands
-        tasks.extend(
-            self._get_single_band_tasks(
-                visualizations.get("bands", [])
+        for task in self._get_single_band_tasks(
+                requested_visualizations.get("bands", [])
+        ):
+            self._add_task_if_needed(
+                tasks=tasks,
+                task=task,
+                outputs=outputs,
             )
-        )
 
         # Custom RGB composite
-        rgb = visualizations.get("rgb_composite")
+        rgb = requested_visualizations.get("rgb_composite")
 
         if rgb:
             task = self._get_rgb_task(rgb)
 
             if task is not None:
-                tasks.append(task)
+                self._add_task_if_needed(
+                    tasks=tasks,
+                    task=task,
+                    outputs=outputs,
+                )
 
         # Presets
-        for preset_id in visualizations.get("presets", []):
+        for preset_id in requested_visualizations.get("presets", []):
             task = self._get_preset_task(preset_id)
 
             if task is not None:
-                tasks.append(task)
+                self._add_task_if_needed(
+                    tasks=tasks,
+                    task=task,
+                    outputs=outputs,
+                )
 
         return ProcessingPlan(
             visualizations=tuple(tasks),
-            outputs=self._get_outputs(
-                properties.get("outputs", {})
-            ),
+            outputs=outputs,
         )
+
+    # ======================================================
+    # TASK FILTERING
+    # ======================================================
+
+    def _add_task_if_needed(
+            self,
+            tasks: list[VisualizationTask],
+            task: VisualizationTask,
+            outputs: dict[OutputFormat, set[TileGroup]],
+    ) -> None:
+
+        # Do not add the same visualization twice to
+        # the current processing plan.
+        if any(
+                existing_task.id == task.id
+                for existing_task in tasks
+        ):
+            return
+
+        # If all requested outputs already exist,
+        # there is nothing to process.
+        if self._visualization_has_outputs(
+                visualization_id=task.id,
+                outputs=outputs,
+        ):
+            self._logger.info(f"Visualization '{task.id}' already has all requested outputs. Skipping processing.")
+            return
+
+        tasks.append(task)
+
+    def _visualization_has_outputs(
+            self,
+            visualization_id: str,
+            outputs: dict[OutputFormat, set[TileGroup]],
+    ) -> bool:
+
+        visualization = self._feature_state.visualizations.get(visualization_id)
+
+        if visualization is None:
+            return False
+
+        for format_name, groups in outputs.items():
+
+            output = visualization.outputs.get(format_name)
+
+            if output is None:
+                return False
+
+            for group in groups:
+
+                if group == TileGroup.FULL_PRODUCT:
+
+                    if not output.has_full_product():
+                        return False
+
+                elif group == TileGroup.WM_TILES:
+
+                    if not output.has_wm_tiles():
+                        return False
+
+                else:
+                    raise ValueError(f"Unsupported tile group: {group}")
+
+        return True
 
     # ======================================================
     # OUTPUTS
@@ -66,11 +144,14 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
     def _get_outputs(
             outputs: dict,
     ) -> dict[OutputFormat, set[TileGroup]]:
+
         result: dict[OutputFormat, set[TileGroup]] = {}
 
         for format_name, groups in outputs.items():
+
             try:
                 output_format = OutputFormat(format_name)
+
             except ValueError:
                 continue
 
@@ -95,11 +176,14 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             self,
             bands: list[str],
     ) -> list[VisualizationTask]:
+
         tasks: list[VisualizationTask] = []
 
         for band_name in bands:
+
             try:
                 band = Sentinel2Band(band_name)
+
             except ValueError:
                 self._logger.warning(f"Unknown Sentinel-2 band: {band_name}")
                 continue
@@ -114,7 +198,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
                 VisualizationTask(
                     id=band.value,
                     input_files=(input_file,),
-                    prefix=None
+                    prefix=None,
                 )
             )
 
@@ -128,6 +212,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             self,
             rgb: dict,
     ) -> VisualizationTask | None:
+
         try:
             red = Sentinel2Band(rgb["red"])
             green = Sentinel2Band(rgb["green"])
@@ -137,7 +222,11 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             self._logger.warning(f"Invalid Sentinel-2 RGB composite: {rgb}")
             return None
 
-        bands = (red, green, blue)
+        bands = (
+            red,
+            green,
+            blue,
+        )
 
         input_files = self._get_input_files(bands)
 
@@ -149,7 +238,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=visualization_id,
             input_files=input_files,
-            prefix=None
+            prefix=None,
         )
 
     # ======================================================
@@ -160,6 +249,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             self,
             preset_id: str,
     ) -> VisualizationTask | None:
+
         preset = SENTINEL2_PRESETS.get(preset_id)
 
         if preset is None:
@@ -178,6 +268,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             self,
             preset: Sentinel2RGBPreset,
     ) -> VisualizationTask | None:
+
         bands = (
             preset.composite.red,
             preset.composite.green,
@@ -194,13 +285,14 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=visualization_id,
             input_files=input_files,
-            prefix=None
+            prefix=None,
         )
 
     def _get_preset_index_task(
             self,
             preset: Sentinel2IndexPreset,
     ) -> VisualizationTask | None:
+
         bands = SENTINEL2_INDEX_BANDS[preset.index]
 
         input_files = self._get_input_files(bands)
@@ -213,7 +305,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
         return VisualizationTask(
             id=visualization_id,
             input_files=input_files,
-            prefix=preset.index.value
+            prefix=preset.index.value,
         )
 
     # ======================================================
@@ -224,9 +316,11 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             self,
             bands: tuple[Sentinel2Band, ...],
     ) -> tuple[Path, ...] | None:
+
         input_files: list[Path] = []
 
         for band in bands:
+
             input_file = self._get_input_file(band)
 
             if input_file is None:
@@ -241,7 +335,9 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             self,
             band: Sentinel2Band,
     ) -> Path | None:
+
         for file_state in self._feature_state.input_files.values():
+
             if file_state.download_path is None:
                 continue
 
@@ -258,6 +354,7 @@ class Sentinel2VisualizationHelper(VisualizationHelper):
             filename: str,
             band: Sentinel2Band,
     ) -> bool:
+
         filename = Path(filename).name
 
         parts = filename.replace(".", "_").split("_")
