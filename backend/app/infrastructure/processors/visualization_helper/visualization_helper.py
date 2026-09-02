@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 
-from settings import settings
+from ....settings import settings
 from .processing_plan import ProcessingPlan
 from ....domain import FeatureState, Job
 
