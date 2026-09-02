@@ -14,20 +14,18 @@ export async function runVisualization(feature: Feature) {
     const controller = startLoading();
 
     try {
-        const visualizationStore =
-            useVisualizationStore.getState();
+        const visualizationStore = useVisualizationStore.getState();
 
-        const {job_id, processed_files} =
-            await requestVisualization(feature, {
-                signal: controller.signal,
-                onMessage: (status) =>
-                    console.log("Job status:", status),
-            });
+        const {job_id, visualizations} = await requestVisualization(feature, {
+            signal: controller.signal,
+            onMessage: (status) =>
+                console.log("Job status:", status),
+        });
 
         visualizationStore.setJobId(job_id);
         visualizationStore.setFeatureId(feature.id);
 
-        applyVisualizationResults(processed_files);
+        applyVisualizationResults(visualizations);
 
         if (useSidebarStore.getState().activeTab !== 2) {
             useSidebarStore.getState().setActiveTab(2);

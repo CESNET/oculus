@@ -12,55 +12,49 @@ export type JobStatus =
     | "FAILED"
     | "CANCELLED";
 
-export interface ProcessedFileState {
-    filename: string;
-    download_path: string;
 
-    full_product: {
-        jpg: string | null;
-        png: string | null;
-        webp: string | null;
-    };
+export type OutputFormat = "jpg" | "png" | "webp";
 
-    wm_tiles: {
-        jpg: string | null;
-        png: string | null;
-        webp: string | null;
-    };
 
+export interface VisualizationFormatOutput {
+    full_product: string | null;
+    wm_tiles: string | null;
     wm_tiles_zoom_levels: number[];
 }
 
-export interface VisualizationOutput {
-    full_product: boolean;
-    wm_tiles: boolean;
+
+export interface ProcessedFileState {
+    outputs: Partial<Record<OutputFormat, VisualizationFormatOutput>>;
 }
+
+
+export interface VisualizationResult {
+    job_id: string;
+    visualizations: Record<string, ProcessedFileState>;
+}
+
+
+export interface JobEventData {
+    job_id: string;
+    current_status: JobStatus;
+    visualizations?: Record<string, ProcessedFileState>;
+}
+
 
 export interface ProductFile {
     path: string;
     name: string; // with extension
-    format: string;
+    format: OutputFormat;
 }
 
 
 export interface TileLayer {
     path: string; // path to folder with tiles
     name: string; // without extension
-    format: string; // webp, jpg, png
+    format: OutputFormat;
     zoomLevels: number[];
 }
 
-export interface VisualizationResult {
-    job_id: string;
-    processed_files: Record<string, ProcessedFileState>;
-}
-
-export interface JobEventData {
-    job_id: string;
-    current_status: JobStatus;
-
-    processed_files?: Record<string, ProcessedFileState>;
-}
 
 export interface VisualizationOptions {
     signal?: AbortSignal;

@@ -1,6 +1,12 @@
 import {Dataset} from "../types/datasets";
 
-import type {ProcessedFileState, ProductFile, TileLayer,} from "../types/visualization";
+import type {
+    ProcessedFileState,
+    ProductFile,
+    TileLayer,
+    OutputFormat,
+} from "../types/visualization";
+
 import {useVisualizationStore} from "../store/useVisualizationStore.ts";
 
 
@@ -15,17 +21,18 @@ export function getProductFiles(
     processedFiles: Record<string, ProcessedFileState>,
 ): ProductFile[] {
 
-    return Object.values(processedFiles)
-        .flatMap(file =>
-            Object.entries(file.full_product)
+    return Object.entries(processedFiles)
+        .flatMap(([name, file]) =>
+            Object.entries(file.outputs)
                 .filter(
-                    ([, path]) =>
-                        path !== null,
+                    ([, output]) =>
+                        output?.full_product !== null &&
+                        output?.full_product !== undefined,
                 )
-                .map(([format, path]) => ({
-                    path: path!,
-                    name: file.filename,
-                    format,
+                .map(([format, output]) => ({
+                    path: output.full_product!,
+                    name: `${name}.${format}`,
+                    format: format as OutputFormat,
                 })),
         );
 }
@@ -38,19 +45,19 @@ export function getTileLayers(
     processedFiles: Record<string, ProcessedFileState>,
 ): TileLayer[] {
 
-    return Object.values(processedFiles)
-        .flatMap(file =>
-            Object.entries(file.wm_tiles)
+    return Object.entries(processedFiles)
+        .flatMap(([name, file]) =>
+            Object.entries(file.outputs)
                 .filter(
-                    ([, path]) =>
-                        path !== null,
+                    ([, output]) =>
+                        output?.wm_tiles !== null &&
+                        output?.wm_tiles !== undefined,
                 )
-                .map(([format, path]) => ({
-                    path: path!,
-                    name: file.filename,
-                    format,
-                    zoomLevels:
-                    file.wm_tiles_zoom_levels,
+                .map(([format, output]) => ({
+                    path: output.wm_tiles!,
+                    name,
+                    format: format as OutputFormat,
+                    zoomLevels: output.wm_tiles_zoom_levels,
                 })),
         );
 }
@@ -134,22 +141,21 @@ export const bandsToApi = (
             ),
     );
 
+
+// ======================================================
+// APPLY RESULTS
+// ======================================================
+
 export const applyVisualizationResults = (
-    processedFiles: Record<string, ProcessedFileState>
+    processedFiles: Record<string, ProcessedFileState>,
 ) => {
     const visualizationStore = useVisualizationStore.getState();
 
     visualizationStore.setProcessedFiles(processedFiles);
 
-    const firstLayer =
-        Object.values(processedFiles)
-            .find(file =>
-                Object.values(file.wm_tiles)
-                    .some(path => path !== null)
-            );
+    const firstLayer = getTileLayers(processedFiles)[0];
 
-    if (firstLayer) {
-        const firstPath = Object.values(firstLayer.wm_tiles).find(path => path !== null);
-        visualizationStore.setSelectedTileLayerPath(firstPath ?? null);
-    }
+    visualizationStore.setSelectedTileLayerPath(
+        firstLayer?.path ?? null,
+    );
 };

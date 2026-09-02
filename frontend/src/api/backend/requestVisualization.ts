@@ -137,8 +137,8 @@ const waitForJobCompletion = (
 
                         resolve({
                             job_id: data.job_id,
-                            processed_files:
-                                data.processed_files ?? {},
+                            visualizations:
+                                data.visualizations ?? {},
                         });
 
                         break;

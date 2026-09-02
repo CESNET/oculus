@@ -8,7 +8,7 @@ import {Dataset} from "../../types/datasets";
 
 import {getProductFiles, getTileLayers} from "../../utils/visualizationUtils";
 
-import ProcessedFileCard from "./visualization/ProcessedFileCard";
+import VisualizationCard from "./visualization/VisualizationCard.tsx";
 import Sentinel2VisualizationOptions from "./visualization/Sentinel2VisualizationOptions";
 
 function compareNameAndFormat(
@@ -155,7 +155,7 @@ export default function VisualizationTab() {
                     <div className="processed-files-list">
                         {sortedProcessedFiles.map(
                             file => (
-                                <ProcessedFileCard
+                                <VisualizationCard
                                     key={file.path}
                                     file={file}
                                 />

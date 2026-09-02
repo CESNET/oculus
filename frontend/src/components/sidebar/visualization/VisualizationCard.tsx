@@ -1,18 +1,18 @@
 import type {ProductFile} from "../../../types/visualization.ts";
 
 /**
- * ProcessedFileCard
- * Displays processed file metadata in unified sidebar card system.
+ * VisualizationCard
+ * Displays visualization metadata in unified sidebar card system.
  */
 type Props = {
     file: ProductFile;
 };
 
-export default function ProcessedFileCard({file}: Props) {
+export default function VisualizationCard({file}: Props) {
     const fullPath = `${file.path}`;
 
     return (
-        <div className="card feature-card processed-file-card">
+        <div className="card feature-card visualization-card">
             <div className="card-body">
 
                 <h5
