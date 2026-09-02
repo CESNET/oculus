@@ -211,16 +211,21 @@ class GJTIFFProcessor(Processor):
                 self._logger.warning(f"Unable to match GJTIFF output to visualization task: {output}")
                 continue
 
-            output_file = Path(output_file)
+            source_path = Path(output_file)
 
             normalized_path = self._normalize_output_path(
-                outfile=output_file,
+                outfile=source_path,
                 task=task,
             )
 
-            if output_file != normalized_path:
-                output_file.rename(normalized_path)
+            self._move_file_if_needed(
+                source_path=source_path,
+                destination_path=normalized_path,
+            )
 
+            # The destination is the path that belongs to the
+            # application state, regardless of whether it already
+            # existed or was just moved there.
             normalized_outputs.append(
                 ProcessorOutput(
                     visualization_id=task.id,
@@ -231,6 +236,21 @@ class GJTIFFProcessor(Processor):
             )
 
         return normalized_outputs
+
+    @staticmethod
+    def _move_file_if_needed(
+            source_path: Path,
+            destination_path: Path,
+    ) -> None:
+
+        if source_path == destination_path:
+            return
+
+        if destination_path.exists():
+            source_path.unlink()
+            return
+
+        source_path.rename(destination_path)
 
     # ------------------------------------------------------------------
     # WM tiles
@@ -244,9 +264,7 @@ class GJTIFFProcessor(Processor):
 
         normalized_outputs: list[ProcessorOutput] = []
 
-        wm_tile_formats = self._get_wm_tile_formats(
-            processing_plan=processing_plan,
-        )
+        wm_tile_formats = self._get_wm_tile_formats(processing_plan=processing_plan)
 
         if not wm_tile_formats:
             return normalized_outputs
@@ -270,15 +288,10 @@ class GJTIFFProcessor(Processor):
                 )
                 continue
 
-            # Rename GJTIFF's directory to our canonical visualization ID.
-            if gjtiff_tiles_path != normalized_tiles_path:
-
-                if normalized_tiles_path.exists():
-                    raise RuntimeError(
-                        f"Cannot rename WM tiles directory because destination already exists: {normalized_tiles_path}"
-                    )
-
-                gjtiff_tiles_path.rename(normalized_tiles_path)
+            self._move_directory_contents(
+                source_directory=gjtiff_tiles_path,
+                destination_directory=normalized_tiles_path,
+            )
 
             for format_name in wm_tile_formats:
                 normalized_outputs.append(
@@ -294,6 +307,50 @@ class GJTIFFProcessor(Processor):
         return normalized_outputs
 
     @staticmethod
+    def _move_directory_contents(
+            source_directory: Path,
+            destination_directory: Path,
+    ) -> None:
+
+        destination_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        for source_path in source_directory.rglob("*"):
+
+            if source_path.is_dir():
+                continue
+
+            relative_path = source_path.relative_to(source_directory)
+
+            destination_path = destination_directory / relative_path
+
+            destination_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            if destination_path.exists():
+                source_path.unlink()
+                continue
+
+            source_path.rename(destination_path)
+
+        # Remove empty source directories.
+        for directory in sorted(
+                source_directory.rglob("*"),
+                reverse=True,
+        ):
+            if directory.is_dir():
+                try:
+                    directory.rmdir()
+                except OSError:
+                    pass
+
+        source_directory.rmdir()
+
+    @staticmethod
     def _get_wm_tile_formats(
             processing_plan: ProcessingPlan,
     ) -> set[OutputFormat]:
@@ -304,17 +361,6 @@ class GJTIFFProcessor(Processor):
             in processing_plan.outputs.items()
             if TileGroup.WM_TILES in groups
         }
-
-    def _get_wm_tiles_path(
-            self,
-            task: VisualizationTask,
-    ) -> Path:
-
-        processed_directory = self._feature_state.feature_root_directory / "processed"
-
-        output_stem = self._get_gjtiff_output_stem(task=task)
-
-        return processed_directory / output_stem
 
     @staticmethod
     def _get_gjtiff_output_stem(

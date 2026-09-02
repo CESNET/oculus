@@ -31,7 +31,7 @@ export function getProductFiles(
                 )
                 .map(([format, output]) => ({
                     path: output.full_product!,
-                    name: `${name}.${format}`,
+                    name: `${name}`,
                     format: format as OutputFormat,
                 })),
         );
