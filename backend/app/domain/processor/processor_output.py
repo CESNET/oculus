@@ -11,4 +11,4 @@ class ProcessorOutput:
     group: TileGroup
     format_name: OutputFormat
     path: Path
-    zoom_levels: list[int] | None = None
+    zoom_levels: tuple[int, ...] = ()

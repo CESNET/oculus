@@ -64,6 +64,10 @@ class GJTIFFProcessor(Processor):
             zoom_levels=zoom_levels,
         )
 
+    # ------------------------------------------------------------------
+    # command
+    # ------------------------------------------------------------------
+
     def _build_command(
             self,
             processing_plan: ProcessingPlan,
@@ -80,9 +84,7 @@ class GJTIFFProcessor(Processor):
             processing_plan.outputs,
         )
 
-        processed_directory = (
-                self._feature_state.feature_root_directory / "processed"
-        )
+        processed_directory = self._feature_state.feature_root_directory / "processed"
 
         processed_directory.mkdir(
             parents=True,
@@ -140,6 +142,10 @@ class GJTIFFProcessor(Processor):
 
         return flags
 
+    # ------------------------------------------------------------------
+    # output normalization
+    # ------------------------------------------------------------------
+
     def _normalize_outputs(
             self,
             processing_plan: ProcessingPlan,
@@ -147,11 +153,43 @@ class GJTIFFProcessor(Processor):
             zoom_levels: list[int],
     ) -> list[ProcessorOutput]:
 
+        full_product_outputs = self._normalize_full_products(
+            processing_plan=processing_plan,
+            gjtiff_stdout=gjtiff_stdout,
+        )
+
+        wm_tile_outputs = self._normalize_wm_tiles(
+            processing_plan=processing_plan,
+            zoom_levels=zoom_levels,
+        )
+
+        normalized_outputs = [
+            *full_product_outputs,
+            *wm_tile_outputs,
+        ]
+
+        self._logger.info(f"GJTIFF normalized outputs: {normalized_outputs}")
+
+        return normalized_outputs
+
+    # ------------------------------------------------------------------
+    # full products
+    # ------------------------------------------------------------------
+
+    def _normalize_full_products(
+            self,
+            processing_plan: ProcessingPlan,
+            gjtiff_stdout: str,
+    ) -> list[ProcessorOutput]:
+
         try:
             outputs = json.loads(gjtiff_stdout)
 
         except json.JSONDecodeError as exc:
             raise RuntimeError("Unable to parse GJTIFF stdout as JSON") from exc
+
+        if not isinstance(outputs, list):
+            raise RuntimeError(f"Unexpected GJTIFF stdout format: expected list, got {type(outputs).__name__}")
 
         normalized_outputs: list[ProcessorOutput] = []
 
@@ -191,13 +229,107 @@ class GJTIFFProcessor(Processor):
                         normalized_path,
                     ),
                     path=normalized_path,
-                    zoom_levels=zoom_levels,
                 )
             )
 
-        self._logger.debug(f"GJTIFF normalized outputs: {normalized_outputs}")
+        return normalized_outputs
+
+    # ------------------------------------------------------------------
+    # WM tiles
+    # ------------------------------------------------------------------
+
+    def _normalize_wm_tiles(
+            self,
+            processing_plan: ProcessingPlan,
+            zoom_levels: list[int],
+    ) -> list[ProcessorOutput]:
+
+        normalized_outputs: list[ProcessorOutput] = []
+
+        for task in processing_plan.visualizations:
+
+            wm_tile_formats = self._get_wm_tile_formats(processing_plan=processing_plan)
+
+            for format_name in wm_tile_formats:
+
+                wm_tiles_path = self._get_wm_tiles_path(task=task)
+
+                if not self._has_wm_tiles(
+                        path=wm_tiles_path,
+                        zoom_levels=zoom_levels,
+                ):
+                    self._logger.warning(
+                        f"Expected WM tiles were not generated for visualization '{task.id}': {wm_tiles_path}"
+                    )
+                    continue
+
+                normalized_outputs.append(
+                    ProcessorOutput(
+                        visualization_id=task.id,
+                        group=TileGroup.WM_TILES,
+                        format_name=format_name,
+                        path=wm_tiles_path,
+                        zoom_levels=tuple(zoom_levels),
+                    )
+                )
 
         return normalized_outputs
+
+    @staticmethod
+    def _get_wm_tile_formats(
+            processing_plan: ProcessingPlan,
+    ) -> set[OutputFormat]:
+
+        return {
+            format_name
+            for format_name, groups
+            in processing_plan.outputs.items()
+            if TileGroup.WM_TILES in groups
+        }
+
+    def _get_wm_tiles_path(
+            self,
+            task: VisualizationTask,
+    ) -> Path:
+
+        processed_directory = self._feature_state.feature_root_directory / "processed"
+
+        output_stem = self._get_gjtiff_output_stem(task=task)
+
+        return processed_directory / output_stem
+
+    @staticmethod
+    def _get_gjtiff_output_stem(
+            task: VisualizationTask,
+    ) -> str:
+
+        input_names = "-COMMA-".join(
+            path.stem
+            for path in task.input_files
+        )
+
+        if task.prefix is not None:
+            return f"{task.prefix}-{input_names}"
+
+        return input_names
+
+    @staticmethod
+    def _has_wm_tiles(
+            path: Path,
+            zoom_levels: list[int],
+    ) -> bool:
+
+        if not path.is_dir():
+            return False
+
+        return all(
+            (path / str(zoom)).is_dir()
+            for zoom in zoom_levels
+        )
+
+    # ------------------------------------------------------------------
+    # task matching
+    # ------------------------------------------------------------------
 
     @classmethod
     def _find_task(
@@ -255,13 +387,19 @@ class GJTIFFProcessor(Processor):
             for path in input_files
         )
 
+    # ------------------------------------------------------------------
+    # path / format
+    # ------------------------------------------------------------------
+
     @staticmethod
     def _normalize_output_path(
             outfile: Path,
             task: VisualizationTask,
     ) -> Path:
 
-        return outfile.with_name(f"{task.id}{outfile.suffix}")
+        return outfile.with_name(
+            f"{task.id}{outfile.suffix}"
+        )
 
     @staticmethod
     def _get_output_format(
@@ -269,10 +407,16 @@ class GJTIFFProcessor(Processor):
     ) -> OutputFormat:
 
         try:
-            return OutputFormat(path.suffix.lstrip(".").lower())
+            return OutputFormat(
+                path.suffix.lstrip(".").lower()
+            )
 
         except ValueError as exc:
             raise ValueError(f"Unsupported GJTIFF output format: {path}") from exc
+
+    # ------------------------------------------------------------------
+    # validation
+    # ------------------------------------------------------------------
 
     @staticmethod
     def _validate_quality(
@@ -320,14 +464,25 @@ class GJTIFFProcessor(Processor):
 
         return zoom_levels
 
+    # ------------------------------------------------------------------
+    # docker
+    # ------------------------------------------------------------------
+
     def _get_container(self):
+
         client = docker.from_env()
 
         try:
-            return client.containers.get(self._GJTIFF_CONTAINER_NAME)
+            return client.containers.get(
+                self._GJTIFF_CONTAINER_NAME
+            )
 
         except DockerException as exc:
-            raise RuntimeError(f"GJTIFF container '{self._GJTIFF_CONTAINER_NAME}' not found. Error: {exc}") from exc
+            raise RuntimeError(
+                "GJTIFF container "
+                f"'{self._GJTIFF_CONTAINER_NAME}' not found. "
+                f"Error: {exc}"
+            ) from exc
 
     def _run_command(
             self,
@@ -335,7 +490,7 @@ class GJTIFFProcessor(Processor):
             command: list[str],
     ) -> str:
 
-        self._logger.debug(f"Running GJTIFF command: {' '.join(command)}")
+        self._logger.info(f"Running GJTIFF command: {' '.join(command)}")
 
         exec_result = container.exec_run(
             cmd=command,
@@ -363,6 +518,6 @@ class GJTIFFProcessor(Processor):
         )
 
         if stdout_text:
-            self._logger.debug(f"GJTIFF output: {stdout_text}")
+            self._logger.info(f"GJTIFF output: {stdout_text}")
 
         return stdout_text
