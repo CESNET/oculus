@@ -12,8 +12,6 @@ export async function fetchSentinel1Features(
 
     const query = buildSentinel1Query(filters);
 
-    console.log(query);
-
     const products = await fetchProducts(query, signal);
 
     return products.map(mapSentinel1ToFeature);

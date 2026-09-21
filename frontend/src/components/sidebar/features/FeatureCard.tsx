@@ -3,9 +3,8 @@ import Tooltip from "react-bootstrap/Tooltip";
 
 import {useFeaturesStore} from "../../../store/useFeaturesStore";
 import {useState} from "react";
-import {runVisualization} from "../../../service/visualizationService";
-import {useVisualizationStore} from "../../../store/useVisualizationStore.ts";
 import type {Feature} from "../../../types/feature.ts";
+import RunVisualizationButton from "../visualization/RunVisualizationButton.tsx";
 
 interface FeatureCardProps {
     feature: Feature;
@@ -20,10 +19,13 @@ export default function FeatureCard({feature}: FeatureCardProps) {
     const [copiedId, setCopiedId] = useState(false);
     const [copiedUrl, setCopiedUrl] = useState(false);
 
+    /*
+    // Not really sure why I was resetting Sentinel2Bands, handleVisualization() was executed only from FeatureCard
     const handleVisualization = async (feature: Feature) => {
         useVisualizationStore.getState().resetSentinel2Bands(true)
         await runVisualization(feature);
     }
+     */
 
     const handleCopyId = async () => {
         await navigator.clipboard.writeText(feature.id);
@@ -86,9 +88,7 @@ export default function FeatureCard({feature}: FeatureCardProps) {
                                         : (
                                             <>
                                                 <code>{feature.name}</code>
-
                                                 <hr className="my-1" />
-
                                                 <small>Click to copy</small>
                                             </>
                                         )
@@ -119,9 +119,7 @@ export default function FeatureCard({feature}: FeatureCardProps) {
                                         : (
                                             <>
                                                 <code>{feature.id}</code>
-
                                                 <hr className="my-1" />
-
                                                 <small>Click to copy</small>
                                             </>
                                         )
@@ -139,12 +137,7 @@ export default function FeatureCard({feature}: FeatureCardProps) {
                     </OverlayTrigger>
                 </p>
 
-                <button
-                    className="btn btn-primary mb-2"
-                    onClick={() => handleVisualization(feature)}
-                >
-                    Visualize
-                </button>
+                <RunVisualizationButton featureId={feature.id}/>
 
                 <div className="d-flex gap-2">
                     <a

@@ -27,15 +27,8 @@ class Sentinel1DownloadService(SentinelDownloadService):
 
         filtered_files: list[str] = []
 
-        requested_polarizations = set(
-            self._job.request_properties.get(
-                "filters",
-                {},
-            ).get(
-                "polarisation_channels",
-                ["VV", "VH", "HH", "HV"],
-            )
-        )
+        visualizations = self._job.request_properties.get("visualizations", {})
+        polarizations = visualizations.get("polarizations", ["VV", "VH", "HH", "HV"])
 
         self._logger.info(f"Available files: {available_files}")
 
@@ -49,7 +42,7 @@ class Sentinel1DownloadService(SentinelDownloadService):
             # Keep files matching one of the requested polarizations.
             matched = any(
                 f"-{polarisation.lower()}-" in file_strip_lower
-                for polarisation in requested_polarizations
+                for polarisation in polarizations
             )
 
             if matched:

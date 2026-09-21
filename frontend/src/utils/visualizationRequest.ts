@@ -17,15 +17,15 @@ import type {
 } from "../types/visualization/request";
 
 import {
-    buildSentinel1Visualization,
+    buildSentinel1VisualizationRequest,
 } from "./visualizationRequestBuilders/sentinel1";
 
 import {
-    buildSentinel2Visualization,
+    buildSentinel2VisualizationRequest,
 } from "./visualizationRequestBuilders/sentinel2";
 
 import {
-    buildLandsatVisualization,
+    buildLandsatVisualizationRequest,
 } from "./visualizationRequestBuilders/landsat";
 
 
@@ -33,31 +33,31 @@ import {
 // DATASET BUILDERS
 // ======================================================
 
-const buildDatasetVisualization = (
+const buildDatasetVisualizationRequest = (
     feature: Feature,
     state: VisualizationState,
 ): Partial<VisualizationProperties> => {
     switch (feature.dataset) {
         case Dataset.Sentinel1:
-            return buildSentinel1Visualization(
+            return buildSentinel1VisualizationRequest(
                 feature,
                 state.sentinel1,
             );
 
         case Dataset.Sentinel2:
-            return buildSentinel2Visualization(
+            return buildSentinel2VisualizationRequest(
                 feature,
                 state.sentinel2,
             );
 
         case Dataset.Landsat:
-            return buildLandsatVisualization(
+            return buildLandsatVisualizationRequest(
                 feature,
                 state.landsat,
             );
 
         default:
-            throw new Error(`Visualization not supported for dataset: ${feature.dataset}`);
+            throw new Error(`Visualization request not supported for dataset: ${feature.dataset}`);
     }
 };
 
@@ -69,7 +69,7 @@ const buildDatasetVisualization = (
 export const getVisualizationRequestPayload = (feature: Feature,): VisualizationRequest => {
     const state = useVisualizationStore.getState();
 
-    const datasetVisualization = buildDatasetVisualization(feature, state);
+    const datasetVisualizationRequest = buildDatasetVisualizationRequest(feature, state);
 
     return {
         dataset: feature.dataset,
@@ -88,7 +88,7 @@ export const getVisualizationRequestPayload = (feature: Feature,): Visualization
 
             outputs: state.outputs,
 
-            ...datasetVisualization,
+            ...datasetVisualizationRequest,
         },
 
         metadata: buildMetadata(feature),

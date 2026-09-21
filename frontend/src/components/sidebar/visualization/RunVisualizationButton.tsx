@@ -1,13 +1,20 @@
-import { useFeaturesStore } from "../../../store/useFeaturesStore";
-import { useVisualizationStore } from "../../../store/useVisualizationStore";
+import {useFeaturesStore} from "../../../store/useFeaturesStore";
+import {useVisualizationStore} from "../../../store/useVisualizationStore";
 
-import { runVisualization } from "../../../service/visualizationService";
+import {runVisualization} from "../../../service/visualization/visualizationService.ts";
 
+interface RunVisualizationButtonProps {
+    featureId?: string;
+}
 
-export default function RunVisualizationButton() {
-    const featureId = useVisualizationStore(
+export default function RunVisualizationButton({
+                                                   featureId: propFeatureId,
+                                               }: RunVisualizationButtonProps) {
+    const storeFeatureId = useVisualizationStore(
         (s) => s.featureId
     );
+
+    const featureId = propFeatureId ?? storeFeatureId;
 
     const feature = useFeaturesStore(
         (s) => featureId ? s.featuresById[featureId] : undefined
@@ -23,7 +30,7 @@ export default function RunVisualizationButton() {
                 }
             }}
         >
-            Re-render Visualization
+            Render Visualization
         </button>
     );
 }

@@ -1,19 +1,26 @@
-import type {Feature} from "../../types/feature";
+import type {Feature} from "../../types/feature.ts";
 
 import type {
-    Sentinel1VisualizationState
+    Sentinel1VisualizationState,
 } from "../../store/useVisualizationStore.ts";
 
 import type {
     VisualizationProperties,
-} from "../../types/visualization/request";
+} from "../../types/visualization/request.ts";
 
-export function buildSentinel1Visualization(
-    //todo odebrat _
+
+export function buildSentinel1VisualizationRequest(
     _feature: Feature,
-    _state: Sentinel1VisualizationState,
+    visualization: Sentinel1VisualizationState,
 ): Partial<VisualizationProperties> {
+
+    const visualizations: Record<string, unknown> = {};
+
+    if (visualization.selectedPolarizations.length) {
+        visualizations.polarizations = visualization.selectedPolarizations;
+    }
+
     return {
-        visualizations: {},
+        visualizations,
     };
 }
