@@ -59,7 +59,7 @@ class GSSConnector:
             )
 
             if response.status_code == 400 or response.status_code == 404:  # Feature not found in GSS
-                self._logger.debug(f"Feature {self._feature_id} not found in GSS")
+                self._logger.info(f"Feature {self._feature_id} not found in GSS")
                 return None
 
             elif response.status_code != 200:
@@ -67,9 +67,9 @@ class GSSConnector:
                 return None
 
             self._feature = response.json()
-            self._logger.debug(f"Feature metadata fetched successfully for {self._feature_id}")
+            self._logger.info(f"Feature metadata fetched successfully for {self._feature_id}")
 
-        self._logger.debug(f"Feature metadata fetched successfully for {self._feature}")
+        self._logger.info(f"Feature metadata fetched successfully for {self._feature}")
         return self._feature
 
     def get_available_files(self) -> list[str]:
@@ -104,13 +104,13 @@ class GSSConnector:
         self._workdir.mkdir(parents=True, exist_ok=True)
 
         downloaded: list[str] = []
-        self._logger.debug(f"Downloading {len(files_to_download)} files to {self._workdir}")
+        self._logger.info(f"Downloading {len(files_to_download)} files to {self._workdir}")
 
         for https_url in files_to_download:
             out_path = self._workdir / Path(https_url).name
 
             try:
-                self._logger.debug(f"Downloading from {https_url}")
+                self._logger.info(f"Downloading from {https_url}")
 
                 response = self._http.get(
                     https_url,
