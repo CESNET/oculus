@@ -78,9 +78,11 @@ class GSSConnector:
 
         product_name = self._feature["Name"]
         collection_name = next(
-            (self._collections_map[collection]
-             for collection in self._collections_map.keys()
-             if product_name.startswith(collection))
+            (
+                self._collections_map[collection]
+                for collection in self._collections_map.keys()
+                if product_name.startswith(collection)
+            )
             , None
         )
 
