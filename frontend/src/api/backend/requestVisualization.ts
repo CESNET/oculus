@@ -1,6 +1,14 @@
-import {visualizeFeature} from "../../utils/featureUtils";
-import type {VisualizationOptions, VisualizationResult, JobEventData} from "../../types/visualization.ts";
-import type {Feature} from "../../types/feature.ts";
+import {
+    getVisualizationRequestPayload
+} from "../../utils/visualizationRequest.ts";
+import type {
+    VisualizationOptions,
+    VisualizationResult,
+    JobEventData,
+} from "../../types/visualization.ts";
+import type {
+    Feature
+} from "../../types/feature.ts";
 
 // ==========================================
 // CONFIG
@@ -39,7 +47,7 @@ const createVisualizationJob = async (
     feature: Feature,
     signal?: AbortSignal
 ): Promise<string> => {
-    const payload = visualizeFeature(feature);
+    const payload = getVisualizationRequestPayload(feature);
 
     const res = await fetch(`${API_URL}/jobs/create`, {
         method: "POST",
@@ -137,8 +145,8 @@ const waitForJobCompletion = (
 
                         resolve({
                             job_id: data.job_id,
-                            processed_files:
-                                data.processed_files ?? {},
+                            visualizations:
+                                data.visualizations ?? {},
                         });
 
                         break;

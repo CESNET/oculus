@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .file_state import FileState, OutputFormat, TileGroup
+from .input_file_state import InputFileState
+from .tile_group import TileGroup
+from .visualization import VisualizationState
+from ..processor import ProcessorOutput
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,10 +18,7 @@ class FeatureStateId:
         return f"{self.dataset}:{self.feature_id}"
 
     @classmethod
-    def parse(
-            cls,
-            value: str,
-    ) -> "FeatureStateId":
+    def parse(cls, value: str) -> "FeatureStateId":
         dataset, feature_id = value.split(":", 1)
 
         return cls(
@@ -31,11 +31,9 @@ class FeatureStateId:
 class FeatureState:
     id: FeatureStateId
     feature_root_directory: Path
-    files: dict[str, FileState] = field(default_factory=dict)
 
-    # -------------------------
-    # convenience
-    # -------------------------
+    input_files: dict[str, InputFileState] = field(default_factory=dict)
+    visualizations: dict[str, VisualizationState] = field(default_factory=dict)
 
     @property
     def dataset(self) -> str:
@@ -46,100 +44,91 @@ class FeatureState:
         return self.id.feature_id
 
     # -------------------------
-    # file operations
+    # input files
     # -------------------------
 
-    def _get_or_create_file_state(self, file: str) -> FileState:
-        state = self.files.get(file)
-
-        if state is None:
-            state = FileState(filename=file)
-            self.files[file] = state
-
-        return state
-
-    def get_file_state(
+    def get_file(
             self,
-            file: str,
-    ) -> FileState | None:
-        return self.files.get(file)
+            filename: str,
+    ) -> InputFileState | None:
+        return self.input_files.get(filename)
 
-    def set_file_processed_path(
+    def get_or_create_file(
             self,
-            file: str,
-            group: TileGroup,
-            format_name: OutputFormat,
-            path: Path,
-            zoom_levels: list[int] | None = None,
-    ) -> None:
-        self._get_or_create_file_state(file).set_processed(
-            group=group,
-            format_name=format_name,
-            path=path,
-            zoom_levels=zoom_levels,
-        )
+            filename: str,
+    ) -> InputFileState:
+        file_state = self.input_files.get(filename)
 
-    def get_file_processed_path(
-            self,
-            file: str,
-            group: TileGroup,
-            format_name: OutputFormat,
-    ) -> Path | None:
-        state = self.files.get(file)
+        if file_state is None:
+            file_state = InputFileState(
+                filename=filename
+            )
+            self.input_files[filename] = file_state
 
-        if state is None:
-            return None
-
-        return state.get_processed_path(
-            group=group,
-            format_name=format_name,
-        )
+        return file_state
 
     def is_file_downloaded(
             self,
-            file: str,
+            filename: str,
     ) -> bool:
-        state = self.files.get(file)
+        file_state = self.input_files.get(filename)
 
-        return (state is not None) and state.is_downloaded
-
-    def is_file_processed(
-            self,
-            file: str,
-            group: TileGroup,
-            format_name: OutputFormat,
-    ) -> bool:
-        state = self.files.get(file)
-
-        if state is None:
-            return False
-
-        return state.is_processed(
-            group=group,
-            format_name=format_name,
+        return (
+                file_state is not None
+                and file_state.is_downloaded
         )
 
-    @property
-    def downloaded_files(self) -> list[str]:
-        return [
-            filename
-            for filename, state in self.files.items()
-            if state.is_downloaded
-        ]
+    # -------------------------
+    # visualizations
+    # -------------------------
 
-    def get_processed_files(
+    def get_visualization(
             self,
-            group: TileGroup,
-            format_name: OutputFormat,
-    ) -> list[str]:
-        return [
-            filename
-            for filename, state in self.files.items()
-            if state.is_processed(
-                group=group,
-                format_name=format_name,
+            visualization_id: str,
+    ) -> VisualizationState | None:
+        return self.visualizations.get(visualization_id)
+
+    def get_or_create_visualization(
+            self,
+            visualization_id: str,
+    ) -> VisualizationState:
+        visualization = self.visualizations.get(visualization_id)
+
+        if visualization is None:
+            visualization = VisualizationState()
+            self.visualizations[visualization_id] = visualization
+
+        return visualization
+
+    def apply_processor_outputs(
+            self,
+            outputs: list[ProcessorOutput],
+    ) -> None:
+
+        for processor_output in outputs:
+
+            visualization = self.get_or_create_visualization(
+                processor_output.visualization_id,
             )
-        ]
+
+            if processor_output.group == TileGroup.FULL_PRODUCT:
+                visualization.set_full_product(
+                    format_name=processor_output.format_name,
+                    path=processor_output.path,
+                )
+
+            elif processor_output.group == TileGroup.WM_TILES:
+                visualization.set_wm_tiles(
+                    format_name=processor_output.format_name,
+                    path=processor_output.path,
+                    zoom_levels=processor_output.zoom_levels,
+                )
+
+            else:
+                raise ValueError(
+                    "Unsupported processor output group: "
+                    f"{processor_output.group}"
+                )
 
     # -------------------------
     # serialization
@@ -147,28 +136,39 @@ class FeatureState:
 
     def to_dict(self) -> dict:
         return {
-            "dataset": self.dataset,
-            "feature_id": self.feature_id,
+            "dataset": self.id.dataset,
+            "feature_id": self.id.feature_id,
             "feature_root_directory": str(self.feature_root_directory),
-            "files": [
-                state.to_dict()
-                for state in self.files.values()
+
+            "input_files": [
+                input_file_state.to_dict()
+                for input_file_state in self.input_files.values()
             ],
+
+            "visualizations": {
+                visualization_id: state.to_dict()
+                for visualization_id, state
+                in self.visualizations.items()
+            },
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> "FeatureState":
-        files_list = data.get("files", [])
-
         return cls(
             id=FeatureStateId(
                 dataset=data["dataset"],
                 feature_id=data["feature_id"],
             ),
             feature_root_directory=Path(data["feature_root_directory"]),
-            files={
-                item["filename"]: FileState.from_dict(item)
-                for item in files_list
+            input_files={
+                input_file_state["filename"]: InputFileState.from_dict(input_file_state)
+                for input_file_state
+                in data.get("input_files", [])
+            },
+            visualizations={
+                visualization_id: VisualizationState.from_dict(visualization_state)
+                for visualization_id, visualization_state
+                in data.get("visualizations", {}).items()
             },
         )
 
@@ -188,5 +188,5 @@ class FeatureState:
                 dataset=dataset,
                 feature_id=feature_id,
             ),
-            feature_root_directory=Path(root_directory) / dataset / feature_id
+            feature_root_directory=Path(root_directory) / dataset / feature_id,
         )

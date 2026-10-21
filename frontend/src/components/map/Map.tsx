@@ -10,6 +10,7 @@ import {
 import type {LatLngExpression} from 'leaflet';
 
 import {polygonToBounds, registerMap} from '../../utils/mapUtils';
+import {getSelectedTileLayer} from "../../utils/visualizationUtils.ts";
 import {useMapStore} from '../../store/useMapStore';
 import {useFiltersStore} from '../../store/useFiltersStore';
 import {useFeaturesStore} from '../../store/useFeaturesStore';
@@ -109,9 +110,8 @@ const Map: React.FC<Props> = ({
     // VISUALIZATION
     // =============================
     const {
-        tileLayers,
-        selectedTileLayerIndex,
-        availableZoomLevels,
+        processedFiles,
+        selectedTileLayerPath,
         opacity,
         featureId
     } = useVisualizationStore();
@@ -120,10 +120,10 @@ const Map: React.FC<Props> = ({
         featureId ? s.featuresById[featureId] : undefined
     );
 
-    const selectedTile =
-        selectedTileLayerIndex !== null
-            ? tileLayers[selectedTileLayerIndex]
-            : null;
+    const selectedTile = getSelectedTileLayer(
+        processedFiles,
+        selectedTileLayerPath
+    );
 
     const featureBounds = feature
         ? polygonToBounds(feature.geometry.coordinates)
@@ -163,7 +163,7 @@ const Map: React.FC<Props> = ({
                     lat={location?.lat ?? 0}
                     lng={location?.lng ?? 0}
                     zoom={13}
-                    userLocation={!!userLocation}
+                    userLocation={userLocation}
                     loading={loadingLocation ?? false}
                     programmaticRef={programmaticRef}
                 />
@@ -184,8 +184,8 @@ const Map: React.FC<Props> = ({
                     key={featureId}
                     url={`${selectedTile.path}/{z}/{x}/{y}.${selectedTile.format}`}
                     opacity={opacity}
-                    maxNativeZoom={availableZoomLevels.at(-1)}
-                    minNativeZoom={availableZoomLevels.at(0)}
+                    minNativeZoom={selectedTile.zoomLevels.at(0)}
+                    maxNativeZoom={selectedTile.zoomLevels.at(-1)}
                     bounds={featureBounds}
                 />
             )}

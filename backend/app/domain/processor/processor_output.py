@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..feature_state.file_state import TileGroup, OutputFormat
+from ..feature_state.output_format import OutputFormat
+from ..feature_state.tile_group import TileGroup
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProcessorOutput:
-    source_file: str
+    visualization_id: str
     group: TileGroup
     format_name: OutputFormat
     path: Path
-    zoom_levels: list[int] | None = None
+    zoom_levels: tuple[int, ...] = ()

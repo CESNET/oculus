@@ -1,208 +1,558 @@
+import json
 from pathlib import Path
 
 import docker
 from docker.errors import DockerException
 
 from .processor import Processor
-from ...domain import TileGroup, OutputFormat, ProcessorOutput
+from .visualization_helper import ProcessingPlan, VisualizationTask
+from ...domain import (
+    OutputFormat,
+    ProcessorOutput,
+    TileGroup,
+)
 from ...settings import settings
 
 FORMAT_FLAGS = {
-    OutputFormat.JPG.value: {TileGroup.FULL_PRODUCT.value: "-J", TileGroup.WM_TILES.value: "-j"},
-    OutputFormat.PNG.value: {TileGroup.FULL_PRODUCT.value: "-P", TileGroup.WM_TILES.value: "-p"},
-    OutputFormat.WEBP.value: {TileGroup.FULL_PRODUCT.value: "-W", TileGroup.WM_TILES.value: "-w"},
+    OutputFormat.JPG: {
+        TileGroup.FULL_PRODUCT: "-J",
+        TileGroup.WM_TILES: "-j",
+    },
+    OutputFormat.PNG: {
+        TileGroup.FULL_PRODUCT: "-P",
+        TileGroup.WM_TILES: "-p",
+    },
+    OutputFormat.WEBP: {
+        TileGroup.FULL_PRODUCT: "-W",
+        TileGroup.WM_TILES: "-w",
+    },
 }
 
 
 class GJTIFFProcessor(Processor):
     _GJTIFF_CONTAINER_NAME = "oculus_gjtiff"
 
-    def _process(self) -> list[ProcessorOutput]:
+    def _process(
+            self,
+            processing_plan: ProcessingPlan,
+    ) -> list[ProcessorOutput]:
 
-        quality = self._validate_int_param(
+        quality = self._validate_quality(
             self._job.request_properties.get("quality"),
-            settings.DEFAULT_PROCESSING_QUALITY,
-            "quality",
         )
 
         zoom_levels = self._validate_zoom_levels(
             self._job.request_properties.get("zoom_levels"),
-            settings.DEFAULT_PROCESSING_ZOOM_LEVELS,
         )
 
         command = self._build_command(
-            output_formats=self._input_files.outputs,
-            input_files=self._input_files.files,
+            processing_plan=processing_plan,
             quality=quality,
-            zoom_levels=",".join(map(str, zoom_levels)),
+            zoom_levels=zoom_levels,
         )
 
-        gjtiff_container = self._get_container()
-        self._run_command(gjtiff_container, command)  # TODO uncomment for production, delete below for testing
+        container = self._get_container()
 
-        # print(f"Now runing gjtiff: {command}")
-        # import time
-        # time.sleep(5)
+        gjtiff_stdout = self._run_command(
+            container=container,
+            command=command,
+        )
 
-        return self._discover_outputs(wm_zoom_levels=zoom_levels)
+        return self._normalize_outputs(
+            processing_plan=processing_plan,
+            gjtiff_stdout=gjtiff_stdout,
+            zoom_levels=zoom_levels,
+        )
 
-    def _discover_outputs(self, wm_zoom_levels: list[int]) -> list[ProcessorOutput]:
+    # ------------------------------------------------------------------
+    # command
+    # ------------------------------------------------------------------
 
-        outputs: list[ProcessorOutput] = []
+    def _build_command(
+            self,
+            processing_plan: ProcessingPlan,
+            quality: int,
+            zoom_levels: list[int],
+    ) -> list[str]:
 
-        processed_dir = Path(self._path_to_processed)
+        visualization_inputs = [
+            self._build_visualization_input(task)
+            for task in processing_plan.visualizations
+        ]
 
-        if not processed_dir.exists():
-            return outputs
+        format_flags = self._build_format_flags(
+            processing_plan.outputs,
+        )
 
-        # map: "TCI_10m" -> full input filename
-        requested_files = {
-            Path(f).stem: f
-            for f in self._job.requested_files
-        }
+        processed_directory = self._feature_state.feature_root_directory / "processed"
 
-        for item in processed_dir.iterdir():
+        processed_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
-            # -------------------
-            # FULL outputs (files)
-            # -------------------
-            if item.is_file():
+        return [
+            "gjtiff",
+            "-q",
+            str(quality),
+            "-Q",
+            "-z",
+            ",".join(map(str, zoom_levels)),
+            "-o",
+            str(processed_directory),
+            *format_flags,
+            *visualization_inputs,
+        ]
 
-                try:
-                    fmt = OutputFormat(item.suffix.lstrip(".").lower())
-                except ValueError:
-                    continue
+    @staticmethod
+    def _build_visualization_input(
+            task: VisualizationTask,
+    ) -> str:
 
-                source_file = requested_files.get(item.stem)
+        input_files = ",".join(
+            str(path)
+            for path in task.input_files
+        )
 
-                if not source_file:
-                    continue
+        if task.prefix is not None:
+            return f"{task.prefix}@{input_files}"
 
-                outputs.append(
+        return input_files
+
+    @staticmethod
+    def _build_format_flags(
+            outputs: dict[OutputFormat, set[TileGroup]],
+    ) -> list[str]:
+
+        flags: list[str] = []
+
+        for format_name, groups in outputs.items():
+
+            if format_name not in FORMAT_FLAGS:
+                raise ValueError(f"Unsupported output format: {format_name}")
+
+            for group in groups:
+
+                flag = FORMAT_FLAGS[format_name].get(group)
+
+                if flag is None:
+                    raise ValueError(f"Unsupported output combination: {format_name}/{group}")
+
+                flags.append(flag)
+
+        return flags
+
+    # ------------------------------------------------------------------
+    # output normalization
+    # ------------------------------------------------------------------
+
+    def _normalize_outputs(
+            self,
+            processing_plan: ProcessingPlan,
+            gjtiff_stdout: str,
+            zoom_levels: list[int],
+    ) -> list[ProcessorOutput]:
+
+        full_product_outputs = self._normalize_full_products(
+            processing_plan=processing_plan,
+            gjtiff_stdout=gjtiff_stdout,
+        )
+
+        wm_tile_outputs = self._normalize_wm_tiles(
+            processing_plan=processing_plan,
+            zoom_levels=zoom_levels,
+        )
+
+        normalized_outputs = [
+            *full_product_outputs,
+            *wm_tile_outputs,
+        ]
+
+        self._logger.info(f"GJTIFF normalized outputs: {normalized_outputs}")
+
+        return normalized_outputs
+
+    # ------------------------------------------------------------------
+    # full products
+    # ------------------------------------------------------------------
+
+    def _normalize_full_products(
+            self,
+            processing_plan: ProcessingPlan,
+            gjtiff_stdout: str,
+    ) -> list[ProcessorOutput]:
+
+        try:
+            outputs = json.loads(gjtiff_stdout)
+
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("Unable to parse GJTIFF stdout as JSON") from exc
+
+        if not isinstance(outputs, list):
+            raise RuntimeError(f"Unexpected GJTIFF stdout format: expected list, got {type(outputs).__name__}")
+
+        normalized_outputs: list[ProcessorOutput] = []
+
+        for output in outputs:
+
+            input_file = output.get("infile")
+            output_file = output.get("outfile")
+
+            if not input_file or not output_file:
+                self._logger.warning(f"Invalid GJTIFF output: {output}")
+                continue
+
+            task = self._find_task(
+                processing_plan=processing_plan,
+                input_file=input_file,
+            )
+
+            if task is None:
+                self._logger.warning(f"Unable to match GJTIFF output to visualization task: {output}")
+                continue
+
+            source_path = Path(output_file)
+
+            normalized_path = self._normalize_output_path(
+                outfile=source_path,
+                task=task,
+            )
+
+            self._move_file_if_needed(
+                source_path=source_path,
+                destination_path=normalized_path,
+            )
+
+            # The destination is the path that belongs to the
+            # application state, regardless of whether it already
+            # existed or was just moved there.
+            normalized_outputs.append(
+                ProcessorOutput(
+                    visualization_id=task.id,
+                    group=TileGroup.FULL_PRODUCT,
+                    format_name=self._get_output_format(normalized_path),
+                    path=normalized_path,
+                )
+            )
+
+        return normalized_outputs
+
+    @staticmethod
+    def _move_file_if_needed(
+            source_path: Path,
+            destination_path: Path,
+    ) -> None:
+
+        if source_path == destination_path:
+            return
+
+        if destination_path.exists():
+            source_path.unlink()
+            return
+
+        source_path.rename(destination_path)
+
+    # ------------------------------------------------------------------
+    # WM tiles
+    # ------------------------------------------------------------------
+
+    def _normalize_wm_tiles(
+            self,
+            processing_plan: ProcessingPlan,
+            zoom_levels: list[int],
+    ) -> list[ProcessorOutput]:
+
+        normalized_outputs: list[ProcessorOutput] = []
+
+        wm_tile_formats = self._get_wm_tile_formats(processing_plan=processing_plan)
+
+        if not wm_tile_formats:
+            return normalized_outputs
+
+        processed_directory = self._feature_state.feature_root_directory / "processed"
+
+        for task in processing_plan.visualizations:
+
+            # GJTIFF creates the directory using its own naming convention.
+            gjtiff_tiles_path = processed_directory / self._get_gjtiff_output_stem(task)
+
+            # Application uses the canonical visualization ID.
+            normalized_tiles_path = processed_directory / task.id
+
+            if not self._has_wm_tiles(
+                    path=gjtiff_tiles_path,
+                    zoom_levels=zoom_levels,
+            ):
+                self._logger.warning(
+                    f"Expected WM tiles were not generated for visualization '{task.id}': {gjtiff_tiles_path}"
+                )
+                continue
+
+            self._move_directory_contents(
+                source_directory=gjtiff_tiles_path,
+                destination_directory=normalized_tiles_path,
+            )
+
+            for format_name in wm_tile_formats:
+                normalized_outputs.append(
                     ProcessorOutput(
-                        source_file=source_file,
-                        group=TileGroup.FULL_PRODUCT,
-                        format_name=fmt,
-                        path=item,
+                        visualization_id=task.id,
+                        group=TileGroup.WM_TILES,
+                        format_name=format_name,
+                        path=normalized_tiles_path,
+                        zoom_levels=tuple(zoom_levels),
                     )
                 )
 
-            # ------------------------
-            # WEB_MERCATOR (dirs)
-            # ------------------------
-            elif item.is_dir():
-
-                # název složky = stem input file
-                source_file = requested_files.get(item.name)
-
-                if not source_file:
-                    continue
-
-                formats = self._discover_tile_formats(item)
-
-                for fmt in formats:
-                    outputs.append(
-                        ProcessorOutput(
-                            source_file=source_file,
-                            group=TileGroup.WM_TILES,
-                            format_name=fmt,
-                            path=item,
-                            zoom_levels=wm_zoom_levels,
-                        )
-                    )
-
-        return outputs
+        return normalized_outputs
 
     @staticmethod
-    def _discover_tile_formats(pyramid_root: Path) -> set[OutputFormat]:
+    def _move_directory_contents(
+            source_directory: Path,
+            destination_directory: Path,
+    ) -> None:
 
-        first_tile = next(
-            (p for p in pyramid_root.rglob("*") if p.is_file()),
-            None,
+        destination_directory.mkdir(
+            parents=True,
+            exist_ok=True,
         )
 
-        if first_tile is None:
-            return set()
+        for source_path in source_directory.rglob("*"):
 
-        formats = set()
-
-        for file in first_tile.parent.iterdir():
-
-            if not file.is_file():
+            if source_path.is_dir():
                 continue
 
-            try:
-                formats.add(OutputFormat(file.suffix.lstrip(".").lower()))
-            except ValueError:
-                pass
+            relative_path = source_path.relative_to(source_directory)
 
-        return formats
+            destination_path = destination_directory / relative_path
 
-    def _get_container(self) -> docker.models.containers.Container:
+            destination_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            if destination_path.exists():
+                source_path.unlink()
+                continue
+
+            source_path.rename(destination_path)
+
+        # Remove empty source directories.
+        for directory in sorted(
+                source_directory.rglob("*"),
+                reverse=True,
+        ):
+            if directory.is_dir():
+                try:
+                    directory.rmdir()
+                except OSError:
+                    pass
+
+        source_directory.rmdir()
+
+    @staticmethod
+    def _get_wm_tile_formats(
+            processing_plan: ProcessingPlan,
+    ) -> set[OutputFormat]:
+
+        return {
+            format_name
+            for format_name, groups
+            in processing_plan.outputs.items()
+            if TileGroup.WM_TILES in groups
+        }
+
+    @staticmethod
+    def _get_gjtiff_output_stem(
+            task: VisualizationTask,
+    ) -> str:
+
+        input_names = "-COMMA-".join(
+            path.stem
+            for path in task.input_files
+        )
+
+        if task.prefix is not None:
+            return f"{task.prefix}-{input_names}"
+
+        return input_names
+
+    @staticmethod
+    def _has_wm_tiles(
+            path: Path,
+            zoom_levels: list[int],
+    ) -> bool:
+
+        if not path.is_dir():
+            return False
+
+        return all(
+            (path / str(zoom)).is_dir()
+            for zoom in zoom_levels
+        )
+
+    # ------------------------------------------------------------------
+    # task matching
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def _find_task(
+            cls,
+            processing_plan: ProcessingPlan,
+            input_file: str,
+    ) -> VisualizationTask | None:
+
+        for task in processing_plan.visualizations:
+
+            actual_inputs = cls._get_gjtiff_inputs(
+                infile=input_file,
+                prefix=task.prefix,
+            )
+
+            expected_inputs = cls._get_input_identifiers(
+                task.input_files,
+            )
+
+            if actual_inputs == expected_inputs:
+                return task
+
+        return None
+
+    @staticmethod
+    def _get_gjtiff_inputs(
+            infile: str,
+            prefix: str | None,
+    ) -> tuple[str, ...]:
+
+        parts = Path(infile).name.split("-COMMA-")
+
+        if prefix is not None:
+
+            prefix_separator = f"{prefix}-"
+
+            if not parts[0].startswith(prefix_separator):
+                return ()
+
+            parts[0] = parts[0][len(prefix_separator):]
+
+        return tuple(
+            Path(part).stem
+            for part in parts
+            if part
+        )
+
+    @staticmethod
+    def _get_input_identifiers(
+            input_files: tuple[Path, ...],
+    ) -> tuple[str, ...]:
+
+        return tuple(
+            path.stem
+            for path in input_files
+        )
+
+    # ------------------------------------------------------------------
+    # path / format
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _normalize_output_path(
+            outfile: Path,
+            task: VisualizationTask,
+    ) -> Path:
+
+        return outfile.with_name(
+            f"{task.id}{outfile.suffix}"
+        )
+
+    @staticmethod
+    def _get_output_format(
+            path: Path,
+    ) -> OutputFormat:
+
+        try:
+            return OutputFormat(
+                path.suffix.lstrip(".").lower()
+            )
+
+        except ValueError as exc:
+            raise ValueError(f"Unsupported GJTIFF output format: {path}") from exc
+
+    # ------------------------------------------------------------------
+    # validation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _validate_quality(
+            value,
+    ) -> int:
+
+        if value is None:
+            return settings.DEFAULT_PROCESSING_QUALITY
+
+        try:
+            quality = int(value)
+
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid quality: {value}") from exc
+
+        if not 0 <= quality <= 100:
+            raise ValueError(f"Quality must be between 0 and 100, got {quality}")
+
+        return quality
+
+    @staticmethod
+    def _validate_zoom_levels(
+            value,
+    ) -> list[int]:
+
+        if value is None:
+            return list(
+                settings.DEFAULT_PROCESSING_ZOOM_LEVELS
+            )
+
+        if isinstance(value, str):
+            value = value.split(",")
+
+        try:
+            zoom_levels = [
+                int(level)
+                for level in value
+            ]
+
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid zoom levels: {value}") from exc
+
+        if any(level < 0 for level in zoom_levels):
+            raise ValueError(f"Zoom levels must be non-negative: {zoom_levels}")
+
+        return zoom_levels
+
+    # ------------------------------------------------------------------
+    # docker
+    # ------------------------------------------------------------------
+
+    def _get_container(self):
 
         client = docker.from_env()
 
         try:
-            return client.containers.get(self._GJTIFF_CONTAINER_NAME)
+            return client.containers.get(
+                self._GJTIFF_CONTAINER_NAME
+            )
 
-        except DockerException as e:
-            raise RuntimeError(f"GJTIFF container '{self._GJTIFF_CONTAINER_NAME}' not found. Error: {e}")
-
-    def _build_command(
-            self,
-            output_formats: dict,
-            input_files: list[Path],
-            quality: int,
-            zoom_levels: str
-    ) -> list[str]:
-
-        input_files = [str(file) for file in input_files]
-
-        entered_format_flags = []
-
-        for format_name, modes in output_formats.items():
-
-            if format_name not in FORMAT_FLAGS:
-                raise TypeError(f"Unknown format: {format_name}")
-
-            for mode, enabled in modes.items():
-                if enabled:
-
-                    '''
-                    ### GJTiff only exports into one WebMercator tiles format at a time. Defaulting to WebP.
-                    
-                    CESNET Slack #meta-esa-vizualizace:
-                    20260318: matejkaj: Ale řekl bych, že GjTiff neumí generovat víc formátů celých produktů najednou?
-                    20260318: xpulec: No neuměl, ale už jsem přidal. Platí to teda ale jen pro celkový obrázek (-W/-J/-P), ne dlaždice, tam je možné pořád generovat jen v jednom formátu.
-                    '''
-
-                    if mode == TileGroup.WM_TILES.value:
-                        if format_name != OutputFormat.WEBP.value:
-                            self._logger.warning(
-                                f"WebMercator tiles are only supported for WEBP format. Ignoring {format_name} format.")
-                        continue
-
-                    entered_format_flags.append(FORMAT_FLAGS[format_name][mode])
-
-        entered_format_flags.append(FORMAT_FLAGS[OutputFormat.WEBP.value][TileGroup.WM_TILES.value])
-
-        return (
-                [
-                    "gjtiff",
-                    "-q", str(quality),
-                    "-Q",
-                    "-z", zoom_levels,
-                    "-o", self._path_to_processed,
-                ]
-                + entered_format_flags
-                + input_files
-        )
+        except DockerException as exc:
+            raise RuntimeError(
+                "GJTIFF container "
+                f"'{self._GJTIFF_CONTAINER_NAME}' not found. "
+                f"Error: {exc}"
+            ) from exc
 
     def _run_command(
             self,
             container,
             command: list[str],
-    ) -> None:
+    ) -> str:
 
         self._logger.info(f"Running GJTIFF command: {' '.join(command)}")
 
@@ -225,5 +575,13 @@ class GJTIFFProcessor(Processor):
 
             raise RuntimeError(f"GJTIFF failed with exit code {exec_result.exit_code}: {error}")
 
-        if stdout:
-            self._logger.info(stdout.decode("utf-8"))
+        stdout_text = (
+            stdout.decode("utf-8")
+            if stdout
+            else ""
+        )
+
+        if stdout_text:
+            self._logger.info(f"GJTIFF output: {stdout_text}")
+
+        return stdout_text

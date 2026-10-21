@@ -1,6 +1,6 @@
 from contextlib import AbstractContextManager
-from typing import Protocol
 from enum import Enum
+from typing import Protocol
 
 from .feature_state import FeatureStateId
 
@@ -8,6 +8,7 @@ from .feature_state import FeatureStateId
 class FeatureStateLockType(str, Enum):
     DOWNLOADING = "DOWNLOADING"
     PROCESSING = "PROCESSING"
+
 
 class FeatureStateLockRepository(Protocol):
 

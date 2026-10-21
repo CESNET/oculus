@@ -1,112 +1,500 @@
 import {create} from "zustand";
 
-export interface ProductFile {
-    path: string;
-    name: string; // with extension
-    format: string;
-}
+import type {
+    ProcessedFileState,
+    VisualizationRequestOutput,
+} from "../types/visualization";
 
-export interface TileLayer {
-    path: string; // path to folder with tiles
-    name: string; // without extension
-    format: string; // webp, jpg, png
-}
+import {
+    type Sentinel1Polarization,
+} from "../types/visualization/sentinel1";
+
+import {
+    DEFAULT_SENTINEL2_RGB_COMPOSITE,
+    SENTINEL2_VISUALIZATION_MODE,
+
+    type Sentinel2Band,
+    type Sentinel2PresetId,
+    type Sentinel2RGBComposite,
+    type Sentinel2VisualizationMode,
+} from "../types/visualization/sentinel2";
+
+
+// ======================================================
+// DATASET VISUALIZATION STATE
+// ======================================================
 
 export interface Sentinel1VisualizationState {
-    // zatím nic
+    /**
+     * Individual polarizations to generate.
+     */
+    availablePolarizations: Sentinel1Polarization[];
+    selectedPolarizations: Sentinel1Polarization[];
 }
+
 
 export interface Sentinel2VisualizationState {
-    bands: string[];
+    /**
+     * UI only.
+     */
+    mode: Sentinel2VisualizationMode;
+
+    /**
+     * Individual bands to generate.
+     */
+    selectedBands: Sentinel2Band[];
+
+    /**
+     * Presets to generate.
+     */
+    selectedPresetIds: Sentinel2PresetId[];
+
+    /**
+     * Generate custom RGB composite.
+     */
+    generateRGB: boolean;
+
+    /**
+     * RGB composite definition.
+     */
+    selectedRGBComposite: Sentinel2RGBComposite;
 }
 
 
-interface VisualizationState {
+export interface LandsatVisualizationState {
+    // TODO: with Landsat implementation
+}
+
+
+// ======================================================
+// DEFAULT STATE
+// ======================================================
+
+const DEFAULT_SENTINEL1_STATE: Sentinel1VisualizationState = {
+    availablePolarizations: [],
+    selectedPolarizations: [],
+};
+
+
+const DEFAULT_SENTINEL2_STATE: Sentinel2VisualizationState = {
+    mode: SENTINEL2_VISUALIZATION_MODE.SINGLE_BANDS,
+
+    selectedBands: ["TCI"],
+
+    selectedPresetIds: [],
+
+    generateRGB: false,
+
+    selectedRGBComposite: DEFAULT_SENTINEL2_RGB_COMPOSITE,
+};
+
+
+// ======================================================
+// STORE
+// ======================================================
+
+export interface VisualizationState {
+    // --------------------------------------------------
+    // Job
+    // --------------------------------------------------
+
     jobId: string | null;
+
     featureId: string | null;
 
+
+    // --------------------------------------------------
+    // Dataset-specific visualization settings
+    // --------------------------------------------------
+
     sentinel1: Sentinel1VisualizationState;
+
     sentinel2: Sentinel2VisualizationState;
 
-    outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>;
-    processedFiles: ProductFile[];
-    tileLayers: TileLayer[];
-    availableZoomLevels: number[];
-    selectedTileLayerIndex: number | null;
-    opacity: number; // global for selected tile layer (0..1)
+    landsat: LandsatVisualizationState;
 
 
-    setJobId: (id: string | null) => void;
-    setFeatureId: (id: string | null) => void;
+    // --------------------------------------------------
+    // Request output configuration
+    // --------------------------------------------------
 
-    setSentinel2: (
+    /**
+     * Output formats requested from the backend.
+     *
+     * Example:
+     *
+     * {
+     *     jpg: {
+     *         full_product: true,
+     *         wm_tiles: false,
+     *     },
+     *     webp: {
+     *         full_product: false,
+     *         wm_tiles: true,
+     *     },
+     * }
+     */
+    outputs: Record<string, VisualizationRequestOutput>;
+
+
+    // --------------------------------------------------
+    // Processing results
+    // --------------------------------------------------
+
+    /**
+     * Actual visualization outputs returned by the backend.
+     *
+     * Key = visualization ID, e.g.:
+     *   "TCI"
+     *   "B02"
+     *   "rgb_B04-B8A-B11"
+     *   "ndvi_B08-B04"
+     */
+    processedFiles: Record<string, ProcessedFileState>;
+
+
+    // --------------------------------------------------
+    // Map
+    // --------------------------------------------------
+
+    selectedTileLayerPath: string | null;
+
+    opacity: number;
+
+
+    // --------------------------------------------------
+    // Generic setters
+    // --------------------------------------------------
+
+    setJobId(
+        id: string | null
+    ): void;
+
+    setFeatureId(
+        id: string | null
+    ): void;
+
+    setOutputs(
+        outputs: Record<string, VisualizationRequestOutput>
+    ): void;
+
+    setProcessedFiles(
+        files: Record<string, ProcessedFileState>
+    ): void;
+
+    setSelectedTileLayerPath(
+        path: string | null
+    ): void;
+
+    setOpacity(
+        opacity: number
+    ): void;
+
+
+    // --------------------------------------------------
+    // Sentinel-1 setters
+    // --------------------------------------------------
+
+    setSentinel1(
+        partial: Partial<Sentinel1VisualizationState>
+    ): void;
+
+    toggleSentinel1Polarization(
+        polarization: Sentinel1Polarization
+    ): void;
+
+    resetSentinel1Polarizations(): void;
+
+    resetSentinel1(): void;
+
+
+    // --------------------------------------------------
+    // Sentinel-2 setters
+    // --------------------------------------------------
+
+    setSentinel2(
         partial: Partial<Sentinel2VisualizationState>
-    ) => void;
-    toggleSentinel2Band: (band: string) => void;
-    resetSentinel2Bands: (tci?: boolean) => void;
+    ): void;
 
-    setOutputs: (outputs: Record<string, { full_product: boolean; wm_tiles: boolean }>) => void;
-    setProcessedFiles: (files: ProductFile[]) => void;
-    setTileLayers: (tiles: TileLayer[]) => void;
-    setAvailableZoomLevels: (availableZoomLevels: number[]) => void;
-    setSelectedTileLayerIndex: (index: number | null) => void;
-    setOpacity: (opacity: number) => void;
+    setGenerateSentinel2RGB(
+        enabled: boolean
+    ): void;
+
+    setSentinel2RGBComposite(
+        composite: Sentinel2RGBComposite
+    ): void;
+
+    toggleSentinel2Band(
+        band: Sentinel2Band
+    ): void;
+
+    resetSentinel2Bands(
+        tci?: boolean
+    ): void;
+
+    toggleSentinel2Preset(
+        preset: Sentinel2PresetId
+    ): void;
+
+    resetSentinel2Presets(): void;
+
+    resetSentinel2RGBComposite(): void;
+
+    resetSentinel2(): void;
 }
 
-export const useVisualizationStore = create<VisualizationState>((set) => ({
-    jobId: null,
-    featureId: null,
 
-    sentinel1: {},
+export const useVisualizationStore =
+    create<VisualizationState>((set) => ({
 
-    sentinel2: {
-        bands: ["TCI"],
-    },
+        // ==================================================
+        // INITIAL STATE
+        // ==================================================
 
-    outputs: {
-        jpg: {full_product: true, wm_tiles: false},
-        png: {full_product: false, wm_tiles: false},
-        webp: {full_product: false, wm_tiles: true}
-    },
-    processedFiles: [],
-    tileLayers: [],
-    availableZoomLevels: [],
-    selectedTileLayerIndex: null,
-    opacity: 0.8,
+        jobId: null,
 
-    setJobId: (id) => set({jobId: id}),
-    setFeatureId: (id) => set({featureId: id}),
+        featureId: null,
 
-    setSentinel2: (partial) =>
-        set((state) => ({
-            sentinel2: {
-                ...state.sentinel2,
-                ...partial,
+
+        // --------------------------------------------------
+        // Dataset state
+        // --------------------------------------------------
+
+        sentinel1: DEFAULT_SENTINEL1_STATE,
+
+        sentinel2: DEFAULT_SENTINEL2_STATE,
+
+        landsat: {},
+
+
+        // --------------------------------------------------
+        // Request output configuration
+        // --------------------------------------------------
+
+        outputs: {
+            jpg: {
+                full_product: true,
+                wm_tiles: false,
             },
-        })),
 
-    toggleSentinel2Band: (band) =>
-        set((state) => ({
-            sentinel2: {
-                ...state.sentinel2,
-                bands: state.sentinel2.bands.includes(band)
-                    ? state.sentinel2.bands.filter((b) => b !== band)
-                    : [...state.sentinel2.bands, band],
+            png: {
+                full_product: false,
+                wm_tiles: false,
             },
-        })),
 
-    resetSentinel2Bands: (tci?: boolean) =>
-        set((state) => ({
-            sentinel2: {
-                ...state.sentinel2,
-                bands: tci ? ["TCI"] : [],
+            webp: {
+                full_product: false,
+                wm_tiles: true,
             },
-        })),
+        },
 
-    setOutputs: (outputs) => set({outputs}),
-    setProcessedFiles: (files) => set({processedFiles: files}),
-    setTileLayers: (tiles) => set({tileLayers: tiles}),
-    setAvailableZoomLevels: (availableZoomLevels) => set({availableZoomLevels: availableZoomLevels}),
-    setSelectedTileLayerIndex: (index) => set({selectedTileLayerIndex: index}),
-    setOpacity: (opacity) => set({opacity})
-}));
+
+        // --------------------------------------------------
+        // Processing results
+        // --------------------------------------------------
+
+        processedFiles: {},
+
+
+        // --------------------------------------------------
+        // Map
+        // --------------------------------------------------
+
+        selectedTileLayerPath: null,
+
+        opacity: 0.8,
+
+
+        // ==================================================
+        // GENERIC SETTERS
+        // ==================================================
+
+        setJobId: (jobId) =>
+            set({
+                jobId,
+            }),
+
+        setFeatureId: (featureId) =>
+            set({
+                featureId,
+            }),
+
+        setOutputs: (outputs) =>
+            set({
+                outputs,
+            }),
+
+        setProcessedFiles: (processedFiles) =>
+            set({
+                processedFiles,
+            }),
+
+        setSelectedTileLayerPath: (selectedTileLayerPath) =>
+            set({
+                selectedTileLayerPath,
+            }),
+
+        setOpacity: (opacity) =>
+            set({
+                opacity,
+            }),
+
+
+        // ==================================================
+        // SENTINEL-1
+        // ==================================================
+
+        setSentinel1: (partial) =>
+            set((state) => ({
+                sentinel1: {
+                    ...state.sentinel1,
+                    ...partial,
+                },
+            })),
+
+        toggleSentinel1Polarization: (polarization) =>
+            set((state) => ({
+                sentinel1: {
+                    ...state.sentinel1,
+
+                    selectedPolarizations:
+                        state.sentinel1.selectedPolarizations.includes(
+                            polarization
+                        )
+                            ? state.sentinel1.selectedPolarizations.filter(
+                                p => p !== polarization
+                            )
+                            : [
+                                ...state.sentinel1.selectedPolarizations,
+                                polarization,
+                            ],
+                },
+            })),
+
+        resetSentinel1Polarizations: () =>
+            set((state) => ({
+                sentinel1: {
+                    ...state.sentinel1,
+
+                    selectedPolarizations: [],
+                },
+            })),
+
+        resetSentinel1: () =>
+            set({
+                sentinel1: {
+                    ...DEFAULT_SENTINEL1_STATE,
+
+                    selectedPolarizations: [
+                        ...DEFAULT_SENTINEL1_STATE.selectedPolarizations,
+                    ],
+                },
+            }),
+
+
+        // ==================================================
+        // SENTINEL-2
+        // ==================================================
+
+        setSentinel2: (partial) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+                    ...partial,
+                },
+            })),
+
+        setGenerateSentinel2RGB: (generateRGB) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+                    generateRGB,
+                },
+            })),
+
+        setSentinel2RGBComposite: (selectedRGBComposite) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+                    selectedRGBComposite,
+                },
+            })),
+
+        toggleSentinel2Band: (band) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+
+                    selectedBands:
+                        state.sentinel2.selectedBands.includes(band)
+                            ? state.sentinel2.selectedBands.filter(
+                                b => b !== band
+                            )
+                            : [
+                                ...state.sentinel2.selectedBands,
+                                band,
+                            ],
+                },
+            })),
+
+        resetSentinel2Bands: (tci = false) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+
+                    selectedBands: tci ? ["TCI"] : [],
+                },
+            })),
+
+        toggleSentinel2Preset: (preset) =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+
+                    selectedPresetIds:
+                        state.sentinel2.selectedPresetIds.includes(preset)
+                            ? state.sentinel2.selectedPresetIds.filter(
+                                p => p !== preset
+                            )
+                            : [
+                                ...state.sentinel2.selectedPresetIds,
+                                preset,
+                            ],
+                },
+            })),
+
+        resetSentinel2Presets: () =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+
+                    selectedPresetIds: [],
+                },
+            })),
+
+        resetSentinel2RGBComposite: () =>
+            set((state) => ({
+                sentinel2: {
+                    ...state.sentinel2,
+
+                    generateRGB: false,
+
+                    selectedRGBComposite: DEFAULT_SENTINEL2_RGB_COMPOSITE,
+                },
+            })),
+
+        resetSentinel2: () =>
+            set({
+                sentinel2: {
+                    ...DEFAULT_SENTINEL2_STATE,
+
+                    selectedBands: [
+                        ...DEFAULT_SENTINEL2_STATE.selectedBands,
+                    ],
+
+                    selectedPresetIds: [
+                        ...DEFAULT_SENTINEL2_STATE.selectedPresetIds,
+                    ],
+                },
+            }),
+    }));

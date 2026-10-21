@@ -1,20 +1,16 @@
 import {useMemo} from "react";
 
-import {type Sentinel2VisualizationState, useVisualizationStore} from "../../store/useVisualizationStore";
+import {useVisualizationStore} from "../../store/useVisualizationStore";
+
 import {useFiltersStore} from "../../store/useFiltersStore";
-import {useFeaturesStore} from "../../store/useFeaturesStore";
 
 import {Dataset} from "../../types/datasets";
-import {getAllVisualizationOptions} from "../../utils/visualizationUtils";
-import {runVisualization} from "../../service/visualizationService";
 
-import ProcessedFileCard from "./visualization/ProcessedFileCard";
-import MultiButtonGroup from "./MultiButtonGroup.tsx";
+import {getProductFiles, getTileLayers} from "../../utils/visualizationUtils";
 
-/**
- * Shared comparator:
- * sort by format first, then by name naturally (B2 < B10)
- */
+import VisualizationCard from "./visualization/VisualizationCard.tsx";
+import Sentinel2VisualizationOptions from "./visualization/Sentinel2VisualizationOptions";
+
 function compareNameAndFormat(
     a: { name: string; format: string },
     b: { name: string; format: string }
@@ -34,45 +30,45 @@ export default function VisualizationTab() {
     const dataset = useFiltersStore((s) => s.dataset);
 
     const {
-        featureId,
+        //featureId,
         processedFiles,
-        tileLayers,
-        selectedTileLayerIndex,
-        setSelectedTileLayerIndex,
+        selectedTileLayerPath,
+        setSelectedTileLayerPath,
         opacity,
         setOpacity,
-
-        sentinel2,
-        toggleSentinel2Band,
     } = useVisualizationStore();
 
-    const feature = useFeaturesStore((s) =>
-        featureId ? s.featuresById[featureId] : undefined
+    /*
+    const feature = useFeaturesStore(
+        s => featureId ? s.featuresById[featureId] : undefined
+    );
+     */
+
+
+    /**
+     * Derived data
+     */
+    const tileLayers = useMemo(
+        () => getTileLayers(processedFiles), [processedFiles]
+    );
+
+
+    const productFiles = useMemo(
+        () => getProductFiles(processedFiles), [processedFiles]
     );
 
     const hasLayers = tileLayers.length > 0;
-    const hasFiles = processedFiles.length > 0;
+    const hasFiles = productFiles.length > 0;
 
-    const sentinel2Defaults = getAllVisualizationOptions(Dataset.Sentinel2) as Sentinel2VisualizationState;
+    const sortedTileLayers = useMemo(
+        () => [...tileLayers].sort(compareNameAndFormat), [tileLayers]
+    );
 
-    /**
-     * Tile layers sorted but preserving original index mapping
-     */
-    const sortedTileLayers = useMemo(() => {
-        return tileLayers.map((tile, originalIndex) => ({
-            tile,
-            originalIndex,
-        })).sort((a, b) =>
-            compareNameAndFormat(a.tile, b.tile)
-        );
-    }, [tileLayers]);
 
-    /**
-     * Processed files sorted consistently
-     */
-    const sortedProcessedFiles = useMemo(() => {
-        return [...processedFiles].sort(compareNameAndFormat);
-    }, [processedFiles]);
+    const sortedProcessedFiles = useMemo(
+        () => [...productFiles].sort(compareNameAndFormat), [productFiles]
+    );
+
 
     if (!hasLayers && !hasFiles) {
         return (
@@ -87,30 +83,18 @@ export default function VisualizationTab() {
             {/* =========================
                 VISUALIZATION SETTINGS
                ========================= */}
+
             {hasLayers && (
                 <div className="filter-section">
-                    <h3>Visualization Settings</h3>
+
+                    <h3>
+                        Visualization options
+                    </h3>
+
 
                     {dataset === Dataset.Sentinel2 && (
-                        <MultiButtonGroup
-                            label="Bands"
-                            values={sentinel2Defaults.bands}
-                            selected={sentinel2.bands}
-                            onToggle={toggleSentinel2Band}
-                        />
+                        <Sentinel2VisualizationOptions />
                     )}
-
-                    <button
-                        className="btn btn-primary mb-3"
-                        disabled={!feature}
-                        onClick={() => {
-                            if (feature) {
-                                runVisualization(feature);
-                            }
-                        }}
-                    >
-                        Re-render Visualization
-                    </button>
 
                     <label htmlFor="tileLayerSelect">
                         Active Tile Layer
@@ -118,18 +102,18 @@ export default function VisualizationTab() {
 
                     <select
                         id="tileLayerSelect"
-                        value={selectedTileLayerIndex ?? ""}
+                        value={selectedTileLayerPath ?? ""}
                         onChange={(e) =>
-                            setSelectedTileLayerIndex(Number(e.target.value))
+                            setSelectedTileLayerPath(e.target.value || null)
                         }
                     >
                         {sortedTileLayers.map(
-                            ({tile, originalIndex}) => (
+                            tile => (
                                 <option
-                                    key={`${tile.name}-${tile.format}`}
-                                    value={originalIndex}
+                                    key={`${tile.path}`}
+                                    value={tile.path}
                                 >
-                                    {tile.name}.{tile.format.toUpperCase()}
+                                    {tile.name.toUpperCase()}.{tile.format.toUpperCase()}
                                 </option>
                             )
                         )}
@@ -161,17 +145,22 @@ export default function VisualizationTab() {
             {/* =========================
                 PROCESSED FILES
                ========================= */}
+
             {hasFiles && (
                 <div className="filter-section">
-                    <h3>Processed Files</h3>
+                    <h3>
+                        Processed Files
+                    </h3>
 
                     <div className="processed-files-list">
-                        {sortedProcessedFiles.map((file) => (
-                            <ProcessedFileCard
-                                key={file.path}
-                                file={file}
-                            />
-                        ))}
+                        {sortedProcessedFiles.map(
+                            file => (
+                                <VisualizationCard
+                                    key={file.path}
+                                    file={file}
+                                />
+                            )
+                        )}
                     </div>
                 </div>
             )}

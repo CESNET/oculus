@@ -1,3 +1,4 @@
+import logging
 from contextlib import contextmanager
 
 from redis import Redis
@@ -10,8 +11,11 @@ class RedisFeatureStateLockRepository(FeatureStateLockRepository):
     def __init__(
             self,
             redis: Redis,
+            logger: logging.Logger | None = None,
     ):
         self._redis = redis
+
+        self._logger: logging.Logger = logger or logging.getLogger(__name__)
 
     @contextmanager
     def lock(
@@ -39,5 +43,5 @@ class RedisFeatureStateLockRepository(FeatureStateLockRepository):
             try:
                 lock.release()
 
-            except Exception:
-                pass
+            except Exception as e:
+                self._logger.exception(f"Failed to release lock for feature_state: {feature_state_id}. Exception: {e}")
