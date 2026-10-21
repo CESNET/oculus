@@ -1,20 +1,27 @@
-import {requestVisualization} from "../api/backend/requestVisualization";
+import {requestVisualization} from "../../api/backend/requestVisualization";
 
-import {useVisualizationStore} from "../store/useVisualizationStore";
-import {useLoadingStore} from "../store/useLoadingStore";
-import {useSidebarStore} from "../store/useSidebarStore";
+import {useVisualizationStore} from "../../store/useVisualizationStore";
+import {useLoadingStore} from "../../store/useLoadingStore";
+import {useSidebarStore} from "../../store/useSidebarStore";
+
+import type {Feature} from "../../types/feature.ts";
+import {applyVisualizationResults} from "../../utils/visualizationUtils.ts";
+
+import {initializeSentinel1Visualization} from "./sentinel1VisualizationService.ts";
+import {Dataset} from "../../types/datasets.ts";
 
 
-import type {Feature} from "../types/feature.ts";
-import {applyVisualizationResults} from "../utils/visualizationUtils.ts";
-
-export async function runVisualization(feature: Feature) {
+export const runVisualization = async (feature: Feature) => {
     const {startLoading, stopLoading} = useLoadingStore.getState();
 
     const controller = startLoading();
 
     try {
         const visualizationStore = useVisualizationStore.getState();
+
+        if (feature.dataset === Dataset.Sentinel1) {
+            initializeSentinel1Visualization(feature);
+        }
 
         const {job_id, visualizations} = await requestVisualization(feature, {
             signal: controller.signal,
@@ -40,4 +47,4 @@ export async function runVisualization(feature: Feature) {
     } finally {
         stopLoading();
     }
-}
+};

@@ -8,7 +8,7 @@ import type {
     VisualizationProperties,
 } from "../../types/visualization/request";
 
-export function buildLandsatVisualization(
+export function buildLandsatVisualizationRequest(
     //todo odebrat _
     _feature: Feature,
     _state: LandsatVisualizationState

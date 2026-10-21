@@ -6,6 +6,10 @@ import type {
 } from "../types/visualization";
 
 import {
+    type Sentinel1Polarization,
+} from "../types/visualization/sentinel1";
+
+import {
     DEFAULT_SENTINEL2_RGB_COMPOSITE,
     SENTINEL2_VISUALIZATION_MODE,
 
@@ -21,7 +25,11 @@ import {
 // ======================================================
 
 export interface Sentinel1VisualizationState {
-    // zatím nic
+    /**
+     * Individual polarizations to generate.
+     */
+    availablePolarizations: Sentinel1Polarization[];
+    selectedPolarizations: Sentinel1Polarization[];
 }
 
 
@@ -61,6 +69,12 @@ export interface LandsatVisualizationState {
 // ======================================================
 // DEFAULT STATE
 // ======================================================
+
+const DEFAULT_SENTINEL1_STATE: Sentinel1VisualizationState = {
+    availablePolarizations: [],
+    selectedPolarizations: [],
+};
+
 
 const DEFAULT_SENTINEL2_STATE: Sentinel2VisualizationState = {
     mode: SENTINEL2_VISUALIZATION_MODE.SINGLE_BANDS,
@@ -178,6 +192,23 @@ export interface VisualizationState {
 
 
     // --------------------------------------------------
+    // Sentinel-1 setters
+    // --------------------------------------------------
+
+    setSentinel1(
+        partial: Partial<Sentinel1VisualizationState>
+    ): void;
+
+    toggleSentinel1Polarization(
+        polarization: Sentinel1Polarization
+    ): void;
+
+    resetSentinel1Polarizations(): void;
+
+    resetSentinel1(): void;
+
+
+    // --------------------------------------------------
     // Sentinel-2 setters
     // --------------------------------------------------
 
@@ -229,7 +260,7 @@ export const useVisualizationStore =
         // Dataset state
         // --------------------------------------------------
 
-        sentinel1: {},
+        sentinel1: DEFAULT_SENTINEL1_STATE,
 
         sentinel2: DEFAULT_SENTINEL2_STATE,
 
@@ -306,6 +337,58 @@ export const useVisualizationStore =
         setOpacity: (opacity) =>
             set({
                 opacity,
+            }),
+
+
+        // ==================================================
+        // SENTINEL-1
+        // ==================================================
+
+        setSentinel1: (partial) =>
+            set((state) => ({
+                sentinel1: {
+                    ...state.sentinel1,
+                    ...partial,
+                },
+            })),
+
+        toggleSentinel1Polarization: (polarization) =>
+            set((state) => ({
+                sentinel1: {
+                    ...state.sentinel1,
+
+                    selectedPolarizations:
+                        state.sentinel1.selectedPolarizations.includes(
+                            polarization
+                        )
+                            ? state.sentinel1.selectedPolarizations.filter(
+                                p => p !== polarization
+                            )
+                            : [
+                                ...state.sentinel1.selectedPolarizations,
+                                polarization,
+                            ],
+                },
+            })),
+
+        resetSentinel1Polarizations: () =>
+            set((state) => ({
+                sentinel1: {
+                    ...state.sentinel1,
+
+                    selectedPolarizations: [],
+                },
+            })),
+
+        resetSentinel1: () =>
+            set({
+                sentinel1: {
+                    ...DEFAULT_SENTINEL1_STATE,
+
+                    selectedPolarizations: [
+                        ...DEFAULT_SENTINEL1_STATE.selectedPolarizations,
+                    ],
+                },
             }),
 
 
@@ -396,8 +479,7 @@ export const useVisualizationStore =
 
                     generateRGB: false,
 
-                    selectedRGBComposite:
-                    DEFAULT_SENTINEL2_RGB_COMPOSITE,
+                    selectedRGBComposite: DEFAULT_SENTINEL2_RGB_COMPOSITE,
                 },
             })),
 

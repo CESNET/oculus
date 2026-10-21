@@ -65,7 +65,7 @@ export const getAllFilterOptions = (dataset: Dataset): Sentinel1Filter | Sentine
                 ],
 
                 cloudCover: 100,
-            } as Sentinel2Filter; // Landsat zatím používá stejný tvar jako Sentinel2Filters
+            } as Sentinel2Filter; // TODO Landsat zatím používá stejný tvar jako Sentinel2Filters
 
 
         default:

@@ -25,6 +25,9 @@ __all__ = [
     "FeatureStateLockError",
     "ProcessorOutput",
 
+    # .dataset/sentinel_1
+    "Sentinel1Polarization",
+
     # .dataset/sentinel_2
     "Sentinel2Band",
     "Sentinel2RGBComposite",

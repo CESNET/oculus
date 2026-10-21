@@ -1,6 +1,9 @@
+from .sentinel_1 import *
 from .sentinel_2 import *
 
 __all__ = [
+    "Sentinel1Polarization",
+
     "Sentinel2Band",
     "Sentinel2RGBComposite",
     "Sentinel2Index",

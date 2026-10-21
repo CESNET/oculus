@@ -13,7 +13,7 @@ import type {
 } from "../../types/visualization/request.ts";
 
 
-export function buildSentinel2Visualization(
+export function buildSentinel2VisualizationRequest(
     feature: Feature,
     visualization: Sentinel2VisualizationState,
 ): Partial<VisualizationProperties> {
