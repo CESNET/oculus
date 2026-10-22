@@ -3,12 +3,12 @@ import {useMap} from 'react-leaflet';
 
 import 'maplibre-gl';
 import '@maplibre/maplibre-gl-leaflet';
+import L from "leaflet";
 
 const OpenFreeMapLayer = () => {
     const map = useMap();
 
     useEffect(() => {
-        // @ts-ignore
         const layer = L.maplibreGL({
             style: 'https://tiles.openfreemap.org/styles/liberty'
         });

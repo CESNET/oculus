@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Map from "../components/map/Map";
 import { useMapStore } from "../store/useMapStore";
 import { useUserLocation, DEFAULT_LOCATION } from "../hooks/useUserLocation";
@@ -12,8 +12,6 @@ export default function MapLayout({ programmaticRef }: MapLayoutProps) {
     const { center, zoom, setView } = useMapStore();
     const { location, loading, isUserLocation } = useUserLocation();
     const [initialized, setInitialized] = useState(false);
-
-    programmaticRef = useRef(false);
 
     // 1. Načtení z URL při prvním startu
     useEffect(() => {
@@ -49,7 +47,7 @@ export default function MapLayout({ programmaticRef }: MapLayoutProps) {
     if (!initialized) return null;
 
     return (
-        <div className="map-wrapper" style={{ width: '100%', height: '100vh' }}>
+        <div className="map-wrapper">
             <Map
                 center={center}
                 zoom={zoom}

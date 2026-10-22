@@ -7,7 +7,7 @@ interface NavbarProps {
 
 export default function Navbar({ programmaticRef }: NavbarProps) {
     return (
-        <nav>
+        <nav className="main-navbar">
             <div className="left">
                 <img src="/logo.png" alt="Logo" className="logo" />
                 <h1 className="title">CESNET Oculus Visualization</h1>

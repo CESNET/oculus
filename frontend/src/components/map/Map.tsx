@@ -18,7 +18,7 @@ import {useVisualizationStore} from '../../store/useVisualizationStore';
 
 import OpenFreeMapLayer from "./OpenFreeMapLayer.tsx";
 import UserLocationMarker from './UserLocationMarker';
-import LocateButton from './LocateButton';
+import MapTopControls from "./MapTopControls.tsx";
 import ProductLayer from './layers/ProductLayer';
 
 interface Props {
@@ -30,6 +30,33 @@ interface Props {
     productUrl?: string;
     programmaticRef: React.MutableRefObject<boolean>;
 }
+
+const MapSizeInvalidator = () => {
+    const map = useMap();
+
+    useEffect(() => {
+        const container = map.getContainer();
+
+        let frameId = 0;
+
+        const observer = new ResizeObserver(() => {
+            cancelAnimationFrame(frameId);
+
+            frameId = requestAnimationFrame(() => {
+                map.invalidateSize({pan: false});
+            });
+        });
+
+        observer.observe(container);
+
+        return () => {
+            observer.disconnect();
+            cancelAnimationFrame(frameId);
+        };
+    }, [map]);
+
+    return null;
+};
 
 /**
  * Registrace Leaflet instance
@@ -133,7 +160,12 @@ const Map: React.FC<Props> = ({
     // RENDER
     // =============================
     return (
-        <MapContainer center={center} zoom={zoom} className="w-100 h-100">
+        <MapContainer
+            center={center}
+            zoom={zoom}
+            zoomControl={false}
+            className="w-100 h-100"
+        >
 
             {/* Base map */}
             {/*
@@ -157,17 +189,14 @@ const Map: React.FC<Props> = ({
                 />
             )}
 
-            {/* User location controls */}
-            {userLocation && (
-                <LocateButton
-                    lat={location?.lat ?? 0}
-                    lng={location?.lng ?? 0}
-                    zoom={13}
-                    userLocation={userLocation}
-                    loading={loadingLocation ?? false}
-                    programmaticRef={programmaticRef}
-                />
-            )}
+            <MapTopControls
+                lat={location?.lat ?? 0}
+                lng={location?.lng ?? 0}
+                zoom={13}
+                userLocation={userLocation ?? false}
+                loading={loadingLocation ?? false}
+                programmaticRef={programmaticRef}
+            />
 
             {userLocation && location && (
                 <UserLocationMarker location={location} />
@@ -190,6 +219,7 @@ const Map: React.FC<Props> = ({
                 />
             )}
 
+            <MapSizeInvalidator />
             <MapRegistrar />
             <MapUpdater programmaticRef={programmaticRef} />
         </MapContainer>

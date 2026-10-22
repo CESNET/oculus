@@ -1,10 +1,29 @@
-/* =========================
-   Root / Globální proměnné
-   ========================= */
+/* =========================================================
+  1. Design tokens
+  ========================================================= */
+
 :root {
-    --font-family: 'Inter', sans-serif;
-    --border-radius: 0.5rem;
-    --transition-fast: 0.2s;
+    --font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+
+    --page-edge-spacing: 12px;
+
+    --border-radius: 0.65rem;
+    --border-radius-sm: 0.45rem;
+
+    --transition-fast: 0.2s ease;
+    --transition-layout: 280ms ease;
+
+    /* Brand and buttons */
+    --color-btn-primary: #3b82f6;
+    --color-btn-primary-hover: #2563eb;
+    --color-btn-outline-bg: #ffffff;
+    --color-btn-outline-text: #475569;
+    --color-btn-outline-hover: #f1f5f9;
+
+    /* Unified button & control sizing */
+    --control-height: 38px;
+    --control-radius: 0.45rem;
 
     /* Navbar */
     --color-navbar-bg: #0f172a;
@@ -12,100 +31,685 @@
     --color-navbar-input-bg: #1e293b;
     --color-navbar-input-focus: #273449;
     --color-navbar-input-placeholder: #94a3b8;
-    --color-navbar-dropdown-bg: #1e293b;
+    --color-navbar-dropdown-bg: #ffffff;
 
     /* Sidebar */
     --color-sidebar-bg: #f8fafc;
-    --color-sidebar-border: #cbd5e1;
+    --color-sidebar-border: #e2e8f0;
     --color-sidebar-text: #1e293b;
     --color-sidebar-tab-bg: #f1f5f9;
-    --color-sidebar-tab-hover: #e2e8f0;
+    --color-sidebar-tab-hover: #e8eef7;
     --color-sidebar-tab-active: #3b82f6;
-    --color-sidebar-tab-active-text: #1e40af;
+    --color-sidebar-tab-active-text: #1d4ed8;
 
-    /* Buttons */
-    --color-btn-primary: #3b82f6;
-    --color-btn-primary-hover: #2563eb;
-    --color-btn-outline-bg: #fff;
-    --color-btn-outline-text: #475569;
-    --color-btn-outline-hover: #e2e8f0;
+    /* Surfaces */
+    --color-surface: #ffffff;
+    --color-surface-subtle: #f8fafc;
+    --color-border: #e2e8f0;
+    --color-text-muted: #64748b;
 
     /* Shadows */
-    --shadow-light: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-medium: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --shadow-dropdown: 0 4px 8px rgba(0, 0, 0, 0.25);
+    --shadow-light: 0 1px 3px rgba(15, 23, 42, 0.05);
+    --shadow-medium: 0 4px 12px rgba(15, 23, 42, 0.1);
+    --shadow-dropdown: 0 12px 28px rgba(15, 23, 42, 0.18);
+    --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.17);
+
+    /* Layout */
+    --sidebar-width: clamp(280px, 25vw, 360px);
+    --sidebar-tablet-max-width: 42%;
+    --sidebar-mobile-height: 75%;
+    --sidebar-toggle-size: 38px; /* Sjednoceno na 38px */
+    --sidebar-toggle-gap: 8px;
 }
 
-/* =========================
-   Global / Main Layout
-   ========================= */
-html, body, #root {
-    height: 100%;
+/* =========================================================
+  2. Global styles
+  ========================================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
     width: 100%;
+    height: 100%;
     margin: 0;
-    font-family: var(--font-family), sans-serif;
+    font-family: var(--font-family);
     background-color: var(--color-sidebar-bg);
     color: var(--color-sidebar-text);
 }
 
+body {
+    min-width: 320px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--color-btn-primary);
+    outline-offset: 3px;
+}
+
+/* =========================================================
+  3. Main layout
+  ========================================================= */
+
 .main-layout {
     display: flex;
     flex-direction: column;
+    width: 100%;
     height: 100vh;
+    height: 100dvh;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
 }
 
 .main-container {
-    flex: 1;
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.main-container > .row {
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+}
+
+/* =========================================================
+  4. Sidebar
+  ========================================================= */
+
+.sidebar-col {
+    position: relative;
+    z-index: 1100;
+
+    display: block;
+    flex: 0 0 var(--sidebar-width);
+    width: var(--sidebar-width);
+    max-width: 360px;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+
+    overflow: visible;
+
+    background: var(--color-sidebar-bg);
+    border-right: 1px solid var(--color-sidebar-border);
+    box-shadow: 2px 0 10px rgba(15, 23, 42, 0.035);
+
+    transition: flex-basis var(--transition-layout),
+    width var(--transition-layout),
+    max-width var(--transition-layout),
+    border-color var(--transition-layout),
+    box-shadow var(--transition-layout);
+}
+
+.sidebar-col.sidebar-col--open {
+    flex-basis: var(--sidebar-width);
+    width: var(--sidebar-width);
+    max-width: 360px;
+}
+
+.sidebar-col.sidebar-col--closed {
+    flex: 0 0 0;
+    width: 0;
+    max-width: 0;
+    border-right-width: 0;
+    box-shadow: none;
+}
+
+.sidebar-panel-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--color-sidebar-bg);
+}
+
+.sidebar-panel-content > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* =========================================================
+  5. Map
+  ========================================================= */
+
+.map-col {
+    position: relative;
+    z-index: 1;
+
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+    height: 100%;
     padding: 0;
     overflow: hidden;
 }
 
-.main-container .row {
+.map-wrapper {
+    position: relative;
+    width: 100%;
     height: 100%;
-    margin: 0;
-}
-
-.sidebar-col {
-    height: 100%;
-    overflow-y: auto;
-
-    width: 20vw;
-    min-width: 250px;
-    max-width: 350px;
-}
-
-.map-col {
-    height: 100%;
-
-    flex: 1;
     min-width: 0;
+    min-height: 0;
 }
 
-/* Buttony globálně */
-.btn {
-    border-radius: var(--border-radius);
-    transition: all var(--transition-fast);
+.map-col .leaflet-container {
+    width: 100%;
+    height: 100%;
+    font-family: var(--font-family);
+}
+
+.map-locate-error {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    max-width: 600px;
+    margin: 0;
+    padding: 12px 36px 12px 12px;
+    font-size: 0.875rem;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+}
+
+/* =========================================================
+  6. Sidebar toggle buttons
+  ========================================================= */
+
+.sidebar-toggle-button {
+    position: absolute;
+    z-index: 1200;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    width: var(--sidebar-toggle-size);
+    height: var(--sidebar-toggle-size);
+    padding: 0;
+
+    border: 1px solid #cbd5e1;
+    border-radius: var(--control-radius);
+
+    background: #ffffff;
+    color: #334155;
+    box-shadow: var(--shadow-medium);
+
     cursor: pointer;
+    line-height: 1;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-toggle-button:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #1e293b;
+}
+
+.sidebar-toggle-button:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}
+
+.sidebar-toggle-button:active {
+    background: #e2e8f0;
+}
+
+.sidebar-toggle-button i {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.sidebar-close-button {
+    top: 12px;
+    right: calc(
+            -1 * (var(--sidebar-toggle-size) + var(--sidebar-toggle-gap))
+    );
+
+    visibility: visible;
+    pointer-events: auto;
+    transition: none;
+}
+
+.sidebar-col.sidebar-col--closed .sidebar-close-button {
+    visibility: hidden;
+    pointer-events: none;
+    transition: visibility 0s linear 280ms;
+}
+
+.sidebar-open-button {
+    top: 12px;
+    left: 12px;
+
+    visibility: hidden;
+    pointer-events: none;
+    transition: none;
+}
+
+.main-container.sidebar-is-closed .sidebar-open-button {
+    visibility: visible;
+    pointer-events: auto;
+    transition: visibility 0s linear 280ms;
+}
+
+/* Icons */
+
+.sidebar-icon-desktop {
+    display: inline-block;
+}
+
+.sidebar-icon-mobile {
+    display: none;
+}
+
+/* =========================================================
+  7. Shared buttons
+  ========================================================= */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+
+    min-height: var(--control-height);
+    padding: 0.5rem 0.85rem;
+
     border: 1px solid transparent;
+    border-radius: var(--border-radius-sm);
+
+    font-weight: 600;
+    line-height: 1.3;
+    cursor: pointer;
+
+    transition: background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .btn-primary {
+    color: #ffffff;
     background-color: var(--color-btn-primary);
-    color: #fff;
     border-color: var(--color-btn-primary);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
+    color: #ffffff;
     background-color: var(--color-btn-primary-hover);
+    border-color: var(--color-btn-primary-hover);
 }
 
 .btn-outline-secondary {
-    background-color: var(--color-btn-outline-bg);
     color: var(--color-btn-outline-text);
-    border-color: var(--color-btn-outline-bg);
+    background-color: var(--color-btn-outline-bg);
+    border-color: #cbd5e1;
 }
 
-.btn-outline-secondary:hover {
+.btn-outline-secondary:hover:not(:disabled) {
+    color: #334155;
     background-color: var(--color-btn-outline-hover);
+    border-color: #94a3b8;
+}
+
+/* =========================================================
+  8. Map controls
+  ========================================================= */
+
+.map-top-controls {
+    position: absolute;
+    z-index: 1000;
+    top: 12px;
+    right: 12px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+
+    margin: 0;
+    padding: 0;
+}
+
+/* Zoom control */
+
+.map-zoom-control {
+    position: static;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: stretch;
+
+    height: var(--control-height);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+
+    border: 1px solid var(--color-border);
+    border-radius: var(--control-radius);
+    background: #ffffff;
+    box-shadow: var(--shadow-medium);
+}
+
+.map-zoom-control button {
+    position: static;
+
+    display: inline-flex;
+    flex: 0 0 var(--control-height);
+    align-items: center;
+    justify-content: center;
+
+    width: var(--control-height);
+    min-width: var(--control-height);
+    height: var(--control-height);
+    min-height: var(--control-height);
+
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+    border-radius: 0;
+
+    background: #ffffff;
+    color: var(--color-sidebar-text);
+
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1;
+
+    box-shadow: none;
+    transform: none;
+    cursor: pointer;
+
+    transition: background-color var(--transition-fast);
+}
+
+.map-zoom-control button + button {
+    border-left: 1px solid var(--color-border);
+}
+
+.map-zoom-control button:hover {
+    background: var(--color-surface-subtle);
+}
+
+.map-zoom-control button:active {
+    background: var(--color-sidebar-tab-hover);
+    transform: none;
+}
+
+/* User location */
+
+.map-top-controls .map-locate-btn {
+    position: static;
+
+    display: inline-flex;
+    flex: 0 0 var(--control-height);
+    align-items: center;
+    justify-content: center;
+
+    width: var(--control-height);
+    min-width: var(--control-height);
+    height: var(--control-height);
+    min-height: var(--control-height);
+
+    margin: 0;
+    padding: 0;
+
+    border: 1px solid var(--color-border);
+    border-radius: var(--control-radius);
+
+    background: #ffffff;
+    color: var(--color-sidebar-text);
+
+    font-size: 1rem;
+    line-height: 1;
+
+    box-shadow: var(--shadow-medium);
+    transform: none;
+    cursor: pointer;
+
+    transition: background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.map-top-controls .map-locate-btn:hover:not(:disabled) {
+    background: var(--color-surface-subtle);
+    border-color: #cbd5e1;
+}
+
+.map-top-controls .map-locate-btn:active:not(:disabled) {
+    background: var(--color-sidebar-tab-hover);
+    transform: none;
+}
+
+.map-top-controls .map-locate-btn.disabled,
+.map-top-controls .map-locate-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.map-zoom-control button:focus-visible,
+.map-top-controls .map-locate-btn:focus-visible {
+    outline: 2px solid var(--color-btn-primary);
+    outline-offset: -3px;
+}
+
+/* Map information panel */
+
+.map-info-box {
+    position: absolute;
+    z-index: 800;
+    bottom: 16px;
+    left: 16px;
+    max-width: min(420px, calc(100% - 32px));
+}
+
+/* =========================================================
+  9. Tablet
+  ========================================================= */
+
+@media (max-width: 1024px) and (min-width: 768px) {
+    :root {
+        --sidebar-width: min(320px, 42vw);
+    }
+
+    .sidebar-col,
+    .sidebar-col.sidebar-col--open {
+        flex-basis: var(--sidebar-width);
+        width: var(--sidebar-width);
+        max-width: var(--sidebar-tablet-max-width);
+    }
+
+    .sidebar-col.sidebar-col--closed {
+        flex-basis: 0;
+        width: 0;
+        max-width: 0;
+    }
+}
+
+/* =========================================================
+  10. Mobile
+  ========================================================= */
+
+@media (max-width: 767px) {
+    .main-container > .row {
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+
+    .main-container > .row > .map-col {
+        position: relative;
+        z-index: 0;
+
+        flex: 1 1 auto;
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+    }
+
+    .main-container > .row > .sidebar-col,
+    .main-container > .row > .sidebar-col.sidebar-col--open,
+    .main-container > .row > .sidebar-col.sidebar-col--closed {
+        position: absolute;
+        z-index: 1100;
+        top: 0;
+        right: 0;
+        left: 0;
+
+        display: flex;
+        flex: none;
+        flex-direction: column;
+
+        width: 100% !important;
+        max-width: 100% !important;
+        height: var(--sidebar-mobile-height);
+        min-width: 0;
+        min-height: 0;
+
+        margin: 0;
+        padding: 0;
+
+        overflow: visible;
+
+        background: var(--color-sidebar-bg);
+        border: none;
+        border-bottom: 1px solid var(--color-sidebar-border);
+        border-radius: 0 0 1rem 1rem;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+
+        transform: translateY(0);
+        visibility: visible;
+        pointer-events: auto;
+
+        transition: transform var(--transition-layout),
+        visibility 0s linear 0s;
+    }
+
+    .main-container > .row > .sidebar-col.sidebar-col--open {
+        transform: translateY(0);
+    }
+
+    .main-container > .row > .sidebar-col.sidebar-col--closed {
+        border-bottom-color: transparent;
+        box-shadow: none;
+
+        transform: translateY(-100%);
+        visibility: hidden;
+        pointer-events: none;
+
+        transition: transform var(--transition-layout),
+        visibility 0s linear 280ms;
+    }
+
+    .sidebar-panel-content {
+        border-radius: 0 0 1rem 1rem;
+    }
+
+    .sidebar-close-button {
+        top: auto;
+        right: auto;
+        bottom: calc(
+                -1 * (var(--sidebar-toggle-size) + var(--sidebar-toggle-gap))
+        );
+        left: 12px;
+
+        visibility: visible;
+        pointer-events: auto;
+        transition: none;
+    }
+
+    .main-container > .row > .sidebar-col.sidebar-col--closed
+    .sidebar-close-button {
+        visibility: hidden;
+        pointer-events: none;
+        transition: visibility 0s linear 280ms;
+    }
+
+    .sidebar-open-button {
+        top: 12px;
+        left: 12px;
+    }
+
+    .sidebar-icon-desktop {
+        display: none;
+    }
+
+    .sidebar-icon-mobile {
+        display: inline-block;
+    }
+
+    .map-top-controls {
+        top: 12px;
+        right: 12px;
+        gap: 6px;
+        max-width: calc(100% - 24px);
+    }
+
+    .map-info-box {
+        bottom: 12px;
+        left: 12px;
+        max-width: calc(100% - 24px);
+    }
+}
+
+/* =========================================================
+  11. Accessibility
+  ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

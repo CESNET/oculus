@@ -10,7 +10,7 @@
 
 .leaflet-control-attribution {
     position: absolute !important;
-    bottom: 3.5rem !important;  /* opravdu u dolního okraje */ /* TODO nevím, jestli se to bude vždycky zobrazovat dole */
+    bottom: 0 !important;  /* opravdu u dolního okraje */
     right: 0 !important;   /* u pravého okraje */
     left: auto !important;
     top: auto !important;
