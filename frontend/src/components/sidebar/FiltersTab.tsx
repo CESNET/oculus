@@ -1,11 +1,12 @@
-import { useFiltersStore } from "../../store/useFiltersStore";
+import {useFiltersStore} from "../../store/useFiltersStore";
 import BoundingBoxFilter from "./filters/BoundingBoxFilter";
 import DatetimeFilter from "./filters/DatetimeFilter";
 import DatasetFilter from "./filters/DatasetFilter";
-import { fetchFeatures } from "../../api/datasources/fetchFeatures.ts";
-import { useFeaturesStore } from "../../store/useFeaturesStore";
-import { useLoadingStore } from "../../store/useLoadingStore";
-import { getEffectiveFilters } from "../../utils/filterUtils.ts";
+import {fetchFeatures} from "../../api/datasources/fetchFeatures.ts";
+import {useFeaturesStore} from "../../store/useFeaturesStore";
+import {useLoadingStore} from "../../store/useLoadingStore";
+import {getEffectiveFilters} from "../../utils/filterUtils.ts";
+import {LoadingType} from "../../types/loadingTypes.ts";
 
 interface FiltersTabProps {
     onFetched?: () => void;
@@ -22,7 +23,7 @@ export default function FiltersTab({ onFetched }: FiltersTabProps) {
 
     const handleFetchFeatures = async () => {
         // 1. Spustíme loading a získáme nový AbortController
-        const controller = startLoading();
+        const controller = startLoading(LoadingType.FETCH_FEATURES);
 
         const effectiveFilters = getEffectiveFilters(filters, filters.dataset);
 

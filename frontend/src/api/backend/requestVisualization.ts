@@ -14,13 +14,11 @@ import type {
 // CONFIG
 // ==========================================
 
-// const API_URL = import.meta.env.VITE_API_URL || "/api";
-const API_URL = "/api";
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+//const API_URL = "/api";
 
 if (!API_URL) {
-    throw new Error(
-        "VITE_API_URL is not defined in environment variables"
-    );
+    throw new Error("VITE_API_URL is not defined in environment variables");
 }
 
 // ==========================================
@@ -59,9 +57,7 @@ const createVisualizationJob = async (
     });
 
     if (!res.ok) {
-        throw new Error(
-            `Failed to create visualization: ${res.statusText}`
-        );
+        throw new Error(`Failed to create visualization: ${res.statusText}`);
     }
 
     const data = await res.json();
@@ -103,10 +99,7 @@ const waitForJobCompletion = (
             try {
                 await cancelVisualizationJob(job_id);
             } catch (err) {
-                console.error(
-                    "Failed to send cancel request:",
-                    err
-                );
+                console.error("Failed to send cancel request:", err);
             }
 
             onCancel?.();
@@ -159,9 +152,7 @@ const waitForJobCompletion = (
                         cleanup();
 
                         reject(
-                            new Error(
-                                `Visualization job ended with status: ${data.current_status}`
-                            )
+                            new Error(`Visualization job ended with status: ${data.current_status}`)
                         );
 
                         break;
@@ -179,9 +170,7 @@ const waitForJobCompletion = (
             cleanup();
 
             reject(
-                new Error(
-                    "SSE connection error"
-                )
+                new Error("SSE connection error")
             );
         };
     });
@@ -203,13 +192,8 @@ export const cancelVisualizationJob = async (
             body: JSON.stringify({job_id}),
         });
 
-        console.info(
-            `Cancel request sent for job ${job_id}`
-        );
+        console.info(`Cancel request sent for job ${job_id}`);
     } catch (err) {
-        console.error(
-            `Failed to cancel job ${job_id}:`,
-            err
-        );
+        console.error(`Failed to cancel job ${job_id}:`, err);
     }
 };
