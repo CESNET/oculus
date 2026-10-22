@@ -9,12 +9,13 @@ import {applyVisualizationResults} from "../../utils/visualizationUtils.ts";
 
 import {initializeSentinel1Visualization} from "./sentinel1VisualizationService.ts";
 import {Dataset} from "../../types/datasets.ts";
+import {LoadingType} from "../../types/loadingTypes.ts";
 
 
 export const runVisualization = async (feature: Feature) => {
     const {startLoading, stopLoading} = useLoadingStore.getState();
 
-    const controller = startLoading();
+    const controller = startLoading(LoadingType.VISUALIZING);
 
     try {
         const visualizationStore = useVisualizationStore.getState();
