@@ -48,7 +48,7 @@ class GSSConnector:
     # -----------------------
     # Feature API
     # -----------------------
-    def get_feature(self) -> dict:
+    def get_feature(self) -> dict | None:
         if self._feature is None:
             url = f"{settings.GSS_ODATA_CATALOG_ROOT.rstrip('/')}/Products({self._feature_id})"
             self._logger.info(f"Querying GSS OData for product {self._feature_id} from API: {url}")

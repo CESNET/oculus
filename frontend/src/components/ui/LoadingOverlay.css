@@ -1,49 +1,163 @@
+
 .loading-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.75); /* Trochu tmavší pro lepší kontrast */
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    inset: 0;
     z-index: 9999;
-    backdrop-filter: blur(2px); /* Volitelné: jemné rozmazání pozadí */
-}
 
-.spinner-wrapper {
     display: flex;
-    flex-direction: column; /* Spinner a text pod sebou */
-    align-items: center;    /* Horizontální zarovnání na střed */
-    justify-content: center;
-}
-
-.loading-text {
-    color: white;
-    margin-top: 15px;       /* Mezera mezi spinnerem a textem */
-    font-size: 1.1rem;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-}
-
-.close-button {
-    color: white;
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    display: flex;
-    justify-content: center;
     align-items: center;
-    transition: transform 0.2s;
-    border-width: 2px;
+    justify-content: center;
+
+    background: rgba(12, 18, 32, 0.58);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+
+    animation: loading-fade-in 0.25s ease-out;
 }
 
-.close-button:hover {
-    transform: scale(1.1);
-    color: white;
-    background-color: rgba(255, 255, 255, 0.1);
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: 2rem;
+    text-align: center;
+    color: #fff;
+}
+
+.loading-indicator {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    margin-bottom: 2rem;
+}
+
+.loading-orbit {
+    position: absolute;
+    inset: 0;
+
+    border: 2px solid transparent;
+    border-radius: 50%;
+    border-top-color: #8ab4ff;
+    border-right-color: rgba(138, 180, 255, 0.25);
+
+    animation: loading-orbit 1.8s linear infinite;
+}
+
+.loading-orbit-one {
+    inset: 0;
+}
+
+.loading-orbit-two {
+    inset: 10px;
+    border-top-color: #fff;
+    border-right-color: transparent;
+    animation-duration: 1.3s;
+    animation-direction: reverse;
+}
+
+.loading-orbit-three {
+    inset: 21px;
+    border-top-color: #8ab4ff;
+    border-right-color: transparent;
+    animation-duration: 1s;
+}
+
+.loading-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 16px rgba(138, 180, 255, 0.9);
+
+    transform: translate(-50%, -50%);
+    animation: loading-pulse 1.6s ease-in-out infinite;
+}
+
+.loading-title {
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+.loading-description {
+    margin-top: 0.55rem;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.9rem;
+}
+
+.loading-cancel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    margin-top: 1.75rem;
+    padding: 0.45rem 0.8rem;
+
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 6px;
+
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+
+    font: inherit;
+    font-size: 0.85rem;
+
+    cursor: pointer;
+    transition:
+            background-color 0.2s ease,
+            color 0.2s ease,
+            border-color 0.2s ease;
+}
+
+.loading-cancel span {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.loading-cancel:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes loading-orbit {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes loading-pulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+}
+
+@keyframes loading-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-overlay,
+    .loading-orbit,
+    .loading-core {
+        animation: none;
+    }
 }
