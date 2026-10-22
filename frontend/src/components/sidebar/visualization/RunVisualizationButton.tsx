@@ -22,7 +22,7 @@ export default function RunVisualizationButton({
 
     return (
         <button
-            className="btn btn-primary w-100 mt-3"
+            className="btn btn-primary w-100 mt-1"
             disabled={!feature}
             onClick={() => {
                 if (feature) {

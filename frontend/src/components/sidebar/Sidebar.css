@@ -1,229 +1,366 @@
-/* =========================
-   SIDEBAR BASE
-   ========================= */
+/* =========================================================
+  Sidebar base
+  ========================================================= */
+
 .sidebar {
-    height: 100%;
     display: flex;
     flex-direction: column;
-
-    background-color: #f4f7fc;
-    color: #1e293b;
-
-    font-family: var(--font-family);
-    font-size: 1rem;
-    line-height: 1.55;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--color-sidebar-bg);
+    color: var(--color-sidebar-text);
+    font-family: inherit;
+    font-size: 0.925rem;
+    line-height: 1.5;
 }
 
-/* =========================
-   TABS
-   ========================= */
+/* Collapse button - sjednoceno na výšku 38px podle MainLayout */
+
+.sidebar-collapse-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--control-height, 38px);
+    height: var(--control-height, 38px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    transition: background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.sidebar-collapse-button:hover {
+    background: var(--color-sidebar-tab-bg);
+    color: var(--color-sidebar-text);
+}
+
+/* =========================================================
+  Tabs
+  ========================================================= */
+
 .sidebar-tabs {
     display: flex;
-    border-bottom: 1px solid #d6deea;
-    background-color: #eef2f8;
+    flex-shrink: 0;
+    gap: 0.25rem;
+    padding: 0.45rem 0.6rem 0;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-sidebar-tab-bg);
 }
 
 .sidebar-tabs button {
-    flex: 1;
-    padding: 0.75rem 0.5rem;
-
-    background: none;
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0.65rem 0.4rem;
     border: none;
+    border-radius: 0.55rem 0.55rem 0 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 450;
+    text-align: center;
     cursor: pointer;
-
-    font-size: 0.95rem;
-    font-weight: 500;
-
-    color: #475569;
-
     transition: background-color var(--transition-fast),
     color var(--transition-fast);
 }
 
 .sidebar-tabs button:hover {
-    background-color: #e3eaf5;
+    background: rgba(255, 255, 255, 0.65);
+    color: #334155;
 }
 
 .sidebar-tabs button.active {
-    border-bottom: 3px solid var(--color-btn-primary);
-    color: #1e40af;
+    background: var(--color-sidebar-bg);
+    color: var(--color-sidebar-tab-active-text);
     font-weight: 600;
 }
 
-/* =========================
-   PANEL
-   ========================= */
-.sidebar-panel {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.1rem;
+.sidebar-tabs button.active::after {
+    position: absolute;
+    right: 0.65rem;
+    bottom: 0;
+    left: 0.65rem;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: var(--color-btn-primary);
+    content: "";
 }
 
-/* =========================
-   FILTER SECTIONS
-   ========================= */
+/* =========================================================
+  Scrollable panel
+  ========================================================= */
+
+.sidebar-panel {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 1rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.sidebar-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-panel::-webkit-scrollbar-thumb {
+    border-radius: 6px;
+    background: #cbd5e1;
+}
+
+/* =========================================================
+  Sections, headings and labels
+  ========================================================= */
+
 .filter-section {
-    margin-bottom: 1.4rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #d6deea;
+    margin-bottom: 1.1rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.filter-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 .filter-section h3 {
-    font-size: 1.2rem;
+    margin: 0 0 0.85rem;
+    color: #334155;
+    font-size: 1.05rem;
     font-weight: 600;
-    margin-bottom: 0.85rem;
+    line-height: 1.4;
 }
 
-.filter-section label {
+.filter-section p {
+    margin: 0 0 0.75rem;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.filter-section label,
+.bbox-grid label {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-
+    min-width: 0;
     margin-bottom: 0.85rem;
-
-    font-size: 0.95rem;
-    font-weight: 500;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    font-weight: 450;
 }
 
-/* =========================
-   INPUTS
-   ========================= */
-.filter-section input,
-.filter-section select {
+.filter-section label:last-child {
+    margin-bottom: 0;
+}
+
+/* =========================================================
+  Form controls
+  ========================================================= */
+
+.sidebar input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.sidebar select,
+.sidebar textarea {
     width: 100%;
-    padding: 0.5rem 0.65rem;
-
+    min-width: 0;
+    min-height: 40px;
+    padding: 0.55rem 0.7rem;
     border: 1px solid #cbd5e1;
-    border-radius: var(--border-radius);
-
-    background-color: #fff;
-
-    font-size: 0.95rem;
-
+    border-radius: var(--border-radius-sm);
+    background: #ffffff;
+    color: #334155;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
     transition: border-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
-.filter-section input:focus,
-.filter-section select:focus {
-    outline: none;
+.sidebar textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.sidebar input::placeholder,
+.sidebar textarea::placeholder {
+    color: #94a3b8;
+    opacity: 1;
+}
+
+.sidebar input:not(:disabled):hover,
+.sidebar select:not(:disabled):hover,
+.sidebar textarea:not(:disabled):hover {
+    border-color: #94a3b8;
+}
+
+.sidebar input:focus,
+.sidebar select:focus,
+.sidebar textarea:focus {
     border-color: var(--color-btn-primary);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    outline: none;
+    box-shadow: var(--shadow-focus);
 }
 
-/* =========================
-   DATE STACK
-   ========================= */
-.filter-section .date-stack {
+.sidebar input:disabled,
+.sidebar select:disabled,
+.sidebar textarea:disabled {
+    background: var(--color-sidebar-tab-bg);
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.sidebar input[type="checkbox"],
+.sidebar input[type="radio"] {
+    accent-color: var(--color-btn-primary);
+}
+
+/* Date fields */
+
+.date-stack,
+.date-field {
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
+    gap: 0.5rem;
+    min-width: 0;
 }
 
-.filter-section .date-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-}
+/* Paired inputs and bounding box */
 
-/* =========================
-   INPUT GRID (generic 2x2)
-   ========================= */
-.input-pair {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.6rem;
-}
-
-/* =========================
-   BOUNDING BOX GRID (IMPORTANT - restored)
-   ========================= */
+.input-pair,
 .bbox-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+.bbox-grid {
     padding: 0;
-    background: none;
     border: none;
+    background: transparent;
 }
 
 .bbox-grid label {
-    display: flex;
-    flex-direction: column;
     gap: 0.35rem;
-
-    font-size: 0.95rem;
-    font-weight: 500;
+    margin-bottom: 0;
+    font-size: 0.85rem;
 }
 
-/* =========================
-   BUTTONS
-   ========================= */
+/* =========================================================
+  Button groups and buttons
+  ========================================================= */
+
 .btn-group,
 .btn-group-small {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem;
     align-items: center;
+    gap: 0.5rem;
 }
 
-.btn {
+.sidebar .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-
-    padding: 0.45rem 0.75rem;
-
-    border-radius: var(--border-radius);
+    gap: 0.4rem;
+    min-height: var(--control-height, 38px);
+    padding: 0.5rem 0.8rem;
+    border-radius: var(--border-radius-sm);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 550;
+    line-height: 1.35;
     cursor: pointer;
-
-    font-size: 1rem;
-    font-weight: 500;
-
-    line-height: 1.2;
-
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
-.btn-primary {
-    background-color: var(--color-btn-primary);
-    color: #fff;
-    border: 1px solid var(--color-btn-primary);
+.sidebar .btn:active:not(:disabled) {
+    transform: translateY(1px);
 }
 
-.btn-primary:hover {
-    background-color: var(--color-btn-primary-hover);
+.sidebar .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
-.btn-outline-secondary {
-    background-color: #fff;
-    color: #475569;
+.sidebar .btn:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}
+
+.sidebar .btn-primary {
+    border-color: var(--color-btn-primary);
+    background: var(--color-btn-primary);
+    color: #ffffff;
+}
+
+.sidebar .btn-primary:hover:not(:disabled) {
+    border-color: var(--color-btn-primary-hover);
+    background: var(--color-btn-primary-hover);
+}
+
+.sidebar .btn-outline-secondary {
     border: 1px solid #cbd5e1 !important;
+    background: #ffffff;
+    color: #475569;
 }
 
-.btn-outline-secondary:hover {
-    background-color: #e2e8f0;
+.sidebar .btn-outline-secondary:hover:not(:disabled) {
+    border-color: #94a3b8 !important;
+    background: var(--color-btn-outline-hover);
+    color: #334155;
 }
 
-/* =========================
-   LISTS
-   ========================= */
+/* =========================================================
+  Feature and visualization lists
+  ========================================================= */
+
 .features-list,
 .processed-files-list {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 0.75rem;
+    min-width: 0;
 }
 
-/* =========================
-   CARDS
-   ========================= */
+/* Cards */
+
 .feature-card,
 .visualization-card {
-    background-color: #fbfcfe;
-    border: 1px solid #d6deea;
-    border-radius: var(--border-radius);
-    box-shadow: none;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: #ffffff;
+    box-shadow: var(--shadow-light);
+    transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.feature-card:hover,
+.visualization-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: var(--shadow-medium);
 }
 
 .feature-card .card-body,
@@ -231,61 +368,104 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+    min-width: 0;
     padding: 0.9rem;
 }
 
 .feature-card .card-title,
 .visualization-card .card-title {
-    font-size: 1.15rem;
+    margin: 0;
+    color: #1e293b;
+    font-size: 1rem;
     font-weight: 600;
-    margin: 0;
+    line-height: 1.4;
 }
 
-.feature-card .card-text,
-.visualization-card .card-text {
-    font-size: 0.95rem;
-    margin: 0;
-    color: #475569;
+/* Feature metadata */
+
+.feature-card .card-text {
+    min-width: 0;
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
 }
 
-.feature-card .card-text .feature-id,
-.feature-card .card-text .feature-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
+.feature-card .metadata-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.feature-card .metadata-label {
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
+    font-weight: 450;
+    white-space: uppercase; /* sjednoceno v textovém popisu */
     white-space: nowrap;
-    flex: 1;
+}
+
+.feature-card .metadata-value {
+    flex: 1 1 auto;
     min-width: 0;
 }
 
-/* =========================
-   VISUALIZE TAB (aligned, NOT separate system)
-   ========================= */
+.feature-card .metadata-row--date .metadata-value {
+    overflow-wrap: anywhere;
+}
+
+.feature-card .metadata-copyable {
+    display: block;
+    overflow: hidden;
+    color: #334155;
+    font-weight: 400;
+    text-decoration: underline;
+    text-decoration-color: #94a3b8;
+    text-underline-offset: 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.feature-card .metadata-copyable:hover {
+    color: var(--color-btn-primary-hover);
+    text-decoration-color: currentColor;
+}
+
+.feature-card .metadata-row > .feature-name,
+.feature-card .metadata-row > .feature-id {
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+}
+
+/* =========================================================
+  Visualization tab
+  ========================================================= */
+
 .visualize-tab {
     display: flex;
     flex-direction: column;
-    gap: 1.2rem;
+    gap: 1rem;
+    min-width: 0;
 }
 
-/* reuse filter-section instead of separate card system */
 .visualize-tab .filter-section {
-    background-color: #eef2f8;
+    margin: 0;
+    padding: 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: #ffffff;
 }
 
-/* opacity control aligned with form system */
+/* Opacity control */
+
 .opacity-control {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.opacity-control input[type="range"] {
-    flex: 1;
-    accent-color: var(--color-btn-primary);
-}
-
-.opacity-value {
-    font-size: 0.9rem;
-    font-weight: 600;
-    min-width: 2.5rem;
-    text-align: right;
+    flex-direction: column;
+    gap: 0.5rem;
 }
