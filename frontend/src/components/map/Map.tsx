@@ -72,7 +72,7 @@ const MapRegistrar = () => {
 };
 
 /**
- * Sync zoom + bbox + feature highlight
+ * Synchronizace zoomu, bbox a zvýraznění features
  */
 interface MapUpdaterProps {
     programmaticRef: React.MutableRefObject<boolean>;
@@ -82,8 +82,8 @@ const MapUpdater = ({programmaticRef}: MapUpdaterProps) => {
     const setView = useMapStore((s) => s.setView);
     const setBboxFromMap = useFiltersStore((s) => s.setBboxFromMap);
 
-    const setHoveredFeatureId = useFeaturesStore(
-        (s) => s.setHoveredFeatureId
+    const setHighlightedFeatureId = useFeaturesStore(
+        (s) => s.setHighlightedFeatureId
     );
 
     const map = useMapEvents({
@@ -114,12 +114,12 @@ const MapUpdater = ({programmaticRef}: MapUpdaterProps) => {
                 return;
             }
 
-            // Clicking an interactive map layer should not clear the highlight
+            // Kliknutí na interaktivní mapovou vrstvu zachová zvýraznění.
             if (target.closest(".leaflet-interactive")) {
                 return;
             }
 
-            // Ignore map controls and other interactive UI elements
+            // Ignorovat mapové ovládací prvky a ostatní interaktivní UI.
             if (
                 target.closest(
                     ".leaflet-control, button, a, input, select, textarea"
@@ -128,8 +128,8 @@ const MapUpdater = ({programmaticRef}: MapUpdaterProps) => {
                 return;
             }
 
-            // Clicking empty map area clears the highlighted feature
-            setHoveredFeatureId(null);
+            // Kliknutí do prázdné oblasti mapy zruší zvýraznění.
+            setHighlightedFeatureId(null);
         }
     });
 
@@ -158,30 +158,34 @@ const Map: React.FC<Props> = ({
                               }) => {
 
     // =============================
-    // FEATURES
+    // FEATURE HIGHLIGHT
     // =============================
-    const hoveredFeatureId = useFeaturesStore(
-        (s) => s.hoveredFeatureId
+
+    const highlightedFeatureId = useFeaturesStore(
+        (s) => s.highlightedFeatureId
     );
 
-    const hoveredFeature = useFeaturesStore((s) =>
-        hoveredFeatureId
-            ? s.featuresById[hoveredFeatureId]
+    const highlightedFeature = useFeaturesStore((s) =>
+        highlightedFeatureId
+            ? s.featuresById[highlightedFeatureId]
             : undefined
     );
 
     // =============================
     // VISUALIZATION
     // =============================
+
     const {
         processedFiles,
         selectedTileLayerPath,
         opacity,
-        featureId
+        featureId: visualizedFeatureId
     } = useVisualizationStore();
 
-    const feature = useFeaturesStore((s) =>
-        featureId ? s.featuresById[featureId] : undefined
+    const visualizedFeature = useFeaturesStore((s) =>
+        visualizedFeatureId
+            ? s.featuresById[visualizedFeatureId]
+            : undefined
     );
 
     const selectedTile = getSelectedTileLayer(
@@ -189,13 +193,14 @@ const Map: React.FC<Props> = ({
         selectedTileLayerPath
     );
 
-    const featureBounds = feature
-        ? polygonToBounds(feature.geometry.coordinates)
+    const visualizedFeatureBounds = visualizedFeature
+        ? polygonToBounds(visualizedFeature.geometry.coordinates)
         : undefined;
 
     // =============================
     // RENDER
     // =============================
+
     return (
         <MapContainer
             center={center}
@@ -213,18 +218,22 @@ const Map: React.FC<Props> = ({
             />
             */}
 
-            {/* Hover highlight */}
-            {hoveredFeature && (
-                <Polygon
-                    positions={hoveredFeature.geometry.coordinates}
-                    pathOptions={{
-                        color: "gray",
-                        fillColor: "gray",
-                        fillOpacity: 0.3,
-                        weight: 3
-                    }}
-                />
-            )}
+            {/* Highlighted feature */}
+            {
+                highlightedFeature &&
+                (highlightedFeatureId !== visualizedFeatureId) &&
+                (
+                    <Polygon
+                        positions={highlightedFeature.geometry.coordinates}
+                        pathOptions={{
+                            color: "gray",
+                            fillColor: "gray",
+                            fillOpacity: 0.3,
+                            weight: 3
+                        }}
+                    />
+                )
+            }
 
             <MapTopControls
                 lat={location?.lat ?? 0}
@@ -247,12 +256,12 @@ const Map: React.FC<Props> = ({
             {/* Visualization tile layer */}
             {selectedTile && (
                 <TileLayer
-                    key={featureId}
+                    key={visualizedFeatureId}
                     url={`${selectedTile.path}/{z}/{x}/{y}.${selectedTile.format}`}
                     opacity={opacity}
                     minNativeZoom={selectedTile.zoomLevels.at(0)}
                     maxNativeZoom={selectedTile.zoomLevels.at(-1)}
-                    bounds={featureBounds}
+                    bounds={visualizedFeatureBounds}
                 />
             )}
 

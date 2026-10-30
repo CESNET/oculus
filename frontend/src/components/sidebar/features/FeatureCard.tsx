@@ -11,8 +11,8 @@ interface FeatureCardProps {
 }
 
 export default function FeatureCard({feature}: FeatureCardProps) {
-    const setHoveredId = useFeaturesStore(
-        (state) => state.setHoveredFeatureId
+    const setHighlightedFeatureId = useFeaturesStore(
+        (state) => state.setHighlightedFeatureId
     );
 
     const [copiedName, setCopiedName] = useState(false);
@@ -43,7 +43,7 @@ export default function FeatureCard({feature}: FeatureCardProps) {
     // On touch devices, tapping a card highlights its feature
     const handleCardClick = () => {
         if (!canHover) {
-            setHoveredId(feature.id);
+            setHighlightedFeatureId(feature.id);
         }
     };
 
@@ -72,10 +72,10 @@ export default function FeatureCard({feature}: FeatureCardProps) {
         <div
             className="card h-100 shadow-sm feature-card"
             onMouseEnter={
-                canHover ? () => setHoveredId(feature.id) : undefined
+                canHover ? () => setHighlightedFeatureId(feature.id) : undefined
             }
             onMouseLeave={
-                canHover ? () => setHoveredId(null) : undefined
+                canHover ? () => setHighlightedFeatureId(null) : undefined
             }
             onClick={handleCardClick}
         >

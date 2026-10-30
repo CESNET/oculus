@@ -16,8 +16,8 @@ export interface FeaturesState {
     getFeatureById: (id: string) => Feature | undefined;
 
     // UI state
-    hoveredFeatureId: string | null;
-    setHoveredFeatureId: (id: string | null) => void;
+    highlightedFeatureId: string | null;
+    setHighlightedFeatureId: (id: string | null) => void;
 }
 
 export const useFeaturesStore = create<FeaturesState>((set, get) => ({
@@ -69,6 +69,6 @@ export const useFeaturesStore = create<FeaturesState>((set, get) => ({
 
     getFeatureById: (id) => get().featuresById[id],
 
-    hoveredFeatureId: null,
-    setHoveredFeatureId: (id) => set({ hoveredFeatureId: id }),
+    highlightedFeatureId: null,
+    setHighlightedFeatureId: (id) => set({ highlightedFeatureId: id }),
 }));

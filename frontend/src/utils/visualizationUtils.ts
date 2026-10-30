@@ -76,11 +76,11 @@ export function getSelectedTileLayer(
     }
 
     return (
-        getTileLayers(processedFiles)
-            .find(
-                layer =>
-                    layer.path === selectedPath,
+        getTileLayers(processedFiles).find(
+            layer => (
+                layer.path === selectedPath
             )
+        )
         ?? null
     );
 }
