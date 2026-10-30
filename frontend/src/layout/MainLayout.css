@@ -92,7 +92,7 @@ body,
     width: 100%;
     height: 100%;
     margin: 0;
-    font-family: var(--font-family);
+    font-family: var(--font-family), sans-serif;
     background-color: var(--color-sidebar-bg);
     color: var(--color-sidebar-text);
 }
