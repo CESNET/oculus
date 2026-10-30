@@ -1,25 +1,25 @@
-import React, {useEffect} from 'react';
+import React, {useEffect} from "react";
 import {
     MapContainer,
     TileLayer,
     useMapEvents,
     useMap,
     Polygon
-} from 'react-leaflet';
+} from "react-leaflet";
 
-import type {LatLngExpression} from 'leaflet';
+import type {LatLngExpression} from "leaflet";
 
-import {polygonToBounds, registerMap} from '../../utils/mapUtils';
+import {polygonToBounds, registerMap} from "../../utils/mapUtils";
 import {getSelectedTileLayer} from "../../utils/visualizationUtils.ts";
-import {useMapStore} from '../../store/useMapStore';
-import {useFiltersStore} from '../../store/useFiltersStore';
-import {useFeaturesStore} from '../../store/useFeaturesStore';
-import {useVisualizationStore} from '../../store/useVisualizationStore';
+import {useMapStore} from "../../store/useMapStore";
+import {useFiltersStore} from "../../store/useFiltersStore";
+import {useFeaturesStore} from "../../store/useFeaturesStore";
+import {useVisualizationStore} from "../../store/useVisualizationStore";
 
 import OpenFreeMapLayer from "./OpenFreeMapLayer.tsx";
-import UserLocationMarker from './UserLocationMarker';
+import UserLocationMarker from "./UserLocationMarker";
 import MapTopControls from "./MapTopControls.tsx";
-import ProductLayer from './layers/ProductLayer';
+import ProductLayer from "./layers/ProductLayer";
 
 interface Props {
     center: LatLngExpression;
@@ -72,11 +72,19 @@ const MapRegistrar = () => {
 };
 
 /**
- * Sync zoom + bbox
+ * Synchronizace zoomu, bbox a zvýraznění features
  */
-const MapUpdater = ({programmaticRef}: any) => {
+interface MapUpdaterProps {
+    programmaticRef: React.MutableRefObject<boolean>;
+}
+
+const MapUpdater = ({programmaticRef}: MapUpdaterProps) => {
     const setView = useMapStore((s) => s.setView);
     const setBboxFromMap = useFiltersStore((s) => s.setBboxFromMap);
+
+    const setHighlightedFeatureId = useFeaturesStore(
+        (s) => s.setHighlightedFeatureId
+    );
 
     const map = useMapEvents({
         moveend: () => {
@@ -97,6 +105,31 @@ const MapUpdater = ({programmaticRef}: any) => {
                 bounds.getEast(),
                 bounds.getWest()
             );
+        },
+
+        click: (event) => {
+            const target = event.originalEvent.target;
+
+            if (!(target instanceof Element)) {
+                return;
+            }
+
+            // Kliknutí na interaktivní mapovou vrstvu zachová zvýraznění.
+            if (target.closest(".leaflet-interactive")) {
+                return;
+            }
+
+            // Ignorovat mapové ovládací prvky a ostatní interaktivní UI.
+            if (
+                target.closest(
+                    ".leaflet-control, button, a, input, select, textarea"
+                )
+            ) {
+                return;
+            }
+
+            // Kliknutí do prázdné oblasti mapy zruší zvýraznění.
+            setHighlightedFeatureId(null);
         }
     });
 
@@ -125,26 +158,34 @@ const Map: React.FC<Props> = ({
                               }) => {
 
     // =============================
-    // FEATURES
+    // FEATURE HIGHLIGHT
     // =============================
-    const hoveredFeatureId = useFeaturesStore((s) => s.hoveredFeatureId);
 
-    const hoveredFeature = useFeaturesStore((s) =>
-        hoveredFeatureId ? s.featuresById[hoveredFeatureId] : undefined
+    const highlightedFeatureId = useFeaturesStore(
+        (s) => s.highlightedFeatureId
+    );
+
+    const highlightedFeature = useFeaturesStore((s) =>
+        highlightedFeatureId
+            ? s.featuresById[highlightedFeatureId]
+            : undefined
     );
 
     // =============================
     // VISUALIZATION
     // =============================
+
     const {
         processedFiles,
         selectedTileLayerPath,
         opacity,
-        featureId
+        featureId: visualizedFeatureId
     } = useVisualizationStore();
 
-    const feature = useFeaturesStore((s) =>
-        featureId ? s.featuresById[featureId] : undefined
+    const visualizedFeature = useFeaturesStore((s) =>
+        visualizedFeatureId
+            ? s.featuresById[visualizedFeatureId]
+            : undefined
     );
 
     const selectedTile = getSelectedTileLayer(
@@ -152,13 +193,14 @@ const Map: React.FC<Props> = ({
         selectedTileLayerPath
     );
 
-    const featureBounds = feature
-        ? polygonToBounds(feature.geometry.coordinates)
+    const visualizedFeatureBounds = visualizedFeature
+        ? polygonToBounds(visualizedFeature.geometry.coordinates)
         : undefined;
 
     // =============================
     // RENDER
     // =============================
+
     return (
         <MapContainer
             center={center}
@@ -166,28 +208,32 @@ const Map: React.FC<Props> = ({
             zoomControl={false}
             className="w-100 h-100"
         >
-
             {/* Base map */}
+            <OpenFreeMapLayer />
+
             {/*
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap contributors"
             />
             */}
-            <OpenFreeMapLayer />
 
-            {/* Hover highlight */}
-            {hoveredFeature && (
-                <Polygon
-                    positions={hoveredFeature.geometry.coordinates}
-                    pathOptions={{
-                        color: 'gray',
-                        fillColor: 'gray',
-                        fillOpacity: 0.3,
-                        weight: 3
-                    }}
-                />
-            )}
+            {/* Highlighted feature */}
+            {
+                highlightedFeature &&
+                (highlightedFeatureId !== visualizedFeatureId) &&
+                (
+                    <Polygon
+                        positions={highlightedFeature.geometry.coordinates}
+                        pathOptions={{
+                            color: "gray",
+                            fillColor: "gray",
+                            fillOpacity: 0.3,
+                            weight: 3
+                        }}
+                    />
+                )
+            }
 
             <MapTopControls
                 lat={location?.lat ?? 0}
@@ -210,12 +256,12 @@ const Map: React.FC<Props> = ({
             {/* Visualization tile layer */}
             {selectedTile && (
                 <TileLayer
-                    key={featureId}
+                    key={visualizedFeatureId}
                     url={`${selectedTile.path}/{z}/{x}/{y}.${selectedTile.format}`}
                     opacity={opacity}
                     minNativeZoom={selectedTile.zoomLevels.at(0)}
                     maxNativeZoom={selectedTile.zoomLevels.at(-1)}
-                    bounds={featureBounds}
+                    bounds={visualizedFeatureBounds}
                 />
             )}
 

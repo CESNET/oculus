@@ -10,9 +10,6 @@
     overflow: hidden;
     background: var(--color-sidebar-bg);
     color: var(--color-sidebar-text);
-    font-family: inherit;
-    font-size: 0.925rem;
-    line-height: 1.5;
 }
 
 /* Collapse button - sjednoceno na výšku 38px podle MainLayout */
@@ -61,9 +58,6 @@
     border-radius: 0.55rem 0.55rem 0 0;
     background: transparent;
     color: var(--color-text-muted);
-    font: inherit;
-    font-size: 0.875rem;
-    font-weight: 450;
     text-align: center;
     cursor: pointer;
     transition: background-color var(--transition-fast),
@@ -78,7 +72,6 @@
 .sidebar-tabs button.active {
     background: var(--color-sidebar-bg);
     color: var(--color-sidebar-tab-active-text);
-    font-weight: 600;
 }
 
 .sidebar-tabs button.active::after {
@@ -140,16 +133,11 @@
 .filter-section h3 {
     margin: 0 0 0.85rem;
     color: #334155;
-    font-size: 1.05rem;
-    font-weight: 600;
-    line-height: 1.4;
 }
 
 .filter-section p {
     margin: 0 0 0.75rem;
     color: var(--color-text-muted);
-    font-size: 0.875rem;
-    font-weight: 400;
 }
 
 .filter-section label,
@@ -160,8 +148,6 @@
     min-width: 0;
     margin-bottom: 0.85rem;
     color: var(--color-text-muted);
-    font-size: 0.875rem;
-    font-weight: 450;
 }
 
 .filter-section label:last-child {
@@ -183,11 +169,6 @@
     border-radius: var(--border-radius-sm);
     background: #ffffff;
     color: #334155;
-    font-family: inherit;
-    font-size: 0.9rem;
-    font-weight: 400;
-    line-height: 1.4;
-    font-variant-numeric: tabular-nums;
     transition: border-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
@@ -259,7 +240,6 @@
 .bbox-grid label {
     gap: 0.35rem;
     margin-bottom: 0;
-    font-size: 0.85rem;
 }
 
 /* =========================================================
@@ -282,10 +262,6 @@
     min-height: var(--control-height, 38px);
     padding: 0.5rem 0.8rem;
     border-radius: var(--border-radius-sm);
-    font-family: inherit;
-    font-size: 0.875rem;
-    font-weight: 550;
-    line-height: 1.35;
     cursor: pointer;
     transition: background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -376,9 +352,6 @@
 .visualization-card .card-title {
     margin: 0;
     color: #1e293b;
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.4;
 }
 
 /* Feature metadata */
@@ -388,9 +361,6 @@
     margin-top: 0;
     margin-bottom: 0.25rem;
     color: var(--color-text-muted);
-    font-size: 0.875rem;
-    font-weight: 400;
-    line-height: 1.5;
 }
 
 .feature-card .metadata-row {
@@ -404,8 +374,6 @@
 .feature-card .metadata-label {
     flex: 0 0 auto;
     color: var(--color-text-muted);
-    font-weight: 450;
-    white-space: uppercase; /* sjednoceno v textovém popisu */
     white-space: nowrap;
 }
 
@@ -422,7 +390,6 @@
     display: block;
     overflow: hidden;
     color: #334155;
-    font-weight: 400;
     text-decoration: underline;
     text-decoration-color: #94a3b8;
     text-underline-offset: 2px;

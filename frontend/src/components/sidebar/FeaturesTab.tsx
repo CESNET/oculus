@@ -11,15 +11,22 @@ export default function FeaturesTab() {
         .filter(Boolean);
 
     if (!features.length) {
-        return <div className="text-center py-5">No features loaded</div>;
+        return (
+            <div className="text-center py-5">
+                No features loaded
+            </div>
+        );
     }
 
-    // TODO na horní okraj by to chtělo přidat možnosti pro vizualizaci - tedy formáty, JPEG quality...
+    // TODO: Add global visualization options (formats, JPEG quality, etc.)
 
     return (
         <div className="features-list">
-            {features.map((f: Feature) => (
-                <FeatureCard key={f.id} feature={f} />
+            {features.map((feature: Feature) => (
+                <FeatureCard
+                    key={feature.id}
+                    feature={feature}
+                />
             ))}
         </div>
     );
