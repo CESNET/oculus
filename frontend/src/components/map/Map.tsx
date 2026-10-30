@@ -74,7 +74,11 @@ const MapRegistrar = () => {
 /**
  * Sync zoom + bbox + feature highlight
  */
-const MapUpdater = ({programmaticRef}: Props) => {
+interface MapUpdaterProps {
+    programmaticRef: React.MutableRefObject<boolean>;
+}
+
+const MapUpdater = ({programmaticRef}: MapUpdaterProps) => {
     const setView = useMapStore((s) => s.setView);
     const setBboxFromMap = useFiltersStore((s) => s.setBboxFromMap);
 
