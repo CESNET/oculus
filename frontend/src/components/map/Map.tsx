@@ -125,7 +125,7 @@ const Map: React.FC<Props> = ({
                               }) => {
 
     // =============================
-    // FEATURES
+    // HOVERED FEATURES
     // =============================
     const hoveredFeatureId = useFeaturesStore((s) => s.hoveredFeatureId);
 

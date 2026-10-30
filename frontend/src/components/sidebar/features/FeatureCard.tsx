@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
@@ -19,13 +19,33 @@ export default function FeatureCard({feature}: FeatureCardProps) {
     const [copiedId, setCopiedId] = useState(false);
     const [copiedUrl, setCopiedUrl] = useState(false);
 
-    /*
-    // Not really sure why I was resetting Sentinel2Bands, handleVisualization() was executed only from FeatureCard
-    const handleVisualization = async (feature: Feature) => {
-        useVisualizationStore.getState().resetSentinel2Bands(true)
-        await runVisualization(feature);
-    }
-     */
+    // Detect devices that support real hover (mouse / touchpad)
+    const [canHover, setCanHover] = useState(false);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia(
+            "(hover: hover) and (pointer: fine)"
+        );
+
+        const updateHover = () => {
+            setCanHover(mediaQuery.matches);
+        };
+
+        updateHover();
+
+        mediaQuery.addEventListener("change", updateHover);
+
+        return () => {
+            mediaQuery.removeEventListener("change", updateHover);
+        };
+    }, []);
+
+    // On touch devices, tapping a card highlights its feature
+    const handleCardClick = () => {
+        if (!canHover) {
+            setHoveredId(feature.id);
+        }
+    };
 
     const handleCopy = async (
         value: string,
@@ -51,8 +71,13 @@ export default function FeatureCard({feature}: FeatureCardProps) {
     return (
         <div
             className="card h-100 shadow-sm feature-card"
-            onMouseEnter={() => setHoveredId(feature.id)}
-            onMouseLeave={() => setHoveredId(null)}
+            onMouseEnter={
+                canHover ? () => setHoveredId(feature.id) : undefined
+            }
+            onMouseLeave={
+                canHover ? () => setHoveredId(null) : undefined
+            }
+            onClick={handleCardClick}
         >
             <div className="card-body d-flex flex-column">
                 <h5 className="card-title">{feature.title}</h5>
