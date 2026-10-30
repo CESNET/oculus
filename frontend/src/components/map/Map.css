@@ -10,19 +10,18 @@
 
 .leaflet-control-attribution {
     position: absolute !important;
-    bottom: 0 !important;  /* opravdu u dolního okraje */
-    right: 0 !important;   /* u pravého okraje */
+    bottom: 0 !important; /* opravdu u dolního okraje */
+    right: 0 !important; /* u pravého okraje */
     left: auto !important;
     top: auto !important;
     z-index: 2000;
 
-    display: inline-flex;        /* zůstane v jedné řádce */
-    align-items: center;         /* vertikální centrování */
-    white-space: nowrap;         /* zabrání zalomení */
-    background-color: rgba(255,255,255,0.9);
+    display: inline-flex; /* zůstane v jedné řádce */
+    align-items: center; /* vertikální centrování */
+    white-space: nowrap; /* zabrání zalomení */
+    background-color: rgba(255, 255, 255, 0.9);
     padding: 0.2rem 0.4rem;
     border-radius: 0 !important;
-    font-size: 0.7rem;
     color: #475569;
     pointer-events: auto;
     text-align: right;
@@ -49,7 +48,6 @@
     background-color: var(--color-btn-outline-bg);
     border: 1px solid var(--color-sidebar-border);
     color: var(--color-btn-outline-text);
-    font-family: var(--font-family), sans-serif;
     transition: background-color var(--transition-fast), color var(--transition-fast);
     cursor: pointer;
 }
@@ -73,7 +71,6 @@
     left: 10px;
     z-index: 1000;
 
-    font-size: 0.85rem;
     box-shadow: var(--shadow-medium);
     background-color: var(--color-sidebar-bg);
     padding: 0.4rem 0.6rem;

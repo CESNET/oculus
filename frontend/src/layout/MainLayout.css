@@ -13,12 +13,19 @@
     --transition-fast: 0.2s ease;
     --transition-layout: 280ms ease;
 
-    /* Typography */
+    /* Typography: the single source of truth for every component */
     --font-size-base: 1rem;
+    --font-size-small: 0.9375rem;
+    --font-size-xs: 0.875rem;
+    --font-size-caption: 0.75rem;
+
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
+
+    --line-height-base: 1.55;
+    --line-height-compact: 1.4;
 
     /* Brand and buttons */
     --color-btn-primary: #3b82f6;
@@ -93,7 +100,7 @@ body {
     min-width: 320px;
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-normal);
-    line-height: 1.55;
+    line-height: var(--line-height-base);
 }
 
 button,
@@ -111,6 +118,168 @@ button:focus-visible,
 a:focus-visible {
     outline: 2px solid var(--color-btn-primary);
     outline-offset: 3px;
+}
+
+/* =========================================================
+   3. Central typography
+   All component font definitions live in this file.
+   ========================================================= */
+
+/* Sidebar */
+.sidebar {
+    font-family: var(--font-family), sans-serif;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-base);
+}
+
+.sidebar-tabs button {
+    font-family: inherit;
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-compact);
+}
+
+.sidebar-tabs button.active {
+    font-weight: var(--font-weight-bold);
+}
+
+.filter-section h3 {
+    font-size: 1.05rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-compact);
+}
+
+.filter-section p,
+.filter-section label,
+.bbox-grid label {
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-compact);
+}
+
+.sidebar input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.sidebar select,
+.sidebar textarea {
+    font-family: inherit;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-compact);
+    font-variant-numeric: tabular-nums;
+}
+
+.sidebar .btn {
+    font-family: inherit;
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-compact);
+}
+
+.feature-card .card-title,
+.visualization-card .card-title {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-compact);
+}
+
+.feature-card .card-text,
+.feature-card .metadata-label,
+.feature-card .metadata-copyable {
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-base);
+}
+
+/* Navbar */
+.main-navbar .title {
+    font-size: 1.35rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+}
+
+.main-navbar .search-input {
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-compact);
+}
+
+.main-navbar .search-button {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.main-navbar .search-dropdown li {
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-compact);
+}
+
+/* Map text */
+.map-col .leaflet-container {
+    font-family: var(--font-family), sans-serif;
+}
+
+.leaflet-control-attribution {
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-compact);
+}
+
+.map-error,
+.map-locate-error {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-compact);
+}
+
+/* Loading overlay */
+.loading-title {
+    font-size: 1.15rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-compact);
+    letter-spacing: 0.01em;
+}
+
+.loading-description {
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-base);
+}
+
+.loading-cancel {
+    font-family: inherit;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-compact);
+}
+
+.loading-cancel span {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+/* Responsive typography */
+@media (max-width: 767px) {
+    body {
+        font-size: var(--font-size-base);
+        line-height: 1.6;
+    }
+
+    .main-navbar .title {
+        font-size: 1.15rem;
+    }
+
+    .main-navbar .search-input {
+        font-size: var(--font-size-small);
+    }
+}
+
+@media (max-width: 420px) {
+    .main-navbar .title {
+        font-size: 1rem;
+        letter-spacing: -0.02em;
+    }
 }
 
 /* =========================================================
@@ -584,11 +753,6 @@ a:focus-visible {
    ========================================================= */
 
 @media (max-width: 767px) {
-    body {
-        font-size: 1rem;
-        line-height: 1.6;
-    }
-
     .main-container > .row {
         flex-direction: column;
         flex-wrap: nowrap;
