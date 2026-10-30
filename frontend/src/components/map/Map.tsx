@@ -1,25 +1,25 @@
-import React, {useEffect} from 'react';
+import React, {useEffect} from "react";
 import {
     MapContainer,
     TileLayer,
     useMapEvents,
     useMap,
     Polygon
-} from 'react-leaflet';
+} from "react-leaflet";
 
-import type {LatLngExpression} from 'leaflet';
+import type {LatLngExpression} from "leaflet";
 
-import {polygonToBounds, registerMap} from '../../utils/mapUtils';
+import {polygonToBounds, registerMap} from "../../utils/mapUtils";
 import {getSelectedTileLayer} from "../../utils/visualizationUtils.ts";
-import {useMapStore} from '../../store/useMapStore';
-import {useFiltersStore} from '../../store/useFiltersStore';
-import {useFeaturesStore} from '../../store/useFeaturesStore';
-import {useVisualizationStore} from '../../store/useVisualizationStore';
+import {useMapStore} from "../../store/useMapStore";
+import {useFiltersStore} from "../../store/useFiltersStore";
+import {useFeaturesStore} from "../../store/useFeaturesStore";
+import {useVisualizationStore} from "../../store/useVisualizationStore";
 
 import OpenFreeMapLayer from "./OpenFreeMapLayer.tsx";
-import UserLocationMarker from './UserLocationMarker';
+import UserLocationMarker from "./UserLocationMarker";
 import MapTopControls from "./MapTopControls.tsx";
-import ProductLayer from './layers/ProductLayer';
+import ProductLayer from "./layers/ProductLayer";
 
 interface Props {
     center: LatLngExpression;
@@ -72,11 +72,15 @@ const MapRegistrar = () => {
 };
 
 /**
- * Sync zoom + bbox
+ * Sync zoom + bbox + feature highlight
  */
-const MapUpdater = ({programmaticRef}: any) => {
+const MapUpdater = ({programmaticRef}: Props) => {
     const setView = useMapStore((s) => s.setView);
     const setBboxFromMap = useFiltersStore((s) => s.setBboxFromMap);
+
+    const setHoveredFeatureId = useFeaturesStore(
+        (s) => s.setHoveredFeatureId
+    );
 
     const map = useMapEvents({
         moveend: () => {
@@ -97,6 +101,31 @@ const MapUpdater = ({programmaticRef}: any) => {
                 bounds.getEast(),
                 bounds.getWest()
             );
+        },
+
+        click: (event) => {
+            const target = event.originalEvent.target;
+
+            if (!(target instanceof Element)) {
+                return;
+            }
+
+            // Clicking an interactive map layer should not clear the highlight
+            if (target.closest(".leaflet-interactive")) {
+                return;
+            }
+
+            // Ignore map controls and other interactive UI elements
+            if (
+                target.closest(
+                    ".leaflet-control, button, a, input, select, textarea"
+                )
+            ) {
+                return;
+            }
+
+            // Clicking empty map area clears the highlighted feature
+            setHoveredFeatureId(null);
         }
     });
 
@@ -125,12 +154,16 @@ const Map: React.FC<Props> = ({
                               }) => {
 
     // =============================
-    // HOVERED FEATURES
+    // FEATURES
     // =============================
-    const hoveredFeatureId = useFeaturesStore((s) => s.hoveredFeatureId);
+    const hoveredFeatureId = useFeaturesStore(
+        (s) => s.hoveredFeatureId
+    );
 
     const hoveredFeature = useFeaturesStore((s) =>
-        hoveredFeatureId ? s.featuresById[hoveredFeatureId] : undefined
+        hoveredFeatureId
+            ? s.featuresById[hoveredFeatureId]
+            : undefined
     );
 
     // =============================
@@ -166,23 +199,23 @@ const Map: React.FC<Props> = ({
             zoomControl={false}
             className="w-100 h-100"
         >
-
             {/* Base map */}
+            <OpenFreeMapLayer />
+
             {/*
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap contributors"
             />
             */}
-            <OpenFreeMapLayer />
 
             {/* Hover highlight */}
             {hoveredFeature && (
                 <Polygon
                     positions={hoveredFeature.geometry.coordinates}
                     pathOptions={{
-                        color: 'gray',
-                        fillColor: 'gray',
+                        color: "gray",
+                        fillColor: "gray",
                         fillOpacity: 0.3,
                         weight: 3
                     }}
